@@ -143,6 +143,26 @@ h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; mar
 .sol-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; white-space: nowrap; }
 .sol-line.h { padding-left: 2.2rem; }
 .sol-line .amt { text-align: right; }
+main .wrap.lex-wrap { grid-template-columns: minmax(0, 1fr); gap: 18px; max-width: 920px; }
+.lex-head { display: grid; gap: 12px; }
+.lex-head input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: inherit; font: inherit; width: 100%; max-width: 420px; }
+.lex-list { display: grid; gap: 18px; }
+.lex-group { display: grid; gap: 8px; }
+.lex-item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.lex-item > summary { cursor: pointer; list-style: none; padding: 12px 16px; font-weight: 700; display: flex; gap: 10px; align-items: center; }
+.lex-item > summary::-webkit-details-marker { display: none; }
+.lex-item > summary::before { content: "▸"; color: var(--muted); } .lex-item[open] > summary::before { content: "▾"; }
+.lex-item[open] > summary { border-bottom: 1px solid var(--line); }
+.lex-body { display: grid; gap: 14px; padding: 14px 16px 16px; min-width: 0; }
+.lex-body > p { margin: 0; line-height: 1.55; }
+.lex-rules { background: var(--accent-soft); border-radius: 10px; padding: 10px 14px; }
+.lex-rules ul { margin: 6px 0 0; padding-left: 1.2rem; display: grid; gap: 4px; line-height: 1.45; }
+.lex-ex { display: grid; gap: 8px; border-left: 3px solid var(--accent); padding-left: 12px; min-width: 0; }
+.lex-ex p { margin: 0; }
+.lex-try { border-left-color: var(--muted); }
+.lex-accs > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.lex-acc { border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 0.85rem; display: inline-grid; }
+.lex-acc b { font-family: var(--font-mono); margin-right: 4px; } .lex-acc small { color: var(--muted); font-size: 0.72rem; }
 .why { margin: 0; padding-left: 1.2rem; display: grid; gap: 3px; font-size: 0.95rem; }
 
 aside { display: grid; gap: 16px; min-width: 0; }
@@ -483,6 +503,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       <button type="button" data-module="ab" aria-current="false">Abschluss</button>
       <button type="button" data-module="bw" aria-current="false">Bewertung</button>
       <button type="button" data-module="test" aria-current="false">Test / Schularbeit</button>
+      <button type="button" data-module="lex" aria-current="false">Lexikon</button>
     </nav>
     <span class="plan-switch">Kontenplan Österreich · USt 20 % / 10 %</span>
   </div>
@@ -864,6 +885,20 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         </div>
       </div>
     </aside>
+  </div>
+</main>
+
+<main id="lexikon" hidden>
+  <div class="wrap lex-wrap">
+    <div class="lex-head">
+      <div>
+        <div class="eyebrow">Nachschlagen</div>
+        <h1>Lexikon Rechnungswesen</h1>
+        <p class="note">Alle Themengebiete kurz erklärt, mit Merksätzen, Lehrbeispielen und den wichtigsten Konten. Über die Knöpfe kommst du direkt zur passenden Übung.</p>
+      </div>
+      <input id="lex-search" type="search" placeholder="Suchen, z. B. Skonto oder 2870" aria-label="Lexikon durchsuchen">
+    </div>
+    <div id="lex-list" class="lex-list"></div>
   </div>
 </main>
 
@@ -3723,6 +3758,202 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       st.textContent = kind === "info" ? "Zur Lösung ↓" : kind === "ok" ? "✓ " + title.textContent : line.replace(/\.$/, "") + " ↓";
     }).observe(fb, { childList: true, subtree: true });
   });
+  // ================= Lexikon: alle Themen kurz erklärt, mit Lehrbeispielen =================
+  // g = Kapitel (-1 = Grundlagen, sonst Index in CHAPTERS), tp = Themengebiet im Trainer (für Lehrbeispiele und „Üben“),
+  // go = weitere Übungen ([Modul, Bewertungsart]), ex = eigene Lehrbeispiele (wenn der Trainer keine passenden hat)
+  const LEX = [
+    { id: "konten", g: -1, title: "Bilanz und Kontenarten",
+      text: "Die <b>Bilanz</b> zeigt links das Vermögen (Aktiva), rechts, woher das Geld dafür kommt: Eigenkapital und Fremdkapital (Passiva). Jede Bilanzposition bekommt ein eigenes Konto. Dazu kommen die Erfolgskonten, auf denen Aufwände und Erträge gesammelt werden.",
+      rules: ["<b>Aktive Bestandskonten</b> (Vermögen, z. B. 2700 Kassa, 2800 Bank, 0660 BGA): Anfangsbestand und Zugänge im Soll, Abgänge im Haben.", "<b>Passive Bestandskonten</b> (Kapital und Schulden, z. B. 9000 Kapital, 3300 Lieferverbindlichkeiten, 3150 Darlehen): Anfangsbestand und Zugänge im Haben, Abgänge im Soll.", "<b>Aufwandskonten</b> (Klasse 5–8, z. B. 5010 Handelswareneinsatz, 7400 Mietaufwand) werden im Soll gebucht. Aufwände vermindern den Gewinn.", "<b>Ertragskonten</b> (Klasse 4 und 8, z. B. 4000 Handelswarenerlöse) werden im Haben gebucht. Erträge erhöhen den Gewinn.", "Die Kontoklasse erkennst du an der ersten Ziffer: 0 Anlagevermögen, 1 Vorräte, 2 Forderungen und Geld, 3 Verbindlichkeiten, 4 Erträge, 5 Material- und Wareneinsatz, 6 Personal, 7 sonstige Aufwände, 8 Finanzbereich, 9 Eigenkapital und Abschluss."],
+      accs: ["kassa", "bank", "verb", "ek", "ware", "erloese"], go: [["tk"]] },
+    { id: "buchungssatz", g: -1, title: "Der Buchungssatz",
+      text: "Jeder Geschäftsfall wird auf mindestens zwei Konten gebucht: einmal im Soll, einmal im Haben (doppelte Buchhaltung). Der Buchungssatz nennt zuerst die Soll-Konten, dann nach dem Schrägstrich die Haben-Konten: <b>Soll / Haben</b>.",
+      rules: ["Frag dich: Welche Konten sind betroffen? Ist es ein aktives oder passives Bestandskonto, ein Aufwand oder ein Ertrag?", "Nimmt das Konto zu oder ab? Daraus folgt die Seite: Zugang bei aktiven Bestandskonten = Soll, bei passiven = Haben.", "Summe Soll = Summe Haben. Bei Rechnungen mit Umsatzsteuer gibt es deshalb oft drei Zeilen (netto, Steuer, brutto).", "Immer zuerst den Beleg genau lesen: Wer schickt die Rechnung, wer bekommt sie? Wird bar, per Bank oder auf Ziel bezahlt?"],
+      ex: [{ t: "Wir kaufen Damenblusen auf Ziel: netto € 1.000,00 zuzüglich 20 % USt.", s: [["ware", 100000], ["vst", 20000]], h: [["verb", 120000]], n: "5010 ist ein Aufwand (Soll), die Vorsteuer eine Forderung an das Finanzamt (aktives Bestandskonto, Zugang im Soll), die Lieferverbindlichkeit eine Schuld (passives Bestandskonto, Zugang im Haben)." }],
+      go: [["bs", "einkauf"]] },
+    { id: "ust", g: -1, title: "Umsatzsteuer und Vorsteuer",
+      text: "Unternehmen verrechnen beim Verkauf <b>Umsatzsteuer</b> (meist 20 %, z. B. bei Büchern, Zeitschriften oder Müllabfuhr 10 %) und führen sie an das Finanzamt ab. Die Umsatzsteuer, die sie selbst beim Einkauf bezahlen, holen sie sich als <b>Vorsteuer</b> zurück.",
+      rules: ["Netto → brutto: netto × 1,2 (bei 10 %: × 1,1). Brutto → netto: brutto ÷ 1,2.", "Einkauf: Vorsteuer auf <b>2500 Vorsteuer</b> im Soll (Forderung an das Finanzamt).", "Verkauf: Umsatzsteuer auf <b>3500 Umsatzsteuer</b> im Haben (Schuld beim Finanzamt).", "Zahllast = Umsatzsteuer − Vorsteuer. Sie steht auf <b>3520 USt-Zahllast</b> und wird bis zum 15. des zweitfolgenden Monats überwiesen.", "Keine Vorsteuer gibt es z. B. beim Pkw (außer Elektroauto), bei Versicherungen, Gebühren, Löhnen und Zinsen."],
+      accs: ["vst", "ust", "zahllast"], go: [["bs", "steuern"]] },
+    { id: "abschluss", g: -1, title: "T-Konten und Abschluss",
+      text: "Im <b>T-Konto</b> stehen links die Soll-, rechts die Haben-Buchungen. Am Jahresende werden alle Konten abgeschlossen: Der Saldo kommt auf die kleinere Seite, damit beide Seiten gleich groß sind.",
+      rules: ["Bestandskonten werden über das <b>Schlussbilanzkonto (9850)</b> abgeschlossen, Erfolgskonten über die <b>Gewinn- und Verlustrechnung (9890 GuV)</b>.", "Gewinn = Erträge − Aufwände. Ein Gewinn steht in der GuV im Soll, ein Verlust im Haben.", "Das Privatkonto wird über das Kapitalkonto abgeschlossen: Endkapital = Anfangskapital + Gewinn − Privatentnahmen + Privateinlagen.", "Kontrolle: In der Schlussbilanz muss die Summe der Aktiva gleich der Summe der Passiva sein."],
+      accs: ["ek", "privat"], go: [["tk"], ["ab"]] },
+
+    { id: "einkauf", g: 0, tp: "einkauf", title: "Einkauf von Handelswaren",
+      text: "Handelswaren kaufen wir ein, um sie unverändert weiterzuverkaufen, im Modehaus also Kleidung und Accessoires. Der Einkauf wird sofort als Aufwand auf <b>5010 Handelswareneinsatz</b> gebucht.",
+      rules: ["5010 Handelswareneinsatz (netto) und 2500 Vorsteuer im Soll.", "Im Haben steht, wie bezahlt wird: 2700 Kassa (bar), 2800 Bank (Überweisung) oder 3300 Lieferverbindlichkeiten (auf Ziel, also auf Rechnung).", "„Auf Ziel“ heißt: Wir bezahlen später. Bezahlt wird dann mit 3300 / 2800."] },
+    { id: "material", g: 0, tp: "material", title: "Materialeinkäufe",
+      text: "Material, das im Betrieb verbraucht wird, kommt sofort auf ein Verbrauchskonto: Nähgarn und Knöpfe für die Änderungsschneiderei sind Hilfsstoffe, dazu kommen Verpackungs-, Reinigungs- und Büromaterial.",
+      rules: ["Hilfsstoffe → 5300, Verpackungsmaterial → 5340, Reinigungsmaterial → 5450, Heizöl → 5600, Büromaterial → 7600.", "Netto auf das Verbrauchskonto, dazu 2500 Vorsteuer.", "Am Jahresende wird der Lagerbestand über die Bestandsveränderung berücksichtigt (siehe „Vorräte: Bestandsveränderung“)."] },
+    { id: "aufwand", g: 0, tp: "aufwand", title: "Sonstige Aufwände",
+      text: "Miete, Werbung, Strom, Telefon, Reinigung oder Versicherungen sind Aufwände der Klasse 7. Sie vermindern den Gewinn und werden im Soll gebucht.",
+      rules: ["Aufwandskonto netto + 2500 Vorsteuer im Soll, Zahlungsmittel oder 3300 im Haben.", "Versicherungen (7700), Gebühren und Beiträge sind umsatzsteuerfrei, also ohne Vorsteuer.", "Fachzeitschriften (7630) haben nur 10 % USt."] },
+    { id: "verkauf", g: 0, tp: "verkauf", title: "Verkauf von Handelswaren und Dienstleistungen",
+      text: "Beim Verkauf entsteht ein Ertrag auf <b>4000 Handelswarenerlöse</b>. Zusätzlich verrechnen wir 20 % Umsatzsteuer, die wir dem Finanzamt schulden.",
+      rules: ["Im Soll steht der Bruttobetrag: 2700 Kassa, 2800 Bank oder 2000 Lieferforderungen (Verkauf auf Ziel).", "Im Haben: 4000 Handelswarenerlöse (netto) und 3500 Umsatzsteuer.", "Dienstleistungen wie Änderungen oder Reparaturen → 4030 Erlöse Reparaturen."] },
+    { id: "ertraege", g: 0, tp: "ertraege", title: "Sonstige betriebliche Erträge",
+      text: "Nicht jeder Ertrag kommt aus dem Warenverkauf: Wir vermieten zum Beispiel einen Raum oder bekommen Provisionen für vermittelte Aufträge.",
+      rules: ["Mieterträge → 4810, Provisionserträge → 4820, jeweils mit 20 % Umsatzsteuer.", "Ist der Betrag noch offen und stammt er nicht aus einem Warenverkauf, buchen wir 2300 Sonstige Forderungen statt 2000."] },
+    { id: "ruecksend", g: 0, tp: "ruecksend", title: "Warenrücksendungen",
+      text: "Wird Ware zurückgeschickt, wird die ursprüngliche Buchung (teilweise) rückgängig gemacht: Konten wie beim Kauf bzw. Verkauf, aber Soll und Haben vertauscht.",
+      rules: ["Wir senden an den Lieferanten zurück: 3300 / 5010 + 2500 (die Vorsteuer wird gekürzt).", "Eine Kundin sendet an uns zurück: 4000 + 3500 / 2000 (die Umsatzsteuer wird gekürzt).", "Grundlage ist eine Gutschrift."] },
+    { id: "privat", g: 0, tp: "privat", title: "Privatkonto",
+      text: "Die Inhaberin eines Einzelunternehmens kann Geld oder Waren für private Zwecke entnehmen oder privates Geld in den Betrieb einlegen. Das läuft über <b>9600 Privat</b>, nicht über Aufwand oder Ertrag.",
+      rules: ["Privatentnahme (Geld): 9600 / 2700 bzw. 2800.", "Privateinlage: 2700 bzw. 2800 / 9600.", "Entnahme von Waren (Eigenverbrauch): 9600 / 4900 Eigenverbrauch + 3500 USt, bewertet zum Einstandspreis.", "Private Steuern der Inhaberin (Einkommensteuer) → 9610 Privatsteuern."] },
+
+    { id: "spesen", g: 1, tp: "spesen", title: "Bezugs- und Versandspesen",
+      text: "<b>Bezugsspesen</b> (Transport beim Einkauf) erhöhen die Anschaffungskosten der Ware. <b>Versandspesen</b> (Transport beim Verkauf) sind ein eigener Aufwand.",
+      rules: ["Bezugsspesen für Waren → 5010 Handelswareneinsatz + 2500.", "Ausgangsfrachten (Spedition) → 7300, Paketgebühren → 7310, jeweils + 2500."] },
+    { id: "rabatte", g: 1, tp: "rabatte", title: "Rabatte",
+      text: "Ein <b>Sofortrabatt</b> steht schon auf der Rechnung und wird nicht eigens gebucht: Wir buchen einfach den verminderten Betrag. Ein <b>nachträglicher Rabatt</b> kommt erst später mit einer Gutschrift.",
+      rules: ["Sofortrabatt: Listenpreis − Rabatt = Nettobetrag, davon 20 % USt.", "Nachträglicher Rabatt vom Lieferanten: 3300 / 5010 + 2500.", "Nachträglicher Rabatt an eine Kundin: 4400 Erlösberichtigungen + 3500 / 2000."] },
+
+    { id: "anlagen", g: 2, tp: "anlagen", title: "Einkauf von Anlagegütern",
+      text: "Anlagegüter bleiben länger als ein Jahr im Betrieb: Ladeneinrichtung, Kassensystem, Maschinen, Fahrzeuge. Sie werden nicht als Aufwand gebucht, sondern <b>aktiviert</b>, also auf ein Anlagekonto der Klasse 0.",
+      rules: ["Anschaffungskosten = Kaufpreis − Rabatt + Anschaffungsnebenkosten (Lieferung, Montage). Die Vorsteuer gehört nicht dazu.", "Wichtige Konten: 0400 Maschinen, 0620 Büromaschinen/EDV, 0640 Lkw, 0660 Betriebs- und Geschäftsausstattung.", "Erst über die Abschreibung wird die Anlage Jahr für Jahr zum Aufwand."], go: [["bw", "av"]] },
+    { id: "gwg", g: 2, tp: "gwg", title: "Geringwertige Wirtschaftsgüter",
+      text: "Anlagegüter mit Anschaffungskosten <b>bis € 1.000,00 netto</b> sind geringwertige Wirtschaftsgüter (GWG). Sie dürfen im Jahr der Anschaffung ganz abgeschrieben werden.",
+      rules: ["Kauf: 0680 (geringwertige EDV) bzw. 0681 (geringwertige BGA) + 2500.", "Am 31.12.: Abschreibung in voller Höhe, 7030 / 0680 bzw. 0681. Die Halbjahresregel gilt hier nicht."] },
+    { id: "fahrzeuge", g: 2, tp: "fahrzeuge", title: "Fahrzeuge: Kauf, Betrieb, Versicherung",
+      text: "Beim <b>Pkw und Kombi</b> (außer beim Elektroauto) gibt es <b>keinen Vorsteuerabzug</b>, weder beim Kauf noch bei Treibstoff oder Reparaturen. Gebucht wird deshalb immer der Bruttobetrag. Beim <b>Lkw</b> ist die Vorsteuer abziehbar.",
+      rules: ["Pkw-Kauf: 0630 (brutto, inkl. NoVA) / Zahlung.", "Pkw-Betrieb (Treibstoff, Service): 7320 brutto, Versicherung 7325.", "Lkw-Kauf: 0640 + 2500, Betrieb 7330 + 2500, Versicherung 7335 (ohne USt)."] },
+
+    { id: "bar", g: 3, tp: "bar", title: "Barzahlungen",
+      text: "Bezahlt jemand bar, ändert sich die Kassa. Wird eine offene Rechnung bar bezahlt, wird die Forderung bzw. Verbindlichkeit ausgeglichen.",
+      rules: ["Kundin bezahlt bar: 2700 / 2000.", "Wir bezahlen eine Lieferantenrechnung bar: 3300 / 2700.", "Grundlage ist ein Kassabeleg (Kassaeingang oder Kassaausgang)."] },
+    { id: "bank", g: 3, tp: "bank", title: "Bankkonten und Barverkehr mit Banken",
+      text: "Überweisungen laufen über <b>2800 Bank</b>. Bei Bareinzahlungen und Barabhebungen gibt es zwei Belege (Kassabeleg und Bankauszug), die zu verschiedenen Zeiten gebucht werden. Damit nichts doppelt gebucht wird, verwenden wir das Zwischenkonto <b>2870 Barverkehr mit Banken</b>.",
+      rules: ["Bareinzahlung: Kassabeleg 2870 / 2700, Bankauszug 2800 / 2870.", "Barabhebung: Bankauszug 2870 / 2800, Kassabeleg 2700 / 2870.", "Kontoführungsgebühren → 7790 Spesen des Geldverkehrs, Habenzinsen → 8100 Zinsenerträge."] },
+    { id: "karten", g: 3, tp: "karten", title: "Zahlungen mit Zahlungskarten",
+      text: "Zahlt eine Kundin mit Karte, bekommen wir das Geld nicht sofort, sondern erst vom Kartenunternehmen bzw. von der Bank, abzüglich einer Provision.",
+      rules: ["Verkauf mit Kreditkarte: 2790 / 4000 + 3500, mit Debitkarte: 2794 / 4000 + 3500.", "Gutschrift: 2800 + 7792 Provisionen / 2790 bzw. 2794.", "Die Provision ist umsatzsteuerfrei, also ohne Vorsteuer."] },
+    { id: "skonto", g: 3, tp: "skonto", title: "Skonto",
+      text: "Skonto ist ein Preisnachlass für schnelles Bezahlen innerhalb der Skontofrist. Weil sich der Preis nachträglich vermindert, wird auch die Umsatzsteuer bzw. Vorsteuer anteilig korrigiert.",
+      rules: ["Skontobetrag vom Bruttobetrag rechnen, dann aufteilen: netto = Skonto ÷ 1,2, Steuer = Skonto − netto.", "Wir ziehen Skonto ab (Lieferantenskonto): 3300 / Bank + 5880 Lieferantenskonti + 2500 Vorsteuer.", "Die Kundin zieht Skonto ab (Kundenskonto): Bank + 4410 Kundenskonti + 3500 Umsatzsteuer / 2000."] },
+    { id: "verzug", g: 3, tp: "verzug", title: "Zahlungsverzug",
+      text: "Wer zu spät zahlt, muss Verzugszinsen und Mahnspesen bezahlen. Diese sind ein Schadenersatz und deshalb <b>ohne Umsatzsteuer</b>.",
+      rules: ["Wir zahlen zu spät: 8300 Verzugszinsenaufwand + 8301 Mahnspesen / 3300.", "Die Kundin zahlt zu spät: 2000 / 8130 Verzugszinsenerträge + 4890 Mahnspesenvergütungen."] },
+
+    { id: "steuern", g: 4, tp: "steuern", title: "Verbuchung von Steuern",
+      text: "Betriebliche Steuern wie die <b>Grundsteuer</b> sind Aufwand. Die <b>Einkommensteuer</b> der Inhaberin ist privat und läuft über das Privatkonto. Die <b>Umsatzsteuer-Zahllast</b> ist eine Schuld beim Finanzamt.",
+      rules: ["Grundsteuer: 7100 / 2800.", "Einkommensteuer der Inhaberin: 9610 Privatsteuern / 2800.", "Überweisung der Zahllast: 3520 USt-Zahllast / 2800."], go: [["bs", "steuern"]] },
+    { id: "beitraege", g: 4, tp: "beitraege", title: "Beiträge und Gebühren",
+      text: "Beiträge an die Wirtschaftskammer und an die Sozialversicherung der Inhaberin (GSVG) sind betrieblicher Aufwand ohne Umsatzsteuer. Die Müllabfuhr hat 10 % USt.",
+      rules: ["Kammerumlage → 7780, GSVG-Beiträge → 7740 (ohne Vorsteuer).", "Müllgebühren → 7220 Entsorgungsaufwand + 10 % Vorsteuer."] },
+
+    { id: "personal", g: 5, tp: "personal", title: "Löhne und Gehälter",
+      text: "Arbeiterinnen und Arbeiter bekommen einen <b>Lohn</b>, Angestellte ein <b>Gehalt</b>. Beides ist Personalaufwand der Klasse 6 und ohne Umsatzsteuer.",
+      rules: ["Löhne der Schneiderinnen → 6000 Fertigungslöhne.", "Gehälter der Verkäuferinnen und Verkäufer → 6200 Gehälter.", "In dieser Übung wird nur die Auszahlung gebucht (ohne Abzüge)."] },
+    { id: "finanz", g: 5, tp: "finanz", title: "Darlehen und Zinsen",
+      text: "Ein Bankdarlehen ist eine langfristige Schuld (passives Bestandskonto <b>3150</b>). Die Zinsen dafür sind Aufwand, die Tilgung vermindert die Schuld.",
+      rules: ["Auszahlung des Darlehens: 2800 / 3150.", "Tilgung: 3150 / 2800.", "Zinsen: 8280 Zinsenaufwand / 2800 (ohne Umsatzsteuer).", "Habenzinsen auf ein Guthaben: 2800 / 8100."] },
+
+    { id: "ja_afa", g: 6, tp: "ja_afa", title: "Abschreibung von Anlagen (AfA)",
+      text: "Anlagen verlieren durch Nutzung an Wert. Diese Wertminderung wird jährlich als <b>Abschreibung für Abnutzung (AfA)</b> gebucht, gleichmäßig über die Nutzungsdauer (linear).",
+      rules: ["Jahres-AfA = Anschaffungskosten ÷ Nutzungsdauer, AfA-Satz = 100 % ÷ Nutzungsdauer.", "<b>Halbjahresregel</b> (entscheidend ist die Inbetriebnahme): erstes Halbjahr = ganze AfA, zweites Halbjahr = halbe AfA.", "Im letzten Jahr wird nur noch der Restbuchwert abgeschrieben.", "Buchung am 31.12.: 7010 Abschreibung von Sachanlagen / Anlagekonto. GWG: 7030 / 0680 bzw. 0681.", "Buchwert 31.12. = Buchwert 01.01. − AfA."], go: [["bw", "av"], ["bw", "an"]] },
+    { id: "ja_umbau", g: 6, tp: "ja_umbau", title: "Anlagen erhalten, umbauen, erweitern",
+      text: "Bei Ausgaben für eine bestehende Anlage musst du entscheiden: <b>Erhaltung</b> (die Anlage bleibt, wie sie war) oder <b>Umbau bzw. Erweiterung</b> (die Anlage wird wesentlich verändert, vergrößert oder verbessert).",
+      rules: ["Erhaltung (Reparatur, Wartung, Ausmalen, gleichwertiger Ersatz): sofort Aufwand, z. B. 7200, 7201 Instandhaltung Gebäude, 7202 BGA, 7203 EDV, 7204 Elektro.", "Umbau oder Erweiterung (Verwendungszweck geändert, Substanz vermehrt): aktivieren auf das Anlagekonto, z. B. 0300.", "Neue AfA = bisherige AfA + Umbaukosten ÷ Restnutzungsdauer (halbe AfA bei Inbetriebnahme im zweiten Halbjahr)."], go: [["bw", "um"]] },
+    { id: "ja_abgang", g: 6, tp: "ja_abgang", title: "Ausscheiden von Anlagen",
+      text: "Eine Anlage scheidet aus, wenn sie verkauft, zerstört oder gestohlen wird. Dann sind mehrere Buchungen nötig: Erlös bzw. Versicherungsentschädigung, Abschreibung bis zum Ausscheiden und Ausbuchen des Restbuchwerts.",
+      rules: ["Verkauf: Zahlung / 4600 Erlöse aus dem Abgang von Anlagen + 3500. Gebrauchter Pkw ohne Vorsteuerabzug beim Kauf: 4601 (ohne USt).", "AfA im Jahr des Ausscheidens: erstes Halbjahr halbe, zweites Halbjahr ganze AfA.", "Restbuchwert ausbuchen: 7820 Buchwert abgegangener Anlagen / Anlagekonto. Beim Schadensfall: 7819 Sonstige Schadensfälle.", "Versicherungsentschädigung: 2800 bzw. 2300 / 4610, ohne Umsatzsteuer."], go: [["bw", "ag"]] },
+    { id: "ja_vorrat", g: 6, tp: "ja_vorrat", title: "Vorräte: Bestandsveränderung",
+      text: "Während des Jahres werden Einkäufe sofort als Aufwand gebucht. Am Jahresende wird der Vorrat laut Inventur bewertet (gleitender Durchschnittspreis) und die Differenz zum Anfangsbestand gebucht.",
+      rules: ["Bestandsveränderung = Bilanzansatz (Endbestand) − Anfangsbestand.", "Lageraufbau (Endbestand größer): Vorratskonto / Aufwandskonto, z. B. 1600 / 5010.", "Lagerabbau (Endbestand kleiner): Aufwandskonto / Vorratskonto, z. B. 5010 / 1600.", "Schwund und Abwertung auf den niedrigeren Preis am Stichtag (Niederstwertprinzip): 7800 Abschreibung von Vorräten / Aufwandskonto."], go: [["bw", "lk"]] },
+    { id: "ja_ford", g: 6, tp: "ja_ford", title: "Bewertung von Forderungen",
+      text: "Am Jahresende wird jede Forderung geprüft: <b>einbringlich</b> (bleibt), <b>uneinbringlich</b> (wird ausgebucht) oder <b>zweifelhaft</b> (Einzelwertberichtigung).",
+      rules: ["Uneinbringlich: 7802 Abschreibung von Forderungen (netto) + 3500 Umsatzsteuer (Korrektur) / 2000.", "Zweifelhaft: Wertberichtigung = Nettobetrag × erwarteter Ausfall in %, ohne USt-Korrektur.", "Konto 2080 anpassen: Zuweisung 7806 / 2080, Auflösung 2080 / 4870.", "Achtung: Eine Quote von 30 % bedeutet einen Ausfall von 70 %."], go: [["bw", "fo"]] },
+    { id: "ja_rap", g: 6, tp: "ja_rap", title: "Rechnungsabgrenzungen",
+      text: "Wird im alten Jahr etwas bezahlt, das (teilweise) das nächste Jahr betrifft, wird dieser Teil am 31.12. abgegrenzt. So steht jeder Aufwand und Ertrag in dem Jahr, zu dem er gehört.",
+      rules: ["Abgegrenzt wird immer der <b>Nettobetrag</b>: netto ÷ Monate × Monate im nächsten Jahr.", "Aufwand im Voraus bezahlt (aktive RA): 2900 ARA / Aufwandskonto.", "Ertrag im Voraus erhalten (passive RA): Ertragskonto / 3900 PRA.", "Am 01.01. wird die Buchung umgekehrt (aufgelöst)."], go: [["bw", "ra"]] },
+    { id: "ja_rst", g: 6, tp: "ja_rst", title: "Rückstellungen",
+      text: "Rückstellungen sind Schulden, deren Höhe oder Zeitpunkt noch nicht genau feststeht, etwa für Steuerberatung, Prozesskosten, Urlaub oder Garantien. Sie werden am 31.12. als Aufwand gebildet.",
+      rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
+  ];
+  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS];
+  const LEX_TYPES = { aktiv: "aktives Bestandskonto", passiv: "passives Bestandskonto", aufwand: "Aufwandskonto", ertrag: "Ertragskonto", erlmind: "Erlösminderung", aufwmind: "Aufwandsminderung", privat: "Privatkonto", korr: "Wertberichtigung (Korrekturposten)" };
+  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben" };
+  let lexQuery = "", lexOpen = store.get("lexOpen", "konten");
+
+  // Lehrbeispiele aus dem Trainer: fest gewählt (immer dieselben), damit das Lexikon ruhig bleibt
+  function lexExamples(e) {
+    if (e.ex) return e.ex.map(x => ({ text: esc(x.t), soll: x.s, haben: x.h, note: x.n, calc: "" }));
+    if (!e.tp) return [];
+    const pool = CASES.filter(c => c.tp === e.tp);
+    const picks = pool.length > 2 ? [pool[0], pool[Math.floor(pool.length / 2)]] : pool;
+    return picks.map((c, i) => makeTask(c, mulberry32(4711 + i * 97 + e.id.length), false, "text"));
+  }
+  function lexSolHtml(t) {
+    const reasons = [...t.soll.map(([k]) => why(k, "soll")), ...t.haben.map(([k]) => why(k, "haben")), t.note, t.calc].filter(Boolean);
+    return bookingHtml(t.soll, t.haben) + (reasons.length ? `<ul class="why">${reasons.map(r => `<li>${r}</li>`).join("")}</ul>` : "");
+  }
+  const lexExHtml = (t, label) => `<div class="lex-ex"><span class="field-label">${label}</span><p>${t.text}</p>${lexSolHtml(t)}</div>`;
+  function lexAccs(e) {
+    const keys = e.accs || [...new Set(lexExamples(e).flatMap(t => [...t.soll, ...t.haben].map(x => x[0])))];
+    return keys.filter(k => P.acc[k]).map(k => `<span class="lex-acc"><b>${P.acc[k][0]}</b> ${esc(P.acc[k][1])}<small>${LEX_TYPES[P.acc[k][2]] || ""}</small></span>`).join("");
+  }
+  function lexEntryHtml(e) {
+    const ex = lexExamples(e);
+    const buttons = [e.tp ? `<button class="btn primary" type="button" data-lexgo="bs" data-v="${e.tp}">Buchungssätze üben</button>` : "",
+      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : m === "bw" ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
+    return `<div class="lex-body">
+        <p>${e.text}</p>
+        ${e.rules ? `<div class="lex-rules"><span class="field-label">Das solltest du dir merken</span><ul>${e.rules.map(r => `<li>${r}</li>`).join("")}</ul></div>` : ""}
+        ${ex.map((t, i) => lexExHtml(t, ex.length > 1 ? `Lehrbeispiel ${i + 1}` : "Lehrbeispiel")).join("")}
+        ${e.tp ? `<div id="lex-more-${e.id}"></div>` : ""}
+        <div class="lex-accs"><span class="field-label">Wichtige Konten</span><div>${lexAccs(e)}</div></div>
+        <div class="actions">${e.tp ? `<button class="btn" type="button" data-lexmore="${e.id}">Weiteres Beispiel</button>` : ""}${buttons}</div>
+      </div>`;
+  }
+  const lexPlain = s => String(s).replace(/<[^>]+>/g, "").toLowerCase();
+  function lexRender() {
+    // Suche ab Wortanfang, damit „Skonto“ nicht in „Bestandskonto“ gefunden wird
+    const q = lexQuery.trim().toLowerCase(), re = new RegExp("(^|[^a-zäöüß0-9])" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const hits = LEX.filter(e => !q || re.test(lexPlain(e.title + " " + e.text + " " + (e.rules || []).join(" ")))
+      || (e.accs || []).some(k => P.acc[k] && re.test((P.acc[k][0] + " " + P.acc[k][1]).toLowerCase())));
+    $("lex-list").innerHTML = hits.length ? LEX_GROUPS.map((gname, gi) => {
+      const items = hits.filter(e => e.g === gi - 1);
+      if (!items.length) return "";
+      return `<div class="lex-group"><div class="eyebrow">${esc(gname)}</div>${items.map(e => `
+        <details class="lex-item" id="lex-${e.id}"${(q ? hits.length <= 3 : lexOpen === e.id) ? " open" : ""}>
+          <summary><span>${esc(e.title)}</span></summary>
+          <div class="lex-slot" data-lex="${e.id}"></div>
+        </details>`).join("")}</div>`;
+    }).join("") : `<p class="note">Nichts gefunden. Versuch es mit einem anderen Wort oder einer Kontonummer.</p>`;
+    $("lex-list").querySelectorAll("details.lex-item").forEach(d => {
+      const fill = () => { const slot = d.querySelector(".lex-slot"); if (d.open && !slot.dataset.done) { slot.innerHTML = lexEntryHtml(LEX.find(x => x.id === slot.dataset.lex)); slot.dataset.done = "1"; lexWire(slot); } };
+      fill();
+      d.addEventListener("toggle", () => { fill(); if (d.open) { lexOpen = d.id.slice(4); store.set("lexOpen", lexOpen); } });
+    });
+  }
+  function lexWire(root) {
+    root.querySelectorAll("[data-lexmore]").forEach(b => b.addEventListener("click", () => {
+      const e = LEX.find(x => x.id === b.dataset.lexmore), pool = allCases().filter(c => c.tp === e.tp);
+      const t = makeTask(pickR(Math.random, pool), Math.random, false, "text");
+      $("lex-more-" + e.id).innerHTML = `<div class="lex-ex lex-try"><span class="field-label">Probier selbst</span><p>${t.text}</p>
+        <details><summary class="note" style="cursor:pointer">Lösung anzeigen</summary><div style="display:grid;gap:8px;margin-top:8px">${lexSolHtml(t)}</div></details></div>`;
+    }));
+    root.querySelectorAll("[data-lexgo]").forEach(b => b.addEventListener("click", () => {
+      const m = b.dataset.lexgo, v = b.dataset.v;
+      if (m === "bs") {
+        practiceTopics.clear(); practiceTopics.add(v); store.set("topics2", [...practiceTopics]); renderTopics("practice");
+        if (mode === "test") { saveTestAnswer(); } setView("practice"); showModule("bs"); buildPractice();
+      } else if (m === "bw") {
+        bwType = v; store.set("bwType", v);
+        ["bw-seg-type-a", "bw-seg-type-u"].forEach(id => $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === v))));
+        bw = null; showModule("bw");
+      } else showModule(m);
+    }));
+  }
+  window.addEventListener("hashchange", () => {
+    const h = location.hash.toLowerCase();
+    if (!h.startsWith("#lex-") || !LEX.some(e => e.id === h.slice(5))) return;
+    lexOpen = h.slice(5); lexQuery = ""; $("lex-search").value = ""; showModule("lex"); lexRender();
+    $("lex-" + lexOpen).scrollIntoView({ block: "start" });
+  });
+  $("lex-search").addEventListener("input", () => { lexQuery = $("lex-search").value; lexRender(); });
+
   // ---------- Module umschalten ----------
   // Test / Schularbeit ist ein eigener Menüpunkt, nutzt aber die Ansichten des Buchungssätze-Trainers
   function syncNav() {
@@ -3738,11 +3969,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("tkonten").hidden = m !== "tk";
     $("abschluss").hidden = m !== "ab";
     $("bewertung").hidden = m !== "bw";
+    $("lexikon").hidden = m !== "lex";
     syncNav();
     store.set("module", m);
     if (m === "tk" && !tk) tkBuild();
     if (m === "ab" && !ab) abBuild();
     if (m === "bw" && !bw) bwBuild();
+    if (m === "lex" && !$("lex-list").innerHTML) lexRender();
     window.scrollTo({ top: 0 });
   }
   document.querySelectorAll("nav.modules [data-module]").forEach(b => b.addEventListener("click", () => showModule(b.dataset.module)));
@@ -3758,7 +3991,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h === "#abschluss") showModule("ab");
     else if (h === "#bewertung") showModule("bw");
     else if (h === "#test") showModule("test");
-    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "test"].includes(saved)) showModule(saved);
+    else if (h === "#lexikon") showModule("lex");
+    else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
+    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "test", "lex"].includes(saved)) showModule(saved);
   }
   connectDb();
 })();
