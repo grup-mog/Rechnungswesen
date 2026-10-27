@@ -4071,16 +4071,17 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   const krTask = (type, title, firm, intro, parts, fields, choices, sols) => ({ type, title, firm, intro, parts, fields, choices, books: [], sols });
 
-  // ---------- Bezugskalkulation ----------
-  function krBezugProg(fields, pre, { lep, r, s, bk, q }) {
-    const rab = krPct(lep, r), zep = lep - rab, sk = krPct(zep, s), kep = zep - sk, ep = kep + bk;
-    const rows = [["", "Listeneinkaufspreis", "", lep], ["−", "Liefererrabatt", krP(r), rab], ["=", "Zieleinkaufspreis", "", zep], ["−", "Liefererskonto", krP(s), sk], ["=", "Kassaeinkaufspreis", "", kep], ["+", "Bezugskosten", "", bk], ["=", "Einstandspreis", "", ep]];
+  // ---------- Bezugskalkulation (Schema laut Buch: Einkaufspreis … Einstandspreis) ----------
+  // Retrograd steht das Schema in derselben Reihenfolge, gerechnet wird von unten nach oben (Rabatt und Skonto i. H.)
+  function krBezugProg(fields, pre, { lep, r, fs, s, bnk, q }) {
+    const rab = krPct(lep, r), rp = lep - rab, zp = rp + fs, sk = krPct(zp, s), kp = zp - sk, ep = kp + bnk;
+    const rows = [["", "Einkaufspreis", "", lep], ["−", "Lieferantenrabatt", krP(r) + " v. H.", rab], ["=", "rabattierter Preis", "", rp], ["+", "Fakturenspesen", "", fs], ["=", "Zielpreis", "", zp], ["−", "Lieferantenskonto", krP(s) + " v. H.", sk], ["=", "Kassapreis", "", kp], ["+", "Beschaffungsnebenkosten", "", bnk], ["=", "Einstandspreis", "", ep]];
     if (q) rows.push(["", "Einstandspreis je Stück", `÷ ${q} Stk.`, Math.round(ep / q), { tol: 1 }]);
     return { ep, epS: q ? Math.round(ep / q) : ep, rows: krRows(fields, pre, rows) };
   }
-  function krBezugRetro(fields, pre, { ep, r, s, bk }) {
-    const kep = ep - bk, zep = Math.round(kep * 100 / (100 - s)), sk = zep - kep, lep = Math.round(zep * 100 / (100 - r)), rab = lep - zep;
-    const rows = [["", "Einstandspreis", "", ep], ["−", "Bezugskosten", "", bk], ["=", "Kassaeinkaufspreis", "", kep], ["+", "Liefererskonto", krP(s) + " i. H.", sk, { tol: 1 }], ["=", "Zieleinkaufspreis", "", zep, { tol: 1 }], ["+", "Liefererrabatt", krP(r) + " i. H.", rab, { tol: 2 }], ["=", "Listeneinkaufspreis", "", lep, { tol: 2 }]];
+  function krBezugRetro(fields, pre, { ep, r, fs, s, bnk }) {
+    const kp = ep - bnk, zp = Math.round(kp * 100 / (100 - s)), sk = zp - kp, rp = zp - fs, lep = Math.round(rp * 100 / (100 - r)), rab = lep - rp;
+    const rows = [["", "Einkaufspreis", "", lep, { tol: 2 }], ["−", "Lieferantenrabatt", krP(r) + " i. H.", rab, { tol: 2 }], ["=", "rabattierter Preis", "", rp, { tol: 1 }], ["+", "Fakturenspesen", "", fs], ["=", "Zielpreis", "", zp, { tol: 1 }], ["−", "Lieferantenskonto", krP(s) + " i. H.", sk, { tol: 1 }], ["=", "Kassapreis", "", kp], ["+", "Beschaffungsnebenkosten", "", bnk], ["=", "Einstandspreis", "", ep, { given: true }]];
     return { lep, rows: krRows(fields, pre, rows) };
   }
   function krMakeBk(rng) {
@@ -4088,84 +4089,96 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const goods = GOODS.slice().sort(() => rng() - 0.5), sups = EA_WAREN.slice().sort(() => rng() - 0.5);
     const unit = g => rndStep(rng, [Math.round(g.u[0] / 200), Math.round(g.u[1] / 200), 1]) * 100;
     const R = () => pickR(rng, [5, 10, 15, 20, 25]), S = () => pickR(rng, [2, 2.5, 3]);
+    const solProg = "Rabatt vom Einkaufspreis, Skonto vom Zielpreis (also nach den Fakturenspesen), die Beschaffungsnebenkosten kommen erst nach dem Skonto dazu.";
     if (bwSize === "kompakt") {
-      const g = goods[0], lep = unit(g), r = R(), s = S(), bk = rndStep(rng, [100, 600, 50]);
-      const k = krBezugProg(fields, "kr-a", { lep, r, s, bk });
-      parts.push({ h: "Einkauf je Stück", text: `Wir kaufen bei ${esc(sups[0][0])} ${esc(g.pl)} ein. Der Listeneinkaufspreis beträgt ${P.fmt(lep)} je Stück. Der Lieferant gewährt ${krP(r)} Rabatt und ${krP(s)} Skonto. Für Fracht rechnen wir mit ${P.fmt(bk)} je Stück. Berechne den Einstandspreis je Stück.`, schemes: [{ head: g.item, sub: "progressiv, je Stück", rows: k.rows }] });
-      sols.push(`Einstandspreis je Stück: ${P.fmt(k.ep)}. Rabatt vom Listeneinkaufspreis, Skonto vom Zieleinkaufspreis, danach die Bezugskosten dazu.`);
+      const g = goods[0], lep = unit(g), r = R(), s = S(), fs = rndStep(rng, [50, 300, 10]), bnk = rndStep(rng, [100, 600, 50]);
+      const k = krBezugProg(fields, "kr-a", { lep, r, fs, s, bnk });
+      parts.push({ h: "Einkauf je Stück", text: `Wir kaufen bei ${esc(sups[0][0])} ${esc(g.pl)} ein. Der Einkaufspreis beträgt ${P.fmt(lep)} je Stück. Der Lieferant gewährt ${krP(r)} Rabatt und verrechnet ${P.fmt(fs)} je Stück für die Verpackung. Bei Zahlung innerhalb von 10 Tagen dürfen wir ${krP(s)} Skonto abziehen. Der Spediteur verrechnet uns ${P.fmt(bnk)} Fracht je Stück. Berechne den Einstandspreis je Stück.`, schemes: [{ head: g.item, sub: "progressiv, je Stück", rows: k.rows }] });
+      sols.push(`Einstandspreis je Stück: ${P.fmt(k.ep)}. ${solProg}`);
     } else {
       const g = goods[0], q = rndStep(rng, [10, 60, 5]);
       if (bwSize === "normal") {
-        const lepS = unit(g), r = R(), s = S(), f1 = rndStep(rng, [40, 160, 5]) * 100, f2 = rndStep(rng, [10, 40, 1]) * 100;
-        const k = krBezugProg(fields, "kr-a", { lep: lepS * q, r, s, bk: f1 + f2, q });
-        parts.push({ h: "Teil 1: Einstandspreis berechnen", text: `Wir bestellen bei ${esc(sups[0][0])} ${q} Stück ${esc(g.item)} zum Listeneinkaufspreis von ${P.fmt(lepS)} je Stück. Der Lieferant gewährt ${krP(r)} Mengenrabatt und ${krP(s)} Skonto. Für die Lieferung zahlen wir Fracht ${P.fmt(f1)} und Transportversicherung ${P.fmt(f2)}.`, schemes: [{ head: `${q} Stk. ${g.pl}`, sub: "progressiv", rows: k.rows }] });
-        sols.push(`Teil 1: Listeneinkaufspreis ${q} × ${P.fmt(lepS)} = ${P.fmt(lepS * q)}, Bezugskosten ${P.fmt(f1)} + ${P.fmt(f2)} = ${P.fmt(f1 + f2)}, Einstandspreis ${P.fmt(k.ep)}, je Stück ${P.fmt(k.epS)}.`);
+        const lepS = unit(g), r = R(), s = S(), fs = rndStep(rng, [20, 80, 1]) * 100, f1 = rndStep(rng, [40, 160, 5]) * 100, f2 = rndStep(rng, [10, 40, 1]) * 100;
+        const k = krBezugProg(fields, "kr-a", { lep: lepS * q, r, fs, s, bnk: f1 + f2, q });
+        parts.push({ h: "Teil 1: Einstandspreis berechnen", text: `Wir bestellen bei ${esc(sups[0][0])} ${q} Stück ${esc(g.item)} zum Einkaufspreis von ${P.fmt(lepS)} je Stück. Der Lieferant gewährt ${krP(r)} Mengenrabatt und ${krP(s)} Skonto und verrechnet uns auf der Rechnung ${P.fmt(fs)} für Verpackung und Transport. Für die Zustellung durch einen Spediteur zahlen wir Fracht ${P.fmt(f1)} und Transportversicherung ${P.fmt(f2)}.`, schemes: [{ head: `${q} Stk. ${g.pl}`, sub: "progressiv", rows: k.rows }] });
+        sols.push(`Teil 1: Einkaufspreis ${q} × ${P.fmt(lepS)} = ${P.fmt(lepS * q)}. Fakturenspesen ${P.fmt(fs)} (stehen auf der Rechnung des Lieferanten), Beschaffungsnebenkosten ${P.fmt(f1)} + ${P.fmt(f2)} = ${P.fmt(f1 + f2)}. Einstandspreis ${P.fmt(k.ep)}, je Stück ${P.fmt(k.epS)}. ${solProg}`);
       } else {
         let A, B, a, b;
         for (let t = 0; t < 50; t++) {
           const base = unit(g);
-          a = { lepS: base, r: R(), s: S(), bk: rndStep(rng, [60, 200, 5]) * 100 };
-          b = { lepS: base + rndStep(rng, [-4, 4, 1]) * 100, r: R(), s: S(), bk: rng() < 0.5 ? 0 : rndStep(rng, [20, 90, 5]) * 100 };
-          const fa = [], fb = [];
-          A = krBezugProg(fa, "x", { lep: a.lepS * q, r: a.r, s: a.s, bk: a.bk, q }); B = krBezugProg(fb, "x", { lep: b.lepS * q, r: b.r, s: b.s, bk: b.bk, q });
+          a = { lepS: base, r: R(), s: S(), fs: rndStep(rng, [20, 80, 1]) * 100, bnk: rndStep(rng, [60, 200, 5]) * 100 };
+          b = { lepS: base + rndStep(rng, [-4, 4, 1]) * 100, r: R(), s: S(), fs: rng() < 0.5 ? 0 : rndStep(rng, [20, 60, 1]) * 100, bnk: rng() < 0.5 ? 0 : rndStep(rng, [20, 90, 5]) * 100 };
+          A = krBezugProg([], "x", { lep: a.lepS * q, r: a.r, fs: a.fs, s: a.s, bnk: a.bnk, q }); B = krBezugProg([], "x", { lep: b.lepS * q, r: b.r, fs: b.fs, s: b.s, bnk: b.bnk, q });
           if (a.r !== b.r && Math.abs(A.ep - B.ep) >= 1000) break;
         }
-        A = krBezugProg(fields, "kr-a", { lep: a.lepS * q, r: a.r, s: a.s, bk: a.bk, q }); B = krBezugProg(fields, "kr-b", { lep: b.lepS * q, r: b.r, s: b.s, bk: b.bk, q });
-        const txt = (x, s) => `${esc(s[0])}: ${P.fmt(x.lepS)} je Stück, ${krP(x.r)} Rabatt, ${krP(x.s)} Skonto, ${x.bk ? `Fracht ${P.fmt(x.bk)}` : "Lieferung frei Haus"}`;
+        A = krBezugProg(fields, "kr-a", { lep: a.lepS * q, r: a.r, fs: a.fs, s: a.s, bnk: a.bnk, q }); B = krBezugProg(fields, "kr-b", { lep: b.lepS * q, r: b.r, fs: b.fs, s: b.s, bnk: b.bnk, q });
+        const txt = (x, s) => `${esc(s[0])}: ${P.fmt(x.lepS)} je Stück, ${krP(x.r)} Rabatt, ${x.fs ? `Verpackung ${P.fmt(x.fs)} (auf der Rechnung)` : "Verpackung kostenlos"}, ${krP(x.s)} Skonto, ${x.bnk ? `Fracht durch einen Spediteur ${P.fmt(x.bnk)}` : "Lieferung frei Haus"}`;
         parts.push({ h: "Teil 1: Angebotsvergleich", text: `Wir brauchen ${q} Stück ${esc(g.item)} und haben zwei Angebote eingeholt. Berechne für beide Angebote den Einstandspreis und entscheide, welches günstiger ist.<br>Angebot A von ${txt(a, sups[0])}.<br>Angebot B von ${txt(b, sups[1])}.`,
           schemes: [{ head: "Angebot A", sub: sups[0][0], rows: A.rows }, { head: "Angebot B", sub: sups[1][0], rows: B.rows }], choice: { id: "kr-ch", q: "Welches Angebot ist günstiger?", opts: [["a", "Angebot A"], ["b", "Angebot B"]] } });
         choices.push({ id: "kr-ch", v: A.ep < B.ep ? "a" : "b" });
-        sols.push(`Teil 1: Angebot A ${P.fmt(A.ep)} (je Stück ${P.fmt(A.epS)}), Angebot B ${P.fmt(B.ep)} (je Stück ${P.fmt(B.epS)}). Günstiger ist Angebot ${A.ep < B.ep ? "A" : "B"}. Entscheidend ist der Einstandspreis, nicht der Listenpreis.`);
+        sols.push(`Teil 1: Angebot A ${P.fmt(A.ep)} (je Stück ${P.fmt(A.epS)}), Angebot B ${P.fmt(B.ep)} (je Stück ${P.fmt(B.epS)}). Günstiger ist Angebot ${A.ep < B.ep ? "A" : "B"}. Entscheidend ist der Einstandspreis, nicht der Einkaufspreis.`);
       }
-      const g2 = goods[1], ep = rndStep(rng, [Math.round(g2.u[0] / 200), Math.round(g2.u[1] / 200), 1]) * 100, bk = rndStep(rng, [100, 500, 50]), r = R(), s = S();
-      const k2 = krBezugRetro(fields, "kr-r", { ep, r, s, bk });
-      parts.push({ h: "Teil 2: Höchster Listeneinkaufspreis", text: `Damit wir ${esc(g2.pl)} zu unserem geplanten Verkaufspreis anbieten können, darf uns ein Stück höchstens ${P.fmt(ep)} kosten (Einstandspreis). Der Lieferant ${esc(sups[2][0])} gewährt ${krP(r)} Rabatt und ${krP(s)} Skonto, die Bezugskosten betragen ${P.fmt(bk)} je Stück. Wie hoch darf der Listeneinkaufspreis je Stück höchstens sein?`, schemes: [{ head: g2.item, sub: "retrograd, je Stück", rows: k2.rows }] });
-      sols.push(`Teil 2: retrograd vom Einstandspreis ${P.fmt(ep)} aus. Skonto und Rabatt werden im Hundert gerechnet (Basis ist der höhere Preis): Zieleinkaufspreis = Kassaeinkaufspreis × 100 ÷ (100 − ${krN(s)}), Listeneinkaufspreis = Zieleinkaufspreis × 100 ÷ (100 − ${r}) = ${P.fmt(k2.lep)}.`);
+      const g2 = goods[1], ep = rndStep(rng, [Math.round(g2.u[0] / 200), Math.round(g2.u[1] / 200), 1]) * 100, bnk = rndStep(rng, [100, 500, 50]), fs = rndStep(rng, [50, 250, 10]), r = R(), s = S();
+      const k2 = krBezugRetro(fields, "kr-r", { ep, r, fs, s, bnk });
+      parts.push({ h: "Teil 2: Retrograde Bezugskalkulation", text: `Damit wir ${esc(g2.pl)} zu unserem geplanten Verkaufspreis anbieten können, darf uns ein Stück höchstens ${P.fmt(ep)} kosten (Einstandspreis). Der Lieferant ${esc(sups[2][0])} gewährt ${krP(r)} Rabatt und ${krP(s)} Skonto und verrechnet ${P.fmt(fs)} Verpackung je Stück. Die Fracht durch den Spediteur beträgt ${P.fmt(bnk)} je Stück. Wie hoch darf der Einkaufspreis je Stück höchstens sein? Rechne von unten nach oben.`, schemes: [{ head: g2.item, sub: "retrograd, je Stück", rows: k2.rows }] });
+      sols.push(`Teil 2: von unten nach oben. Kassapreis = Einstandspreis − Beschaffungsnebenkosten. Skonto und Rabatt werden im Hundert gerechnet (Basis ist der höhere Preis): Zielpreis = Kassapreis × 100 ÷ (100 − ${krN(s)}), rabattierter Preis = Zielpreis − Fakturenspesen, Einkaufspreis = rabattierter Preis × 100 ÷ (100 − ${r}) = ${P.fmt(k2.lep)}.`);
     }
-    return krTask("bk", "Berechne den Einstandspreis", `${US.name} · Bezugskalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. Bei retrograden Rechnungen werden Abweichungen von 1–2 Cent durch Rundung akzeptiert.", parts, fields, choices, sols);
+    return krTask("bk", "Berechne den Einstandspreis", `${US.name} · Bezugskalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. v. H. = vom Hundert, i. H. = im Hundert. Bei retrograden Rechnungen werden Abweichungen von 1–2 Cent durch Rundung akzeptiert.", parts, fields, choices, sols);
   }
 
-  // ---------- Absatzkalkulation ----------
-  function krAbsatzProg(fields, pre, { ep, rk, gw, s, r }) {
-    const rkB = krPct(ep, rk), sk = ep + rkB, gB = krPct(sk, gw), kvp = sk + gB, rows = [["", "Einstandspreis", "", ep], ["+", "Regiekosten", krP(rk), rkB], ["=", "Selbstkosten", "", sk], ["+", "Gewinn", krP(gw), gB], ["=", s ? "Kassaverkaufspreis" : "Verkaufspreis netto", "", kvp]];
-    let net = kvp, t = 0;
-    if (s) { const zvp = Math.round(kvp * 100 / (100 - s)); rows.push(["+", "Kundenskonto", krP(s) + " i. H.", zvp - kvp, { tol: 1 }], ["=", "Zielverkaufspreis", "", zvp, { tol: 1 }]); net = zvp; t = 1; }
-    if (r) { const lvp = Math.round(net * 100 / (100 - r)); rows.push(["+", "Kundenrabatt", krP(r) + " i. H.", lvp - net, { tol: 2 }], ["=", "Listenverkaufspreis netto", "", lvp, { tol: 2 }]); net = lvp; t = 2; }
-    const u = krPct(net, 20);
-    rows.push(["+", "Umsatzsteuer", "20 %", u, { tol: t }], ["=", r ? "Listenverkaufspreis brutto" : "Verkaufspreis brutto", "", net + u, { tol: t ? 3 : 0 }]);
-    return { net, brutto: net + u, rows: krRows(fields, pre, rows) };
+  // ---------- Absatzkalkulation (Schema laut Buch: Selbstkosten … Bruttoverkaufspreis) ----------
+  // o: sk, g (Gewinn %), ns (nominelle Sonderkosten), vp (Verkaufsprovision %), s, r; Zeilen mit 0 entfallen
+  function krAbsatzVals(o) {
+    const gB = krPct(o.sk, o.g), nvp = o.sk + gB, zs = nvp + (o.ns || 0), kp = o.vp ? Math.round(zs * 100 / (100 - o.vp)) : zs;
+    const zp = Math.round(kp * 100 / (100 - o.s)), lvp = Math.round(zp * 100 / (100 - o.r)), u = krPct(lvp, 20);
+    return { gB, nvp, zs, kp, zp, lvp, u, b: lvp + u };
   }
-  // von unten (Listenverkaufspreis brutto) bis zum Kassaverkaufspreis
-  function krAbsatzDown(b, r, s) {
-    const net = Math.round(b * 100 / 120), u = b - net, rab = krPct(net, r), zvp = net - rab, sko = krPct(zvp, s), kvp = zvp - sko;
-    return { net, u, rab, zvp, sko, kvp };
+  // Rückwärts vom Bruttoverkaufspreis bis zum Nettoverkaufspreis
+  function krAbsatzBack(b, o) {
+    const lvp = Math.round(b * 100 / 120), u = b - lvp, rab = krPct(lvp, o.r), zp = lvp - rab, sko = krPct(zp, o.s), kp = zp - sko;
+    const prov = o.vp ? krPct(kp, o.vp) : 0, zs = kp - prov, nvp = zs - (o.ns || 0);
+    return { lvp, u, rab, zp, sko, kp, prov, zs, nvp };
+  }
+  // v: alle Beträge; mode "prog" | "retro" | "dif"; tol: Rundungstoleranz je Zeile
+  function krAbsatzRows(o, v, mode) {
+    const pr = mode === "prog", T = (p, r) => ({ tol: pr ? p : r });
+    const rows = [["", "Selbstkosten", "", v.sk, mode === "dif" ? { given: true } : T(0, 3)]];
+    if (mode === "dif") rows.push(["+", "Gewinn", "", v.gB, { tol: 2, pid: v.gp, ptol: 2 }]);
+    else rows.push(["+", "Gewinn", krP(o.g) + (pr ? " v. H." : " a. H."), v.gB, T(0, 2)]);
+    rows.push(["=", "Nettoverkaufspreis", "", v.nvp, T(0, 2)]);
+    if (o.ns) rows.push(["+", "nominelle Sonderkosten", "", o.ns], ["=", "Zwischensumme", "", v.zs, T(0, 2)]);
+    if (o.vp) rows.push(["+", "Verkaufsprovision", krP(o.vp) + (pr ? " i. H." : " v. H."), v.kp - v.zs, T(1, 2)], ["=", "Kassapreis", "", v.kp, T(1, 2)]);
+    else rows.push(["=", "Kassapreis", "", v.kp, T(0, 2)]);
+    rows.push(["+", "Kundenskonto", krP(o.s) + (pr ? " i. H." : " v. H."), v.zp - v.kp, T(2, 1)], ["=", "Zielpreis", "", v.zp, T(2, 1)],
+      ["+", "Kundenrabatt", krP(o.r) + (pr ? " i. H." : " v. H."), v.lvp - v.zp, T(3, 1)], ["=", "Listenverkaufspreis", "", v.lvp, T(3, 0)],
+      ["+", "Umsatzsteuer", pr ? "20 % v. H." : "20 % a. H.", v.u, T(3, 0)], ["=", "Bruttoverkaufspreis", "", v.b, pr ? { tol: 4 } : { given: true }]);
+    // „= Kassapreis“ ohne Provision ist nur eine Wiederholung: weglassen
+    return rows.filter((r, i, a) => !(r[1] === "Kassapreis" && !o.vp && a[i - 1][0] === "="));
   }
   function krMakeAk(rng) {
     const fields = [], parts = [], sols = [], goods = GOODS.slice().sort(() => rng() - 0.5);
-    const RK = () => rndStep(rng, [20, 45, 5]), GW = () => pickR(rng, [8, 10, 12, 15, 20]), S = () => pickR(rng, [2, 3]), R = () => pickR(rng, [5, 10, 15, 20]);
-    const epOf = g => rndStep(rng, [Math.round(g.u[0] / 200), Math.round(g.u[1] / 200), 1]) * 100;
-    const nb = bwSize === "kompakt";
-    { const g = goods[0], ep = epOf(g), rk = RK(), gw = GW(), s = nb ? 0 : S(), r = nb ? 0 : R();
-      const k = krAbsatzProg(fields, "kr-p", { ep, rk, gw, s, r });
-      parts.push({ h: nb ? "Verkaufspreis berechnen" : "Teil 1: Progressive Absatzkalkulation", text: `Wir verkaufen ${esc(g.pl)} (${esc(g.item)}). Der Einstandspreis beträgt ${P.fmt(ep)} je Stück. Wir rechnen mit ${krP(rk)} Regiekosten und ${krP(gw)} Gewinn${s ? `. Den Kundinnen und Kunden gewähren wir ${krP(s)} Skonto und ${krP(r)} Rabatt` : ""}. Berechne den ${r ? "Listenverkaufspreis" : "Verkaufspreis"} brutto (20 % USt).`, schemes: [{ head: g.item, sub: "progressiv", rows: k.rows }] });
-      sols.push(`${nb ? "" : "Teil 1: "}Regiekosten vom Einstandspreis, Gewinn von den Selbstkosten${s ? ", Kundenskonto und Kundenrabatt im Hundert (vom höheren Preis)" : ""}. ${r ? "Listenverkaufspreis" : "Verkaufspreis"} brutto: ${P.fmt(k.brutto)}.`);
+    const G = () => pickR(rng, [8, 10, 12, 15, 20]), S = () => pickR(rng, [2, 3]), R = () => pickR(rng, [5, 10, 15, 20]), VP = () => pickR(rng, [3, 4, 5, 6]);
+    const skOf = g => rndStep(rng, [Math.round(g.u[0] / 160), Math.round(g.u[1] / 160), 1]) * 100;
+    const full = bwSize !== "kompakt", extra = () => full ? { ns: rndStep(rng, [80, 400, 10]), vp: VP() } : {};
+    const extraTxt = o => o.ns ? ` Für Verpackung und Versand rechnen wir mit ${P.fmt(o.ns)} je Stück (nominelle Sonderkosten), unsere Handelsvertreterin bekommt ${krP(o.vp)} Verkaufsprovision.` : "";
+    { const g = goods[0], o = Object.assign({ sk: skOf(g), g: G(), s: S(), r: R() }, extra()), v = Object.assign({ sk: o.sk }, krAbsatzVals(o));
+      parts.push({ h: full ? "Teil 1: Progressive Absatzkalkulation" : "Bruttoverkaufspreis berechnen", text: `Die Selbstkosten für ${esc(g.pl)} (${esc(g.item)}) betragen ${P.fmt(o.sk)} je Stück. Wir rechnen mit ${krP(o.g)} Gewinn.${extraTxt(o)} Den Kundinnen und Kunden gewähren wir ${krP(o.s)} Skonto und ${krP(o.r)} Rabatt. Berechne den Bruttoverkaufspreis (20 % USt).`, schemes: [{ head: g.item, sub: "progressiv", rows: krRows(fields, "kr-p", krAbsatzRows(o, v, "prog")) }] });
+      sols.push(`${full ? "Teil 1: " : ""}Gewinn vom Hundert der Selbstkosten${o.vp ? ", Verkaufsprovision" : ""}, Kundenskonto und Kundenrabatt im Hundert (vom höheren Preis), USt vom Hundert des Listenverkaufspreises. Bruttoverkaufspreis: ${P.fmt(v.b)}.`);
     }
-    if (!nb) {
-      const g = goods[1], b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - 10, rk = RK(), gw = GW(), s = S(), r = R();
-      const d = krAbsatzDown(b, r, s), sk = Math.round(d.kvp * 100 / (100 + gw)), ep = Math.round(sk * 100 / (100 + rk));
-      const rows = [["", "Listenverkaufspreis brutto", "", b], ["−", "Umsatzsteuer", "20 % a. H.", d.u], ["=", "Listenverkaufspreis netto", "", d.net], ["−", "Kundenrabatt", krP(r), d.rab, { tol: 1 }], ["=", "Zielverkaufspreis", "", d.zvp, { tol: 1 }], ["−", "Kundenskonto", krP(s), d.sko, { tol: 1 }], ["=", "Kassaverkaufspreis", "", d.kvp, { tol: 2 }], ["−", "Gewinn", krP(gw) + " a. H.", d.kvp - sk, { tol: 2 }], ["=", "Selbstkosten", "", sk, { tol: 2 }], ["−", "Regiekosten", krP(rk) + " a. H.", sk - ep, { tol: 2 }], ["=", "Einstandspreis", "", ep, { tol: 3 }]];
-      parts.push({ h: "Teil 2: Retrograde Absatzkalkulation", text: `Die Konkurrenz in der Grazer Innenstadt verkauft ${esc(g.pl)} um ${P.fmt(b)} inkl. 20 % USt. Wir wollen gleich teuer sein. Wir rechnen mit ${krP(rk)} Regiekosten, ${krP(gw)} Gewinn, ${krP(s)} Kundenskonto und ${krP(r)} Kundenrabatt. Wie hoch darf der Einstandspreis höchstens sein?`, schemes: [{ head: g.item, sub: "retrograd", rows: krRows(fields, "kr-r", rows) }] });
-      sols.push(`Teil 2: Die USt steckt im Bruttopreis (auf Hundert: ÷ 120 × 20). Rabatt und Skonto werden vom jeweiligen Preis abgezogen, Gewinn und Regiekosten stecken im Betrag (auf Hundert). Höchster Einstandspreis: ${P.fmt(ep)}.`);
+    if (full) {
+      const g = goods[1], o = Object.assign({ g: G(), s: S(), r: R() }, extra()), b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - 10;
+      const d = krAbsatzBack(b, o), sk = Math.round(d.nvp * 100 / (100 + o.g)), v = Object.assign({}, d, { sk, gB: d.nvp - sk, b });
+      parts.push({ h: "Teil 2: Retrograde Absatzkalkulation", text: `Die Konkurrenz in der Grazer Innenstadt verkauft ${esc(g.pl)} um ${P.fmt(b)} inkl. 20 % USt. Wir wollen gleich teuer sein. Wir rechnen mit ${krP(o.g)} Gewinn, ${krP(o.s)} Kundenskonto und ${krP(o.r)} Kundenrabatt.${extraTxt(o)} Wie hoch dürfen die Selbstkosten höchstens sein? Rechne von unten nach oben.`, schemes: [{ head: g.item, sub: "retrograd", rows: krRows(fields, "kr-r", krAbsatzRows(o, v, "retro")) }] });
+      sols.push(`Teil 2: von unten nach oben. Die USt steckt auf Hundert im Bruttoverkaufspreis (÷ 120 × 100). Rabatt, Skonto und Provision werden vom Hundert des jeweiligen Preises abgezogen, der Gewinn steckt auf Hundert im Nettoverkaufspreis. Höchste Selbstkosten: ${P.fmt(sk)}.`);
     }
     if (bwSize === "gross") {
-      const g = goods[2], rk = RK(), s = S(), r = R(), b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - 10;
-      const d = krAbsatzDown(b, r, s), gw0 = 4 + rng() * 16, ep = Math.round(d.kvp / (1 + gw0 / 100) / (1 + rk / 100) / 100) * 100;
-      const rkB = krPct(ep, rk), sk = ep + rkB, gB = d.kvp - sk, gp = Math.round(gB / sk * 10000);
-      const rows = [["", "Einstandspreis", "", ep], ["+", "Regiekosten", krP(rk), rkB], ["=", "Selbstkosten", "", sk], ["+", "Gewinn", "", gB, { tol: 2, pid: gp, ptol: 2 }], ["=", "Kassaverkaufspreis", "", d.kvp, { tol: 2 }], ["+", "Kundenskonto", krP(s) + " i. H.", d.sko, { tol: 1 }], ["=", "Zielverkaufspreis", "", d.zvp, { tol: 1 }], ["+", "Kundenrabatt", krP(r) + " i. H.", d.rab, { tol: 1 }], ["=", "Listenverkaufspreis netto", "", d.net], ["+", "Umsatzsteuer", "20 %", d.u], ["=", "Listenverkaufspreis brutto", "", b, { given: true }]];
-      parts.push({ h: "Teil 3: Differenzkalkulation", text: `Für ${esc(g.item)} ist der Preis vom Hersteller mit ${P.fmt(b)} inkl. USt vorgegeben. Der Einstandspreis beträgt ${P.fmt(ep)}, die Regiekosten ${krP(rk)}. Wir gewähren ${krP(s)} Skonto und ${krP(r)} Rabatt. Wie viel Gewinn bleibt uns in Euro und in Prozent der Selbstkosten?`, schemes: [{ head: g.item, sub: "Differenzkalkulation", rows: krRows(fields, "kr-d", rows) }] });
-      sols.push(`Teil 3: Oben progressiv bis zu den Selbstkosten (${P.fmt(sk)}), unten retrograd bis zum Kassaverkaufspreis (${P.fmt(d.kvp)}). Gewinn = Differenz = ${P.fmt(gB)}, das sind ${krN((gp / 100).toFixed(2))} % der Selbstkosten.`);
+      const g = goods[2], o = Object.assign({ s: S(), r: R() }, extra()), b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - 10;
+      const d = krAbsatzBack(b, o), sk = Math.round(d.nvp / (1 + (4 + rng() * 16) / 100) / 100) * 100, gB = d.nvp - sk, gp = Math.round(gB / sk * 10000);
+      const v = Object.assign({}, d, { sk, gB, gp, b });
+      parts.push({ h: "Teil 3: Differenzkalkulation", text: `Für ${esc(g.item)} ist der Preis vom Hersteller mit ${P.fmt(b)} inkl. USt vorgegeben. Die Selbstkosten betragen ${P.fmt(sk)} je Stück. Wir gewähren ${krP(o.s)} Skonto und ${krP(o.r)} Rabatt.${extraTxt(o)} Wie viel Gewinn bleibt uns in Euro und in Prozent der Selbstkosten?`, schemes: [{ head: g.item, sub: "Differenzkalkulation", rows: krRows(fields, "kr-d", krAbsatzRows(o, v, "dif")) }] });
+      sols.push(`Teil 3: vom Bruttoverkaufspreis retrograd bis zum Nettoverkaufspreis (${P.fmt(d.nvp)}). Gewinn = Nettoverkaufspreis − Selbstkosten = ${P.fmt(gB)}, das sind ${krN((gp / 100).toFixed(2))} % der Selbstkosten.`);
     }
-    return krTask("ak", "Berechne den Verkaufspreis", `${US.name} · Absatzkalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. i. H. = im Hundert, a. H. = auf Hundert. Abweichungen von wenigen Cent durch Rundung werden akzeptiert.", parts, fields, [], sols);
+    return krTask("ak", "Berechne den Verkaufspreis", `${US.name} · Absatzkalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. v. H. = vom Hundert, i. H. = im Hundert, a. H. = auf Hundert. Abweichungen von wenigen Cent durch Rundung werden akzeptiert.", parts, fields, [], sols);
   }
 
   // ---------- Kostenartenrechnung: Betriebsüberleitungsbogen ----------
@@ -4239,45 +4252,54 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     keyed("Miete", "m²", [E(8, 20, 1) * 10, E(25, 45, 1) * 10, E(5, 12, 1) * 10, E(6, 15, 1) * 10], E(120, 200, 5) * 100);
     if (bwSize !== "kompakt") keyed("Kalk. Abschreibung", "Anlagenwerte (Tsd. €)", [E(15, 60, 5), E(150, 320, 10), E(20, 60, 5), E(25, 80, 5)], E(8, 15, 1) * 1000);
     if (bwSize === "gross") keyed("Sonstige Gemeinkosten", "Schlüssel", [E(1, 3, 1), E(2, 6, 1), E(1, 4, 1), E(1, 3, 1)], E(30, 60, 1) * 10000);
+    const kst = bwSize === "gross" ? KR_KST : ["Material", "Fertigung", "Verwaltung und Vertrieb"];
+    if (kst.length === 3) rows.forEach(r => {
+      r.sh = [r.sh[0], r.sh[1], r.sh[2] + r.sh[3]];
+      if (r.parts) { r.parts = [r.parts[0], r.parts[1], r.parts[2] + r.parts[3]]; r.key = r.key.replace(/ [\d.: ]+$/, " " + r.parts.map(fmtNumInt).join(" : ")); }
+    });
     rows.forEach((r, i) => { r.id = `kr-b${i}`; r.sum = r.sh.reduce((a, b) => a + b, 0); if (!r.dir) r.sh.forEach((v, j) => fields.push({ id: `${r.id}-${j}`, amt: v })); });
-    const gk = KR_KST.map((_, j) => rows.reduce((a, r) => a + r.sh[j], 0));
+    const gk = kst.map((_, j) => rows.reduce((a, r) => a + r.sh[j], 0));
     gk.forEach((v, j) => fields.push({ id: `kr-bs-${j}`, amt: v }));
     const fm = Math.round(gk[0] / (E(10, 30, 1) / 100) / 10000) * 10000, fl = Math.round(gk[1] / (E(80, 200, 5) / 100) / 10000) * 10000;
     const hk = fm + gk[0] + fl + gk[1], pc = (a, b) => Math.round(a / b * 10000);
-    fields.push({ id: "kr-bh-2", amt: hk }, { id: "kr-bh-3", amt: hk });
-    const z = [pc(gk[0], fm), pc(gk[1], fl), pc(gk[2], hk), pc(gk[3], hk)];
+    kst.forEach((_, j) => { if (j > 1) fields.push({ id: `kr-bh-${j}`, amt: hk }); });
+    const z = gk.map((v, j) => pc(v, j === 0 ? fm : j === 1 ? fl : hk));
     z.forEach((v, j) => fields.push({ id: `kr-bz-${j}`, amt: v, tol: 1 }));
     rows.filter(r => !r.dir).forEach(r => sols.push(`${r.l}: ${fmtNum(r.sum)} ÷ ${fmtNumInt(r.parts.reduce((a, b) => a + b, 0))} Teile = ${fmtNum(r.sh[0] / r.parts[0])} je Teil.`));
     sols.push(`Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten = ${fmtNum(fm)} + ${fmtNum(gk[0])} + ${fmtNum(fl)} + ${fmtNum(gk[1])} = ${fmtNum(hk)}.`,
-      `Zuschlagssätze: MGK ${krN((z[0] / 100).toFixed(2))} % vom Fertigungsmaterial, FGK ${krN((z[1] / 100).toFixed(2))} % von den Fertigungslöhnen, VwGK ${krN((z[2] / 100).toFixed(2))} % und VtGK ${krN((z[3] / 100).toFixed(2))} % von den Herstellkosten.`);
-    return { type: "bab", title: "Erstelle den Betriebsabrechnungsbogen", rows, fm, fl, fields, choices: [], books: [], sols };
+      `Zuschlagssätze: MGK ${krN((z[0] / 100).toFixed(2))} % vom Fertigungsmaterial, FGK ${krN((z[1] / 100).toFixed(2))} % von den Fertigungslöhnen, ${kst.length === 4 ? `VwGK ${krN((z[2] / 100).toFixed(2))} % und VtGK ${krN((z[3] / 100).toFixed(2))} %` : `Verwaltungs- und Vertriebsgemeinkosten ${krN((z[2] / 100).toFixed(2))} %`} von den Herstellkosten.`);
+    return { type: "bab", title: "Erstelle den Betriebsabrechnungsbogen", rows, kst, fm, fl, fields, choices: [], books: [], sols };
   }
   const fmtNumInt = n => fmtNum(n * 100).replace(/,00$/, "");
   function krRenderBab() {
     const inp = (id, l, cls = "") => `<input id="${id}" class="${cls}" inputmode="decimal" aria-label="${esc(l)}">`;
-    const rows = bw.rows.map(r => `<tr><td>${esc(r.l)}</td><td class="kr-key">${esc(r.key)}</td><td class="num mono">${fmtNum(r.sum)}</td>${r.sh.map((v, j) => `<td>${r.dir ? `<span class="mono kr-given">${fmtNum(v)}</span>` : inp(`${r.id}-${j}`, `${r.l} ${KR_KST[j]}`)}</td>`).join("")}</tr>`).join("");
+    const rows = bw.rows.map(r => `<tr><td>${esc(r.l)}</td><td class="kr-key">${esc(r.key)}</td><td class="num mono">${fmtNum(r.sum)}</td>${r.sh.map((v, j) => `<td>${r.dir ? `<span class="mono kr-given">${fmtNum(v)}</span>` : inp(`${r.id}-${j}`, `${r.l} ${bw.kst[j]}`)}</td>`).join("")}</tr>`).join("");
     const total = bw.rows.reduce((a, r) => a + r.sum, 0);
-    return `<div class="ab-sec"><h2>${esc(KR_PROD_FIRM)}</h2><p class="note">Die Trachtenmanufaktur erzeugt Dirndl, Janker und Blusen. Verteile die Gemeinkosten des Monats nach den angegebenen Schlüsseln auf die vier Kostenstellen, bilde die Summen und berechne die Zuschlagssätze auf zwei Kommastellen. Fertigungsmaterial: ${P.fmt(bw.fm)}, Fertigungslöhne: ${P.fmt(bw.fl)}.</p></div>
+    return `<div class="ab-sec"><h2>${esc(KR_PROD_FIRM)}</h2><p class="note">Die Trachtenmanufaktur erzeugt Dirndl, Janker und Blusen. Verteile die Gemeinkosten des Monats nach den angegebenen Schlüsseln auf die Kostenstellen, bilde die Summen und berechne die Zuschlagssätze auf zwei Kommastellen. Fertigungsmaterial: ${P.fmt(bw.fm)}, Fertigungslöhne: ${P.fmt(bw.fl)}.</p></div>
       <div class="ab-sec"><div class="av-title"><b>Betriebsabrechnungsbogen (BAB)</b><span>Beträge in EUR</span></div><div class="ab-scroll"><table class="av-table kr-table kr-bab">
-        <thead><tr><th>Gemeinkostenart</th><th>Schlüssel</th><th class="num">Betrag</th>${KR_KST.map(k => `<th class="num">${k}</th>`).join("")}</tr></thead>
+        <thead><tr><th>Gemeinkostenart</th><th>Schlüssel</th><th class="num">Betrag</th>${bw.kst.map(k => `<th class="num">${k}</th>`).join("")}</tr></thead>
         <tbody>${rows}</tbody>
         <tfoot>
-          <tr><td colspan="2">Summe Gemeinkosten</td><td class="num mono">${fmtNum(total)}</td>${KR_KST.map((k, j) => `<td>${inp(`kr-bs-${j}`, `Summe ${k}`)}</td>`).join("")}</tr>
-          <tr><td colspan="3">Zuschlagsbasis</td><td><span class="kr-base">Fertigungsmaterial</span><span class="mono kr-given">${fmtNum(bw.fm)}</span></td><td><span class="kr-base">Fertigungslöhne</span><span class="mono kr-given">${fmtNum(bw.fl)}</span></td><td><span class="kr-base">Herstellkosten</span>${inp("kr-bh-2", "Herstellkosten Verwaltung")}</td><td><span class="kr-base">Herstellkosten</span>${inp("kr-bh-3", "Herstellkosten Vertrieb")}</td></tr>
-          <tr><td colspan="3">Zuschlagssatz in %</td>${KR_KST.map((k, j) => `<td>${inp(`kr-bz-${j}`, `Zuschlagssatz ${k}`)}</td>`).join("")}</tr>
+          <tr><td colspan="2">Summe Gemeinkosten</td><td class="num mono">${fmtNum(total)}</td>${bw.kst.map((k, j) => `<td>${inp(`kr-bs-${j}`, `Summe ${k}`)}</td>`).join("")}</tr>
+          <tr><td colspan="3">Zuschlagsbasis</td><td><span class="kr-base">Fertigungsmaterial</span><span class="mono kr-given">${fmtNum(bw.fm)}</span></td><td><span class="kr-base">Fertigungslöhne</span><span class="mono kr-given">${fmtNum(bw.fl)}</span></td>${bw.kst.slice(2).map((k, j) => `<td><span class="kr-base">Herstellkosten</span>${inp(`kr-bh-${j + 2}`, `Herstellkosten ${k}`)}</td>`).join("")}</tr>
+          <tr><td colspan="3">Zuschlagssatz in %</td>${bw.kst.map((k, j) => `<td>${inp(`kr-bz-${j}`, `Zuschlagssatz ${k}`)}</td>`).join("")}</tr>
         </tfoot></table></div></div>`;
   }
 
-  // ---------- Kostenträgerrechnung: differenzierende Zuschlagskalkulation ----------
+  // ---------- Kostenträgerrechnung: differenzierende Zuschlagskalkulation (Schema laut Buch) ----------
+  // c.vwvt: gemeinsamer Satz für Verwaltung und Vertrieb, sonst c.vw und c.vt getrennt; Sätze in Hundertstel-Prozent
   function krZuschlag(fields, pre, c) {
-    const MG = krPct(c.fm, c.mgk), MK = c.fm + MG, FG = krPct(c.fl, c.fgk), FK = c.fl + FG + (c.se || 0), HK = MK + FK, VW = krPct(HK, c.vw), VT = krPct(HK, c.vt), SK = HK + VW + VT;
-    const rows = [["", "Fertigungsmaterial", "", c.fm], ["+", "Materialgemeinkosten", krP(c.mgk), MG], ["=", "Materialkosten", "", MK], ["", "Fertigungslöhne", "", c.fl], ["+", "Fertigungsgemeinkosten", krP(c.fgk), FG]];
-    if (c.se) rows.push(["+", "Sondereinzelkosten der Fertigung", "", c.se]);
-    rows.push(["=", "Fertigungskosten", "", FK], ["=", "Herstellkosten", "", HK], ["+", "Verwaltungsgemeinkosten", krP(c.vw), VW], ["+", "Vertriebsgemeinkosten", krP(c.vt), VT], ["=", "Selbstkosten", "", SK]);
-    let V = SK;
-    if (c.g) { const G = krPct(SK, c.g); V = SK + G; rows.push(["+", "Gewinn", krP(c.g), G], ["=", c.s ? "Kassaverkaufspreis" : "Verkaufspreis netto", "", V]); }
-    if (c.s) { const Z = Math.round(V * 100 / (100 - c.s)), L = Math.round(Z * 100 / (100 - c.r)); rows.push(["+", "Kundenskonto", krP(c.s) + " i. H.", Z - V, { tol: 1 }], ["=", "Zielverkaufspreis", "", Z, { tol: 1 }], ["+", "Kundenrabatt", krP(c.r) + " i. H.", L - Z, { tol: 2 }], ["=", "Listenverkaufspreis netto", "", L, { tol: 2 }]); V = L; }
-    return { HK, SK, V, rows: krRows(fields, pre, rows) };
+    const pc = (b, p) => Math.round(b * p / 10000), P2 = p => krN((p / 100).toFixed(2)) + " %";
+    const MG = pc(c.fm, c.mgk), MK = c.fm + MG, FG = pc(c.fl, c.fgk), HK = MK + c.fl + FG + (c.sef || 0);
+    const rows = [["", "Fertigungsmaterial", "", c.fm], ["+", "Materialgemeinkosten", P2(c.mgk), MG], ["=", "Materialkosten", "", MK], ["+", "Fertigungslöhne", "", c.fl], ["+", "Fertigungsgemeinkosten", P2(c.fgk), FG]];
+    if (c.sef) rows.push(["+", "Sondereinzelkosten der Fertigung", "", c.sef]);
+    rows.push(["=", "Herstellkosten", "", HK]);
+    let SK = HK;
+    if (c.vwvt) { const V = pc(HK, c.vwvt); SK += V; rows.push(["+", "Verwaltungs- und Vertriebsgemeinkosten", P2(c.vwvt), V]); }
+    else { const VW = pc(HK, c.vw), VT = pc(HK, c.vt); SK += VW + VT; rows.push(["+", "Verwaltungsgemeinkosten", P2(c.vw), VW], ["+", "Vertriebsgemeinkosten", P2(c.vt), VT]); }
+    if (c.sev) { SK += c.sev; rows.push(["+", "Sondereinzelkosten des Vertriebs", "", c.sev]); }
+    rows.push(["=", "Selbstkosten", "", SK]);
+    return { HK, SK, rows: krRows(fields, pre, rows) };
   }
   function krProdData(rng, p) {
     const m = krTenth(rng, p.m), sp = rndStep(rng, [p.sp[0] / 10, p.sp[1] / 10, 1]) * 10, z = rndStep(rng, [p.z[0] / 10, p.z[1] / 10, 1]) * 10;
@@ -4285,21 +4307,22 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return { m, sp, z, h, ls, fm: Math.round(m * sp) + z, fl: Math.round(h * ls) };
   }
   function krMakeZk(rng) {
-    const fields = [], parts = [], sols = [], prods = KR_PROD.slice().sort(() => rng() - 0.5);
-    const pc = { mgk: rndStep(rng, [8, 25, 1]), fgk: rndStep(rng, [80, 180, 5]), vw: rndStep(rng, [8, 18, 1]), vt: rndStep(rng, [4, 12, 1]) };
-    const n = bwSize === "gross" ? 2 : 1, g = bwSize === "kompakt" ? 0 : rndStep(rng, [8, 20, 1]);
-    const ex = bwSize === "gross" ? { s: pickR(rng, [2, 3]), r: pickR(rng, [10, 15, 20]) } : {};
-    const pcTxt = `Zuschlagssätze laut BAB: Materialgemeinkosten ${krP(pc.mgk)}, Fertigungsgemeinkosten ${krP(pc.fgk)}, Verwaltungsgemeinkosten ${krP(pc.vw)} und Vertriebsgemeinkosten ${krP(pc.vt)} (beide von den Herstellkosten)${g ? `, Gewinn ${krP(g)}` : ""}${ex.s ? `, Kundenskonto ${krP(ex.s)}, Kundenrabatt ${krP(ex.r)}` : ""}.`;
+    const fields = [], parts = [], sols = [], prods = KR_PROD.slice().sort(() => rng() - 0.5), H = (a, b) => rndStep(rng, [a, b, 1]);
+    const sep = bwSize === "gross", pc = { mgk: H(800, 2500), fgk: H(6000, 18000) };
+    if (sep) Object.assign(pc, { vw: H(800, 2000), vt: H(500, 1500) }); else pc.vwvt = H(1500, 6000);
+    const P2 = p => krN((p / 100).toFixed(2)) + " %";
+    const pcTxt = `Zuschlagssätze aus dem BAB: Materialgemeinkosten ${P2(pc.mgk)}, Fertigungsgemeinkosten ${P2(pc.fgk)}, ${sep ? `Verwaltungsgemeinkosten ${P2(pc.vw)} und Vertriebsgemeinkosten ${P2(pc.vt)}` : `Verwaltungs- und Vertriebsgemeinkosten ${P2(pc.vwvt)}`} (von den Herstellkosten).`;
+    const n = sep ? 2 : 1;
     for (let i = 0; i < n; i++) {
-      const p = prods[i], d = krProdData(rng, p), se = bwSize === "gross" && i === 0 ? rndStep(rng, [8, 25, 1]) * 100 : 0;
-      const k = krZuschlag(fields, `kr-z${i}`, Object.assign({ fm: d.fm, fl: d.fl, se, g }, pc, ex));
-      const text = bwSize === "kompakt" ? `Für ein Stück ${esc(p.n)} fallen ${P.fmt(d.fm)} Fertigungsmaterial und ${P.fmt(d.fl)} Fertigungslöhne an.`
-        : `Für ein Stück ${esc(p.n)} brauchen wir ${krN(d.m)} m ${esc(p.st)} zu ${P.fmt(d.sp)} je Meter und ${esc(p.zt)} um ${P.fmt(d.z)}. Die Näherin arbeitet ${krN(d.h)} Stunden daran, der Fertigungslohn beträgt ${P.fmt(d.ls)} je Stunde.${se ? ` Die Stickerei wird außer Haus vergeben und kostet ${P.fmt(se)} je Stück (Sondereinzelkosten der Fertigung).` : ""}`;
-      parts.push({ h: n > 1 ? `Produkt ${i + 1}` : "Kalkulation je Stück", text, schemes: [{ head: p.n, sub: "je Stück", rows: k.rows }] });
-      sols.push(`${p.n}: ${bwSize === "kompakt" ? "" : `Fertigungsmaterial = ${krN(d.m)} × ${fmtNum(d.sp)} + ${fmtNum(d.z)} = ${fmtNum(d.fm)}, Fertigungslöhne = ${krN(d.h)} × ${fmtNum(d.ls)} = ${fmtNum(d.fl)}. `}Herstellkosten ${P.fmt(k.HK)}, Selbstkosten ${P.fmt(k.SK)}${g ? `, ${ex.s ? "Listenverkaufspreis netto" : "Verkaufspreis netto"} ${P.fmt(k.V)}` : ""}.`);
+      const p = prods[i], d = krProdData(rng, p), sef = bwSize !== "kompakt" && i === 0 ? rndStep(rng, [8, 25, 1]) * 100 : 0, sev = sep && i === 0 ? rndStep(rng, [3, 9, 1]) * 100 : 0;
+      const k = krZuschlag(fields, `kr-z${i}`, Object.assign({ fm: d.fm, fl: d.fl, sef, sev }, pc));
+      const fmTxt = bwSize === "kompakt" ? `Fertigungsmaterial: ${P.fmt(d.fm)}.` : `Wir brauchen ${krN(d.m)} m ${esc(p.st)} zu ${P.fmt(d.sp)} je Meter und ${esc(p.zt)} um ${P.fmt(d.z)}.`;
+      const text = `Für ein Stück ${esc(p.n)} werden die Selbstkosten vorkalkuliert. ${fmTxt} Fertigungslöhne: ${P.fmt(d.ls)} je Stunde, ${krN(d.h)} Fertigungsstunden.${sef ? ` Die Stickerei wird außer Haus vergeben und kostet ${P.fmt(sef)} je Stück (Sondereinzelkosten der Fertigung).` : ""}${sev ? ` Für die Spezialverpackung im Geschenkkarton fallen ${P.fmt(sev)} je Stück an (Sondereinzelkosten des Vertriebs).` : ""}`;
+      parts.push({ h: n > 1 ? `Produkt ${i + 1}` : "Vorkalkulation je Stück", text, schemes: [{ head: p.n, sub: "je Stück", rows: k.rows }] });
+      sols.push(`${p.n}: ${bwSize === "kompakt" ? "" : `Fertigungsmaterial = ${krN(d.m)} × ${fmtNum(d.sp)} + ${fmtNum(d.z)} = ${fmtNum(d.fm)}. `}Fertigungslöhne = ${krN(d.h)} h × ${fmtNum(d.ls)} = ${fmtNum(d.fl)}. Herstellkosten ${P.fmt(k.HK)}, Selbstkosten ${P.fmt(k.SK)}.`);
     }
-    sols.push("Materialgemeinkosten vom Fertigungsmaterial, Fertigungsgemeinkosten von den Fertigungslöhnen, Verwaltungs- und Vertriebsgemeinkosten von den Herstellkosten.");
-    return krTask("zk", "Kalkuliere mit der differenzierenden Zuschlagskalkulation", KR_PROD_FIRM, pcTxt + " Rechne auf Cent genau.", parts, fields, [], sols);
+    sols.push("Materialgemeinkosten in % des Fertigungsmaterials, Fertigungsgemeinkosten in % der Fertigungslöhne, Verwaltungs- und Vertriebsgemeinkosten in % der Herstellkosten. Sondereinzelkosten werden mit dem Betrag dazugezählt.");
+    return krTask("zk", "Berechne die Selbstkosten mit der Zuschlagskalkulation", KR_PROD_FIRM, pcTxt + " Rechne auf Cent genau.", parts, fields, [], sols);
   }
 
   // ---------- Teilkostenrechnung: Deckungsbeitrag ----------
@@ -4404,11 +4427,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const KR_RENDER = { bue: krRenderBue, bab: krRenderBab };
 
   Object.assign(BW_STEPS, {
-    bk: ["Progressiv (von oben nach unten): Listeneinkaufspreis − Liefererrabatt = Zieleinkaufspreis − Liefererskonto = Kassaeinkaufspreis + Bezugskosten = Einstandspreis.", "Der Rabatt wird vom Listeneinkaufspreis gerechnet, der Skonto vom Zieleinkaufspreis.", "Bezugskosten sind z. B. Fracht, Zustellung oder Transportversicherung. Bei einer Lieferung mehrerer Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd (von unten nach oben): Einstandspreis − Bezugskosten = Kassaeinkaufspreis. Skonto und Rabatt rechnest du dann im Hundert (i. H.), weil sie sich auf den höheren Preis beziehen: Zieleinkaufspreis = Kassaeinkaufspreis × 100 ÷ (100 − Skontosatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Listenpreis."],
-    ak: ["Progressiv: Einstandspreis + Regiekosten (vom Einstandspreis) = Selbstkosten + Gewinn (von den Selbstkosten) = Kassaverkaufspreis.", "Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil die Kundin sie später vom höheren Preis abzieht: Zielverkaufspreis = Kassaverkaufspreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis netto + 20 % USt = Listenverkaufspreis brutto.", "Retrograd vom Bruttopreis: Die USt steckt auf Hundert (a. H.) im Preis: netto = brutto × 100 ÷ 120. Rabatt und Skonto ziehst du vom jeweiligen Preis ab.", "Gewinn und Regiekosten stecken auf Hundert im Betrag: Selbstkosten = Kassaverkaufspreis × 100 ÷ (100 + Gewinnsatz), Einstandspreis = Selbstkosten × 100 ÷ (100 + Regiesatz).", "Differenzkalkulation: oben progressiv bis zu den Selbstkosten, unten retrograd bis zum Kassaverkaufspreis. Der Gewinn ist die Differenz, in Prozent der Selbstkosten."],
+    bk: ["Progressiv (von oben nach unten): Einkaufspreis − Lieferantenrabatt = rabattierter Preis + Fakturenspesen = Zielpreis − Lieferantenskonto = Kassapreis + Beschaffungsnebenkosten = Einstandspreis.", "Der Rabatt wird vom Hundert (v. H.) des Einkaufspreises gerechnet, der Skonto vom Hundert des Zielpreises.", "Fakturenspesen stellt der Lieferant auf der Rechnung in Rechnung (z. B. Verpackung), deshalb gibt es auf sie auch Skonto. Beschaffungsnebenkosten (Fracht durch einen Spediteur, Versicherung, Zoll) kommen erst nach dem Skonto dazu.", "Bei mehreren Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd rechnest du von unten nach oben: Einstandspreis − Beschaffungsnebenkosten = Kassapreis. Skonto und Rabatt im Hundert (i. H.): Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz), Einkaufspreis = rabattierter Preis × 100 ÷ (100 − Rabattsatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Einkaufspreis."],
+    ak: ["Progressiv: Selbstkosten + Gewinn (v. H. der Selbstkosten) = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme.", "Verkaufsprovision, Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil sie später vom höheren Preis gerechnet werden: Kassapreis = Zwischensumme × 100 ÷ (100 − Provisionssatz), Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis + 20 % USt (v. H.) = Bruttoverkaufspreis.", "Retrograd rechnest du von unten nach oben: Die USt steckt auf Hundert (a. H.) im Bruttoverkaufspreis: Listenverkaufspreis = brutto × 100 ÷ 120.", "Kundenrabatt, Kundenskonto und Verkaufsprovision ziehst du vom Hundert (v. H.) des jeweiligen Preises ab. Der Gewinn steckt auf Hundert im Nettoverkaufspreis: Selbstkosten = Nettoverkaufspreis × 100 ÷ (100 + Gewinnsatz).", "Differenzkalkulation: retrograd vom Bruttoverkaufspreis bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten, in Prozent der Selbstkosten."],
     bue: ["Übernimm alle Aufwände aus der GuV in die Spalte „Aufwand lt. GuV“.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) sind keine Kosten: zur Gänze in die Spalte „Abzüge“.", "Bilanzielle Abschreibung, Zinsaufwand und Forderungsabschreibung werden ebenfalls abgezogen und durch die kalkulatorischen Werte ersetzt (Spalte „Zurechnungen“).", "Kalkulatorische Abschreibung = Wiederbeschaffungswert ÷ Nutzungsdauer. Kalkulatorische Zinsen = betriebsnotwendiges Kapital × Zinssatz.", "Betriebsnotwendiges Kapital = betriebsnotwendiges Anlage- und Umlaufvermögen − Abzugskapital (zinsenfreies Fremdkapital wie Lieferverbindlichkeiten oder Kundenanzahlungen).", "Kalkulatorischer Unternehmerlohn: Was die Inhaberin anderswo verdienen würde. Er steht nicht in der GuV und kommt nur als Zurechnung dazu.", "Kosten = Aufwand − Abzüge + Zurechnungen."],
     bab: ["Gemeinkosten, die direkt einer Kostenstelle zugeordnet werden können (z. B. lt. Gehaltsliste), sind schon eingetragen.", "Alle anderen verteilst du nach dem Schlüssel: Betrag ÷ Summe der Schlüsselteile = Betrag je Teil, dann × Teile der Kostenstelle.", "Kontrolle: Die Summe der vier Kostenstellen muss den Gesamtbetrag ergeben.", "Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten.", "Zuschlagssätze: Materialgemeinkosten ÷ Fertigungsmaterial × 100, Fertigungsgemeinkosten ÷ Fertigungslöhne × 100, Verwaltungs- bzw. Vertriebsgemeinkosten ÷ Herstellkosten × 100."],
-    zk: ["Fertigungsmaterial = Stoffverbrauch × Meterpreis + Zutaten. Fertigungslöhne = Arbeitsstunden × Stundenlohn.", "Materialgemeinkosten in % vom Fertigungsmaterial, Fertigungsgemeinkosten in % von den Fertigungslöhnen.", "Materialkosten + Fertigungskosten = Herstellkosten. Sondereinzelkosten der Fertigung (z. B. Fremdstickerei) gehören zu den Fertigungskosten.", "Verwaltungs- und Vertriebsgemeinkosten rechnest du beide von den Herstellkosten.", "Selbstkosten + Gewinn = Verkaufspreis. Skonto und Rabatt werden wie in der Absatzkalkulation im Hundert aufgeschlagen."],
+    zk: ["Fertigungsmaterial = Stoffverbrauch × Meterpreis + Zutaten. Fertigungslöhne = Fertigungsstunden × Stundenlohn.", "Fertigungsmaterial + Materialgemeinkosten (in % des Fertigungsmaterials) = Materialkosten.", "Materialkosten + Fertigungslöhne + Fertigungsgemeinkosten (in % der Fertigungslöhne) + Sondereinzelkosten der Fertigung = Herstellkosten.", "Herstellkosten + Verwaltungs- und Vertriebsgemeinkosten (in % der Herstellkosten) + Sondereinzelkosten des Vertriebs = Selbstkosten.", "Die Zuschlagssätze kommen aus dem BAB."],
     db: ["Variable Kosten ändern sich mit der Menge (Material, Fertigungslohn), fixe Kosten bleiben gleich (Miete, Gehälter, Abschreibung).", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz. Fixkosten = Gesamtkosten − Menge × variable Kosten je Stück.", "Deckungsbeitrag je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100. Sie zeigt, wie viel Prozent vom Preis zur Deckung der Fixkosten bleiben.", "DB gesamt = DB je Stück × Menge. Betriebsergebnis = Summe der Deckungsbeiträge − Fixkosten."],
     be: ["Variable Kosten je Stück zusammenzählen. Fixe Kosten je Stück = Fixkosten ÷ geplante Menge.", "Langfristige Preisuntergrenze = Selbstkosten je Stück (variable + fixe Kosten je Stück).", "Kurzfristige Preisuntergrenze = variable Kosten je Stück. Darunter verliert man mit jedem Stück zusätzlich Geld.", "Break-even-Menge = Fixkosten ÷ DB je Stück, auf ganze Stück aufrunden. Ab dieser Menge gibt es Gewinn.", "Zusatzauftrag bei freier Kapazität: annehmen, wenn der Preis über den variablen Kosten liegt (positiver Deckungsbeitrag)."],
     pp: ["DB je Stück = Preis − variable Kosten je Stück.", "Ohne Engpass: Jedes Produkt mit positivem Deckungsbeitrag wird bis zum maximalen Absatz hergestellt. Produkte mit negativem DB werden nicht hergestellt.", "Mit Engpass: Rechne den relativen Deckungsbeitrag = DB je Stück ÷ Engpasseinheiten je Stück (hier Minuten auf der Stickmaschine).", "Reihe die Produkte nach dem relativen DB. Das beste Produkt bekommt so viel Kapazität, wie es braucht, dann das nächste, bis die Minuten aufgebraucht sind.", "Restkapazität ÷ Minuten je Stück, abgerundet auf ganze Stück. DB gesamt = DB je Stück × Menge, Betriebsergebnis = Summe DB − Fixkosten."],
@@ -4707,8 +4730,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // Kostenrechnung im Lexikon: Lehrbeispiele mit fertig gerechnetem Schema
   {
     const sch = (head, rows) => krSchemeHtml({ head, rows: rows.map(r => Object.assign(r, { id: null, pid: false })) });
-    const bk = krBezugProg([], "x", { lep: 10000, r: 10, s: 2, bk: 350 }), ak = krAbsatzProg([], "x", { ep: bk.ep, rk: 30, gw: 10, s: 2, r: 10 });
-    const zk = krZuschlag([], "x", { fm: 8240, fl: 22000, mgk: 15, fgk: 120, vw: 12, vt: 8, g: 10 });
+    const bk = krBezugProg([], "x", { lep: 10000, r: 10, fs: 200, s: 2, bnk: 350 }), akO = { sk: 10000, g: 10, ns: 200, vp: 5, s: 2, r: 10 }, akV = Object.assign({ sk: 10000 }, krAbsatzVals(akO)), ak = { rows: krRows([], "x", krAbsatzRows(akO, akV, "prog")), b: akV.b };
+    const zk = krZuschlag([], "x", { fm: 17560, fl: 19500, mgk: 2298, fgk: 6626, vwvt: 5929 });
     LEX.push(
       { id: "kr-grund", g: 8, title: "Aufwand und Kosten",
         text: "Die Buchhaltung erfasst <b>Aufwände</b> (alles, was den Gewinn mindert). Die Kostenrechnung fragt: Was kostet uns der Betrieb wirklich? <b>Kosten</b> sind nur der betriebliche, normale und periodenrichtige Werteverzehr.",
@@ -4716,14 +4739,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         ex: [{ t: "Laut GuV beträgt die Abschreibung € 18.000,00. Die kalkulatorische Abschreibung vom Wiederbeschaffungswert beträgt € 24.000,00.", s: [], h: [], n: "Im BÜB werden die € 18.000,00 abgezogen und € 24.000,00 als kalkulatorische Kosten zugerechnet. In die Kostenrechnung gehen € 24.000,00 ein." }],
         go: [["kr", "bue"]] },
       { id: "kr-bezug", g: 8, title: "Bezugskalkulation",
-        text: "Die Bezugskalkulation ermittelt den <b>Einstandspreis</b>: Was kostet uns eine Ware wirklich, bis sie bei uns im Geschäft ist? Progressiv rechnest du vom Listeneinkaufspreis nach unten, retrograd vom gewünschten Einstandspreis nach oben.",
-        rules: ["Listeneinkaufspreis − Liefererrabatt = Zieleinkaufspreis − Liefererskonto = Kassaeinkaufspreis + Bezugskosten = Einstandspreis.", "Rabatt vom Listeneinkaufspreis, Skonto vom Zieleinkaufspreis.", "Retrograd werden Skonto und Rabatt im Hundert gerechnet: Zieleinkaufspreis = Kassaeinkaufspreis × 100 ÷ (100 − Skontosatz).", "Beim Angebotsvergleich zählt der Einstandspreis."],
-        ex: [{ t: "Listeneinkaufspreis € 100,00, 10 % Rabatt, 2 % Skonto, Bezugskosten € 3,50.", s: [], h: [], html: sch("Bezugskalkulation", bk.rows), n: "Der Einstandspreis beträgt € 91,70." }],
+        text: "Die Bezugskalkulation ermittelt den <b>Einstandspreis</b>: Was kostet uns eine Ware wirklich, bis sie bei uns ist? Progressiv rechnest du vom Einkaufspreis nach unten, retrograd vom gewünschten Einstandspreis nach oben.",
+        rules: ["Einkaufspreis − Lieferantenrabatt = rabattierter Preis + Fakturenspesen = Zielpreis − Lieferantenskonto = Kassapreis + Beschaffungsnebenkosten = Einstandspreis.", "Fakturenspesen verrechnet der Lieferant auf der Rechnung (Verpackung, Transport), Beschaffungsnebenkosten zahlen wir an andere (Spediteur, Versicherung, Zoll).", "Progressiv werden Rabatt und Skonto vom Hundert (v. H.) gerechnet, retrograd im Hundert (i. H.): Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz).", "Beim Angebotsvergleich zählt der Einstandspreis."],
+        ex: [{ t: "Einkaufspreis € 100,00, 10 % Rabatt, Fakturenspesen € 2,00, 2 % Skonto, Beschaffungsnebenkosten € 3,50.", s: [], h: [], html: sch("Bezugskalkulation", bk.rows), n: `Der Einstandspreis beträgt ${P.fmt(bk.ep)}.` }],
         go: [["kr", "bk"]] },
       { id: "kr-absatz", g: 8, title: "Absatzkalkulation",
-        text: "Die Absatzkalkulation ermittelt den <b>Verkaufspreis</b>. Auf den Einstandspreis kommen die Regiekosten (Kosten des Geschäfts wie Miete und Gehälter), der Gewinn sowie Skonto und Rabatt für die Kundschaft, zum Schluss die Umsatzsteuer.",
-        rules: ["Einstandspreis + Regiekosten = Selbstkosten + Gewinn = Kassaverkaufspreis + Kundenskonto = Zielverkaufspreis + Kundenrabatt = Listenverkaufspreis netto + USt = Listenverkaufspreis brutto.", "Regiekosten vom Einstandspreis, Gewinn von den Selbstkosten.", "Kundenskonto und Kundenrabatt im Hundert aufschlagen (Basis ist der höhere Preis).", "Retrograd: USt, Gewinn und Regiekosten stecken auf Hundert im Betrag (÷ 120 × 100, ÷ (100 + Satz) × 100).", "Differenzkalkulation: Ist der Verkaufspreis vorgegeben, ergibt sich der Gewinn als Differenz zwischen Kassaverkaufspreis und Selbstkosten."],
-        ex: [{ t: `Einstandspreis ${P.fmt(bk.ep)}, 30 % Regiekosten, 10 % Gewinn, 2 % Kundenskonto, 10 % Kundenrabatt.`, s: [], h: [], html: sch("Absatzkalkulation", ak.rows), n: `Der Listenverkaufspreis brutto beträgt ${P.fmt(ak.brutto)}.` }],
+        text: "Die Absatzkalkulation ermittelt den <b>Verkaufspreis</b>. Auf die Selbstkosten kommen der Gewinn, nominelle Sonderkosten (z. B. Verpackung und Versand), die Verkaufsprovision, Skonto und Rabatt für die Kundschaft und zum Schluss die Umsatzsteuer.",
+        rules: ["Selbstkosten + Gewinn = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme + Verkaufsprovision = Kassapreis + Kundenskonto = Zielpreis + Kundenrabatt = Listenverkaufspreis + USt = Bruttoverkaufspreis.", "Progressiv: Gewinn und USt vom Hundert (v. H.), Verkaufsprovision, Kundenskonto und Kundenrabatt im Hundert (i. H.).", "Retrograd: USt und Gewinn auf Hundert (a. H.), Kundenrabatt, Kundenskonto und Verkaufsprovision vom Hundert (v. H.).", "Differenzkalkulation: Ist der Verkaufspreis vorgegeben, rechnest du retrograd bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten."],
+        ex: [{ t: "Selbstkosten € 100,00, 10 % Gewinn, nominelle Sonderkosten € 2,00, 5 % Verkaufsprovision, 2 % Kundenskonto, 10 % Kundenrabatt.", s: [], h: [], html: sch("Absatzkalkulation", ak.rows), n: `Der Bruttoverkaufspreis beträgt ${P.fmt(ak.b)}.` }],
         go: [["kr", "ak"]] },
       { id: "kr-bue", g: 8, title: "Kostenartenrechnung und BÜB",
         text: "Die Kostenartenrechnung beantwortet die Frage: <b>Welche Kosten</b> sind entstanden? Im <b>Betriebsüberleitungsbogen (BÜB)</b> werden die Aufwände der GuV in Kosten übergeleitet.",
@@ -4731,12 +4754,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         go: [["kr", "bue"]] },
       { id: "kr-bab", g: 8, title: "Kostenstellenrechnung und BAB",
         text: "Die Kostenstellenrechnung beantwortet die Frage: <b>Wo</b> sind die Kosten entstanden? Im <b>Betriebsabrechnungsbogen (BAB)</b> werden die Gemeinkosten auf die Kostenstellen Material, Fertigung, Verwaltung und Vertrieb verteilt.",
-        rules: ["Direkt zurechenbare Gemeinkosten (lt. Liste) direkt eintragen, die anderen nach einem Schlüssel verteilen (m², kWh, Anlagenwerte).", "Betrag je Schlüsselteil = Betrag ÷ Summe der Teile.", "Zuschlagsbasis: Material → Fertigungsmaterial, Fertigung → Fertigungslöhne, Verwaltung und Vertrieb → Herstellkosten.", "Zuschlagssatz = Gemeinkosten der Kostenstelle ÷ Zuschlagsbasis × 100. Die Sätze braucht man für die Kalkulation."],
+        rules: ["Direkt zurechenbare Gemeinkosten (lt. Liste) direkt eintragen, die anderen nach einem Schlüssel verteilen (m², kWh, Anlagenwerte).", "Betrag je Schlüsselteil = Betrag ÷ Summe der Teile.", "Zuschlagsbasis: Material → Fertigungsmaterial, Fertigung → Fertigungslöhne, Verwaltung und Vertrieb → Herstellkosten. Verwaltung und Vertrieb können eine gemeinsame Kostenstelle sein.", "Zuschlagssatz = Gemeinkosten der Kostenstelle ÷ Zuschlagsbasis × 100. Die Sätze braucht man für die Kalkulation."],
         go: [["kr", "bab"]] },
       { id: "kr-zuschlag", g: 8, title: "Differenzierende Zuschlagskalkulation",
         text: "Die Kostenträgerrechnung beantwortet die Frage: <b>Wofür</b> sind die Kosten entstanden? In der differenzierenden Zuschlagskalkulation werden auf die Einzelkosten eines Produkts die Gemeinkosten mit den Zuschlagssätzen aus dem BAB aufgeschlagen.",
-        rules: ["Fertigungsmaterial + MGK = Materialkosten. Fertigungslöhne + FGK (+ Sondereinzelkosten der Fertigung) = Fertigungskosten.", "Materialkosten + Fertigungskosten = Herstellkosten.", "Herstellkosten + VwGK + VtGK = Selbstkosten. Beide Zuschläge werden von den Herstellkosten gerechnet.", "Selbstkosten + Gewinn = Verkaufspreis."],
-        ex: [{ t: "Ein Dirndl braucht Fertigungsmaterial um € 82,40 und 8 Stunden zu € 27,50 Fertigungslohn. Zuschläge: MGK 15 %, FGK 120 %, VwGK 12 %, VtGK 8 %, Gewinn 10 %.", s: [], h: [], html: sch("Zuschlagskalkulation", zk.rows), n: `Selbstkosten ${P.fmt(zk.SK)}, Verkaufspreis netto ${P.fmt(zk.V)}.` }],
+        rules: ["Fertigungsmaterial + Materialgemeinkosten (in % des FM) = Materialkosten.", "Materialkosten + Fertigungslöhne + Fertigungsgemeinkosten (in % der FL) + Sondereinzelkosten der Fertigung = Herstellkosten.", "Herstellkosten + Verwaltungs- und Vertriebsgemeinkosten (in % der HK) + Sondereinzelkosten des Vertriebs = Selbstkosten.", "Mit den Selbstkosten geht es in der Absatzkalkulation weiter."],
+        ex: [{ t: "Vorkalkulation für ein Maßdirndl: Fertigungsmaterial € 175,60, 13 Fertigungsstunden zu € 15,00. Zuschlagssätze aus dem BAB: MGK 22,98 %, FGK 66,26 %, Verwaltungs- und Vertriebsgemeinkosten 59,29 %.", s: [], h: [], html: sch("Zuschlagskalkulation", zk.rows), n: `Selbstkosten je Stück: ${P.fmt(zk.SK)}.` }],
         go: [["kr", "zk"]] },
       { id: "kr-db", g: 8, title: "Teilkostenrechnung und Deckungsbeitrag",
         text: "Die Teilkostenrechnung rechnet einem Produkt nur die <b>variablen Kosten</b> zu. Was vom Preis übrig bleibt, ist der <b>Deckungsbeitrag</b>: Er deckt zuerst die Fixkosten, der Rest ist Gewinn.",
