@@ -161,6 +161,12 @@ main .wrap.lex-wrap { grid-template-columns: minmax(0, 1fr); gap: 18px; max-widt
 .lex-ex p { margin: 0; }
 .lex-try { border-left-color: var(--muted); }
 .lex-accs > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.vt-table { min-width: 1500px; } .vt-table input { width: 5.4rem; } .vt-table th.c, .web-table th.c { text-align: center; } .vt-table td.vt-text { min-width: 8rem; font-size: 0.8rem; }
+.vt-table tr.vt-ab td { color: var(--muted); font-style: italic; }
+.web-table { min-width: 1350px; } .web-table input.ea-bez { width: 11rem; } .web-table input.ea-num { width: 3.2rem; }
+.ea-cases { display: grid; gap: 14px; } .ea-case { display: grid; gap: 6px; border-left: 3px solid var(--line); padding-left: 12px; min-width: 0; } .ea-case p { margin: 0; }
+.ea-case-h { display: flex; gap: 8px; align-items: center; }
+.ea-res { max-width: 560px; margin-top: 12px; }
 .lex-acc { border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; font-size: 0.85rem; display: inline-grid; }
 .lex-acc b { font-family: var(--font-mono); margin-right: 4px; } .lex-acc small { color: var(--muted); font-size: 0.72rem; }
 .why { margin: 0; padding-left: 1.2rem; display: grid; gap: 3px; font-size: 0.95rem; }
@@ -502,6 +508,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       <button type="button" data-module="tk" aria-current="false">T-Konten</button>
       <button type="button" data-module="ab" aria-current="false">Abschluss</button>
       <button type="button" data-module="bw" aria-current="false">Bewertung</button>
+      <button type="button" data-module="ea" aria-current="false">E/A-Rechnung</button>
       <button type="button" data-module="test" aria-current="false">Test / Schularbeit</button>
       <button type="button" data-module="lex" aria-current="false">Lexikon</button>
     </nav>
@@ -860,8 +867,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <button class="btn" id="bw-new" type="button">Neue Aufgabe</button>
       </div>
       <div class="bw-types">
-        <div class="bw-tgroup"><span class="field-label">Anlagevermögen</span><div class="seg bw-type" id="bw-seg-type-a" role="group" aria-label="Aufgabe zum Anlagevermögen wählen"></div></div>
-        <div class="bw-tgroup"><span class="field-label">Umlaufvermögen und Abgrenzungen</span><div class="seg bw-type" id="bw-seg-type-u" role="group" aria-label="Aufgabe zum Umlaufvermögen wählen"></div></div>
+        <div class="bw-tgroup" id="bw-tg-a"><span class="field-label">Anlagevermögen</span><div class="seg bw-type" id="bw-seg-type-a" role="group" aria-label="Aufgabe zum Anlagevermögen wählen"></div></div>
+        <div class="bw-tgroup" id="bw-tg-u"><span class="field-label">Umlaufvermögen und Abgrenzungen</span><div class="seg bw-type" id="bw-seg-type-u" role="group" aria-label="Aufgabe zum Umlaufvermögen wählen"></div></div>
+        <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
       </div>
       <div id="bw-body" style="display:grid;gap:18px;min-width:0"></div>
       <div class="actions sticky-actions">
@@ -2900,12 +2908,17 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ================= Bewertung (Jahresabschluss) =================
   let bwType = store.get("bwType", "av"), bwSize = store.get("bwSize", "normal"), bwCalcBw = store.get("bwCalcBw", false), bw = null, bwNo = 0;
   const BW_TYPES_A = [["av", "Anlagen\u00ADverzeichnis"], ["an", "Verzeichnis ergänzen"], ["ag", "Verkauf & Schadensfall"], ["um", "Erhaltung & Umbau"]];
+  const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
+  let bwArea = "bw";
   const BW_TYPES_U = [["lk", "Lagerkartei"], ["fo", "Forderungen"], ["ra", "Abgrenzungen"], ["rs", "Rückstellungen"]];
   const BW_STEPS = {
     av: ["Jahres-AfA = Anschaffungskosten ÷ Nutzungsdauer (linear).", "Halbjahresregel: Entscheidend ist das Datum der Inbetriebnahme. Inbetriebnahme im zweiten Halbjahr = halbe AfA im ersten Jahr.", "Im letzten Jahr wird nur noch der Restbuchwert abgeschrieben.", "Scheidet eine Anlage im ersten Halbjahr aus, gibt es die halbe AfA, im zweiten Halbjahr die ganze. Der Restbuchwert wird über 7820 ausgebucht.", "Geringwertige Wirtschaftsgüter (bis € 1.000,00 netto) werden voll abgeschrieben (7030) und stehen gleichzeitig als Zugang und Abgang im Verzeichnis.", "Buchwert 31.12. = Buchwert 01.01. − laufende AfA. AfA kumuliert 31.12. = AfA kumuliert 01.01. + laufende AfA.", "Die Summe der laufenden AfA je Konto wird am 31.12. gebucht: 7010 / Anlagenkonto."],
     an: ["Anschaffungskosten = Kaufpreis − Rabatt + Anschaffungsnebenkosten (z. B. Lieferung, Montage), netto. Beim Pkw gibt es keinen Vorsteuerabzug: Anschaffungskosten = brutto.", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im ersten Halbjahr = ganze AfA, im zweiten Halbjahr = halbe AfA (entscheidend ist die Inbetriebnahme, nicht der Kauf).", "Bestehende Anlage: Buchwert 01.01. = Anschaffungswert − bisherige AfA. Neuanschaffung: Buchwert 01.01. = 0.", "Kum. AfA 31.12. = bisherige AfA + AfA 2026, Buchwert 31.12. = Anschaffungswert − kum. AfA.", "Buchungen: Kauf (Anlagenkonto + Vorsteuer / 3300) und am 31.12. die gesamte AfA: 7010 / Anlagenkonto."],
     ag: ["Verkauf: Zahlungsmittel bzw. Kunde / 4600 Erlöse aus dem Abgang von Anlagen 20 % und 3500 Umsatzsteuer. Gebrauchter Pkw ohne Vorsteuerabzug beim Kauf: 4601 (0 %, ohne USt).", "Schadensfall: Versicherungsentschädigung auf 4610, ohne Umsatzsteuer. Bei schriftlicher Zusage zuerst 2300 Sonstige Forderungen, bei der Zahlung Bank / 2300.", "31.12.: Abschreibung bis zum Ausscheiden. Erstes Halbjahr = halbe AfA, zweites Halbjahr = ganze AfA, höchstens der Buchwert.", "Restbuchwert = Buchwert 01.01. − AfA im Jahr des Ausscheidens.", "Restbuchwert ausbuchen: 7820 Buchwert abgegangener Anlagen / Anlagenkonto. Bei einem Schadensfall: 7819 Sonstige Schadensfälle / Anlagenkonto."],
     um: ["Erhaltung (Reparatur, Wartung, Ausmalen, gleichwertiger Ersatz): sofort Aufwand in Klasse 7, z. B. 7201 Instandhaltung Gebäude.", "Umbau oder Erweiterung (Verwendungszweck geändert oder Substanz vermehrt): auf das bestehende Anlagenkonto aktivieren, z. B. 0300.", "Bisherige Nutzungsdauer nach der Halbjahresregel zählen: erstes Jahr ½ oder 1, im Jahr des Umbaus ½ bei Inbetriebnahme im zweiten Halbjahr.", "Restnutzungsdauer = gesamte Nutzungsdauer − bisherige Nutzungsdauer.", "AfA gesamt = AfA der bestehenden Anlage + Umbaukosten ÷ Restnutzungsdauer (halbe AfA bei Inbetriebnahme im zweiten Halbjahr)."],
+    vt: ["Einnahmen und Ausgaben werden erst gezählt, wenn Geld fließt (Zufluss-Abfluss-Prinzip). Eine offene Rechnung kommt erst bei der Zahlung ins Buch.", "Kassa bzw. Bank: Betrag brutto bei Einzahlung oder Auszahlung eintragen.", "Aufgliedern: Umsatzsteuer bzw. Vorsteuer in die Steuerspalte, den Nettobetrag in die passende Einnahmen- oder Ausgabenspalte.", "Pkw: kein Vorsteuerabzug, daher kommt der Bruttobetrag in die Spalte PKW. Versicherungen haben keine Umsatzsteuer.", "GWG bis € 1.000,00 netto sind sofort zur Gänze Ausgabe. Geldtransfers zwischen Kassa und Bank werden nicht aufgegliedert.", "Überschuss = Betriebseinnahmen netto − Betriebsausgaben netto."],
+    web: ["Jede Eingangsrechnung für Handelswaren wird eingetragen, auch wenn sie noch nicht bezahlt ist.", "Lieferdatum, Lieferant und Ware stehen auf der Rechnung. Der Rabatt ist im Rechnungsbetrag schon abgezogen.", "Bruttobetrag = Rechnungsbetrag, Vorsteuer 20 %, Nettobetrag = brutto − Vorsteuer.", "Abzüge (z. B. Skonto) und Zusatzkosten (z. B. Mahnspesen) werden brutto eingetragen. Skonto = Bruttobetrag × Skontosatz.", "„Bezahlt am“ erst eintragen, wenn bezahlt wurde."],
+    eav: ["Anlagen über € 1.000,00 netto kommen ins Anlagenverzeichnis, ihre Anschaffung ist keine sofortige Ausgabe.", "Anschaffungskosten = Kaufpreis − Rabatt + Lieferung/Montage, netto (Pkw brutto).", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im zweiten Halbjahr = halbe AfA.", "Buchwert 31.12. = Anschaffungswert − kumulierte AfA. Die AfA ist die Betriebsausgabe des Jahres."],
     lk: ["Nach jedem Zukauf wird ein neuer Durchschnittspreis berechnet: Bestandswert ÷ Bestandsmenge.", "Entnahmen bzw. Verkäufe werden mit dem aktuellen Durchschnittspreis bewertet. Der Durchschnittspreis ändert sich dadurch nicht.", "Schwund = (Sollbestand − Istbestand) × Durchschnittspreis.", "Abwertung: Ist der Preis am Bilanzstichtag niedriger, wird der Istbestand mit diesem niedrigeren Preis bewertet: Istbestand × (Ø-Preis − Tagespreis).", "Bilanzansatz = Istbestand × niedrigerer Preis. UB 1: Bestandsveränderung = Bilanzansatz − Anfangsbestand (AB > EB = Lagerabbau). UB 2: Wertminderung (Schwund + Abwertung) auf 7800 Abschreibung von Vorräten."],
     fo: ["Entscheide zuerst: einbringlich, zweifelhaft oder uneinbringlich.", "Rechne den Nettobetrag aus: brutto ÷ 1,2.", "Uneinbringlich: Der ganze Nettobetrag wird abgeschrieben (7802), die Umsatzsteuer wird berichtigt (3500).", "Zweifelhaft: Wertberichtigung = Nettobetrag × erwarteter Ausfall in %. Keine USt-Korrektur.", "Achtung: Eine erwartete Quote von 30 % bedeutet einen Ausfall von 70 %.", "Vergleiche die neue Wertberichtigung mit dem Konto 2080: Ist das Konto kleiner, wird zugewiesen (7806 / 2080), ist es größer, wird aufgelöst (2080 / 4870)."],
     ra: ["Zahlungszeitpunkt: Der ganze Aufwand bzw. Ertrag wird gebucht, mit Vorsteuer bzw. Umsatzsteuer.", "31.12.: Welcher Teil betrifft schon das nächste Jahr? Rechne mit dem Nettobetrag: netto ÷ Monate × Monate im nächsten Jahr.", "Eigene Vorauszahlung (Aufwand im Voraus bezahlt): 2900 ARA / Aufwandskonto.", "Fremde Vorauszahlung (Ertrag im Voraus erhalten): Ertragskonto / 3900 PRA.", "01.01.: Der Buchungssatz vom 31.12. wird gestürzt."],
@@ -2915,7 +2928,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const bwSeg = (id, opts, lbl) => `<div class="seg" id="${id}" role="group" aria-label="${esc(lbl)}">${opts.map(([v, t]) => `<button type="button" data-v="${v}" aria-pressed="false">${esc(t)}</button>`).join("")}</div>`;
   function bwBuild() {
     const rng = Math.random;
-    bw = ({ av: bwMakeAv, an: bwMakeAn, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }[bwType] || bwMakeAv)(rng);
+    bw = ({ av: bwMakeAv, an: bwMakeAn, vt: bwMakeVt, web: bwMakeWeb, eav: bwMakeEav, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }[bwType] || bwMakeAv)(rng);
     bwNo++;
     bwRender();
   }
@@ -3165,7 +3178,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     }
     rows.forEach(r => {
       if (!r.old) fields.push({ id: r.id + "-buy", date: avDate(r.buy) }, { id: r.id + "-inb", date: avDate(r.inb) }, { id: r.id + "-nd", amt: r.nd * 100, qty: true }, { id: r.id + "-pct", amt: anPct(r.nd), pct: true, nd: r.nd }, { id: r.id + "-ak", amt: r.ak });
-      fields.push({ id: r.id + "-bw1", amt: r.bw1, zeroOk: true }, { id: r.id + "-afa", amt: r.afa }, { id: r.id + "-kum", amt: r.kum }, { id: r.id + "-bw31", amt: r.bw31 });
+      fields.push({ id: r.id + "-bw1", amt: r.bw1, zeroOk: true, blank: !r.old }, { id: r.id + "-afa", amt: r.afa }, { id: r.id + "-kum", amt: r.kum }, { id: r.id + "-bw31", amt: r.bw31 });
     });
     const sum = rows.reduce((s, r) => s + r.afa, 0);
     books.push({ id: "bw-n-afa", label: `31.12.2026: Abschreibung ${P.acc[acc][0]} ${P.acc[acc][1]}`, soll: [["afa", sum]], haben: [[acc, sum]] });
@@ -3194,7 +3207,224 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <label class="field-label" for="bw-neben" style="margin-top:6px">Nebenrechnungen (für dich, wird nicht geprüft)</label>
         <textarea id="bw-neben" rows="4" class="an-neben" placeholder="z. B. 35.000,00 × 12,5 % = 4.375,00 …"></textarea>
         <span class="ab-msg" id="bw-msg"></span></div>
-      <h2 class="bw-h">Buchungssätze</h2>${bwBooksHtml()}`;
+      ${bw.books.length ? `<h2 class="bw-h">Buchungssätze</h2>${bwBooksHtml()}` : ""}`;
+  }
+
+  // ================= Einnahmen-Ausgaben-Rechnung (1. Klasse): Kassa-/Bankbuch mit Verteilungstabelle, Wareneingangsbuch =================
+  const MONTHS = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  // Spalten der Verteilungstabelle (wie in der Vorlage von Patrick)
+  const VT_COLS = [["kE", "Einzahlungen"], ["kA", "Auszahlungen"], ["bE", "Einzahlungen"], ["bA", "Auszahlungen"], ["ust", "USt"], ["vst", "VSt"], ["erl", "Erlöse"], ["ueb", "Übrige Einnahmen"],
+    ["hw", "HW/ Material"], ["bm", "Büro­material"], ["pkw", "PKW"], ["tel", "Telefon"], ["ver", "Versiche­rung"], ["str", "Strom"], ["gwg", "GWG"]];
+  const VT_OUT = ["hw", "bm", "pkw", "tel", "ver", "str", "gwg"];
+  const EA_WAREN = [...PARTNERS.waren, ["Modegroßhandel Lend GmbH", "Lendplatz 12", "8020 Graz", "ATU 64410273"], ["Strickwaren Puntigam KG", "Triester Straße 180", "8055 Graz", "ATU 69920451"]];
+  const EA_GWG = [["Tablet für die Präsentation der Online-Kollektion", 38000, 62000, "edv"], ["Schaufensterpuppe", 29000, 54000, "deko"], ["Standspiegel mit Holzrahmen", 24000, 48000, "deko"], ["Kartenterminal", 19000, 34000, "edv"], ["Etikettendrucker", 21000, 46000, "edv"], ["Rollständer für Kleider", 16000, 32000, "deko"]];
+  const eaDate = (m, d) => new Date(2026, m, d);
+  const eaD = dt => fmtDate(dt).slice(0, 6);
+  // Bruttobetrag zu einem runden Nettobetrag in Euro
+  const eaNet = (rng, a, b, s = 1) => rndStep(rng, [a, b, s]) * 100;
+
+  function vtCase(kind, rng, m, day) {
+    const dt = eaDate(m, day), r = { kind, dt, cols: {} }, c = r.cols;
+    const inv = (issuer, lines, net, R, opt = {}) => bwInvoice(Object.assign({ rng, issuer, recipient: bwUs(), date: dt, deliv: dt, lines, net, R, tax: net * R / 100 }, opt));
+    switch (kind) {
+      case "losung": {
+        const n = eaNet(rng, 600, 2400, 10), t = n / 5;
+        r.text = `Tageslosung laut Registrierkasse: € ${fmtNum(n + t)} inkl. 20 % USt (bar).`; r.short = "Tageslosung"; c.kE = n + t; c.ust = t; c.erl = n;
+        r.sol = `Bareinnahme brutto in die Kassa, aufgeteilt in Erlöse netto ${fmtNum(n)} und USt ${fmtNum(t)}.`; break;
+      }
+      case "kunde": {
+        const k = pickR(rng, PARTNERS.kunden), n = eaNet(rng, 800, 6000, 10), t = n / 5;
+        r.text = `${k[0]} überweist für unsere Rechnung über Trachten- und Festtagsmode € ${fmtNum(n + t)} (inkl. 20 % USt).`; r.short = `Zahlung ${k[0]}`; c.bE = n + t; c.ust = t; c.erl = n;
+        if (rng() < 0.6) { r.doc = bwBank(rng, dt, `Gutschrift ${k[0]}, Zahlung Rechnung`, n + t, true); r.text = "Zahlungseingang einer Kundin für Waren, 20 % USt (siehe Kontoauszug)."; }
+        r.sol = `Einnahme erst bei Zahlung (Zufluss-Abfluss-Prinzip). Bank ${fmtNum(n + t)} = Erlöse ${fmtNum(n)} + USt ${fmtNum(t)}.`; break;
+      }
+      case "provision": {
+        const n = eaNet(rng, 200, 1500, 10), t = n / 5;
+        r.text = `Wir erhalten für die Vermittlung eines Großauftrags an eine Brautmodenfirma eine Provision von € ${fmtNum(n + t)} inkl. 20 % USt auf unser Bankkonto.`; r.short = "Provision"; c.bE = n + t; c.ust = t; c.ueb = n;
+        r.sol = `Eine Provision ist kein Warenerlös, sondern eine übrige Einnahme: netto ${fmtNum(n)}, USt ${fmtNum(t)}.`; break;
+      }
+      case "miete": {
+        const n = eaNet(rng, 250, 600, 10), t = n / 5;
+        r.text = `Das Nagelstudio Glanzpunkt überweist die Monatsmiete für den untervermieteten Raum: € ${fmtNum(n + t)} inkl. 20 % USt.`; r.short = "Untermiete"; c.bE = n + t; c.ust = t; c.ueb = n;
+        r.sol = `Mieteinnahme = übrige Einnahme, netto ${fmtNum(n)}, USt ${fmtNum(t)}.`; break;
+      }
+      case "hwbank": {
+        const s = pickR(rng, EA_WAREN), g = pickR(rng, GOODS), q = 4 + Math.floor(rng() * 12), u = rndStep(rng, [g.u[0] / 100, g.u[1] / 100, 1]) * 100, n = q * u, t = n / 5;
+        r.doc = inv(s, [[q, g.item, u, n]], n, 20, { pay: `Zahlbar innerhalb von 30 Tagen ohne Abzug.`, date: eaDate(m, Math.max(1, day - 10)), deliv: eaDate(m, Math.max(1, day - 10)) });
+        r.text = `Wir überweisen am ${eaD(dt)} den Rechnungsbetrag für diese Warenlieferung (siehe Beleg).`; r.short = `Zahlung ${s[0]}`; c.bA = n + t; c.vst = t; c.hw = n;
+        r.sol = `Ausgabe für Handelswaren bei Zahlung: Bank ${fmtNum(n + t)}, VSt ${fmtNum(t)}, HW/Material ${fmtNum(n)}.`; break;
+      }
+      case "hwbar": {
+        const s = PARTNERS.kurzwaren[0], n = eaNet(rng, 40, 260, 1), t = n / 5;
+        r.doc = inv(s, [[1, "Nähgarn, Knöpfe und Reißverschlüsse für die Änderungsschneiderei", n, n]], n, 20, { pay: "Betrag bar erhalten. Danke für Ihren Einkauf!", cash: true });
+        r.text = "Einkauf von Material für die Änderungsschneiderei, bar bezahlt (siehe Beleg)."; r.short = "Nähzubehör bar"; c.kA = n + t; c.vst = t; c.hw = n;
+        r.sol = `Material: Kassa ${fmtNum(n + t)}, VSt ${fmtNum(t)}, HW/Material ${fmtNum(n)}.`; break;
+      }
+      case "buero": {
+        const s = PARTNERS.buero[0], n = eaNet(rng, 30, 180, 1), t = n / 5;
+        r.doc = inv(s, [[1, pickR(rng, ["Druckerpapier und Ordner", "Toner für den Laserdrucker", "Kassenrollen und Kugelschreiber", "Etiketten und Preisschilder"]), n, n]], n, 20, { pay: "Betrag bar erhalten.", cash: true });
+        r.text = "Kauf von Büromaterial, bar bezahlt (siehe Beleg)."; r.short = "Büromaterial bar"; c.kA = n + t; c.vst = t; c.bm = n;
+        r.sol = `Büromaterial: Kassa ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Büromaterial ${fmtNum(n)}.`; break;
+      }
+      case "tanken": {
+        const n = eaNet(rng, 50, 95, 1), t = n / 5;
+        r.doc = inv(["Tankstelle Puntigam", "Triester Straße 300", "8055 Graz", "ATU 58810934"], [[1, "Treibstoff Super 95", n, n]], n, 20, { pay: "Bar bezahlt.", cash: true, title: "Rechnung / Tankbeleg" });
+        r.text = "Wir tanken den betrieblichen Pkw (Benziner) und bezahlen bar (siehe Beleg)."; r.short = "Tanken Pkw"; c.kA = n + t; c.pkw = n + t;
+        r.sol = `Beim Pkw gibt es keinen Vorsteuerabzug. Deshalb kommt der Bruttobetrag ${fmtNum(n + t)} in die Spalte PKW, VSt bleibt leer.`; break;
+      }
+      case "service": {
+        const s = PARTNERS.auto[0], n = eaNet(rng, 180, 650, 1), t = n / 5;
+        r.doc = inv(s, [[1, "Jahresservice und Pickerl-Überprüfung Pkw", n, n]], n, 20, { pay: "Zahlbar sofort ohne Abzug." });
+        r.text = `Wir überweisen die Rechnung für das Pkw-Service am ${eaD(dt)} (siehe Beleg).`; r.short = "Pkw-Service"; c.bA = n + t; c.pkw = n + t;
+        r.sol = `Pkw: kein Vorsteuerabzug, daher Bank und PKW je ${fmtNum(n + t)} brutto.`; break;
+      }
+      case "telefon": {
+        const s = PARTNERS.telekom[0], n = eaNet(rng, 45, 140, 1), t = n / 5;
+        r.text = `${s[0]} bucht die Telefon- und Internetrechnung von unserem Bankkonto ab: € ${fmtNum(n + t)} inkl. 20 % USt.`; r.short = "Telefonrechnung";
+        if (rng() < 0.5) { r.doc = bwBank(rng, dt, `Abbuchung ${s[0]}, Telefonrechnung inkl. 20 % USt`, n + t, false); r.text = "Abbuchung der Telefonrechnung (siehe Kontoauszug, 20 % USt enthalten)."; }
+        c.bA = n + t; c.vst = t; c.tel = n; r.sol = `Telefon: Bank ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Telefon ${fmtNum(n)}.`; break;
+      }
+      case "versich": {
+        const a = eaNet(rng, 120, 900, 1);
+        r.text = `Die ${BW_INSURER[0]} bucht die Prämie für die Betriebsversicherung (Feuer, Einbruch) ab: € ${fmtNum(a)}.`; r.short = "Versicherungsprämie";
+        if (rng() < 0.5) { r.doc = bwBank(rng, dt, `Abbuchung ${BW_INSURER[0]}, Prämie Betriebsversicherung`, a, false); r.text = "Abbuchung der Versicherungsprämie (siehe Kontoauszug)."; }
+        c.bA = a; c.ver = a; r.sol = `Versicherungen sind umsatzsteuerfrei, daher keine Vorsteuer: Bank und Versicherung je ${fmtNum(a)}.`; break;
+      }
+      case "strom": {
+        const s = PARTNERS.energie[0], n = eaNet(rng, 90, 320, 1), t = n / 5;
+        r.text = `${s[0]} bucht die Stromrechnung für das Geschäftslokal ab: € ${fmtNum(n + t)} inkl. 20 % USt.`; r.short = "Stromrechnung";
+        if (rng() < 0.5) { r.doc = bwBank(rng, dt, `Abbuchung ${s[0]}, Teilbetrag Strom inkl. 20 % USt`, n + t, false); r.text = "Abbuchung der Stromrechnung (siehe Kontoauszug, 20 % USt enthalten)."; }
+        c.bA = n + t; c.vst = t; c.str = n; r.sol = `Strom: Bank ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Strom ${fmtNum(n)}.`; break;
+      }
+      case "gwg": {
+        const [what, lo, hi, sup] = pickR(rng, EA_GWG), s = PARTNERS[sup][0], n = rndStep(rng, [lo / 100, hi / 100, 1]) * 100, t = n / 5, bar = rng() < 0.4;
+        r.doc = inv(s, [[1, what, n, n]], n, 20, bar ? { pay: "Betrag bar erhalten.", cash: true } : { pay: "Zahlbar sofort ohne Abzug." });
+        r.text = bar ? "Kauf gegen Barzahlung (siehe Beleg)." : `Wir kaufen und überweisen am ${eaD(dt)} sofort (siehe Beleg).`; r.short = what;
+        c[bar ? "kA" : "bA"] = n + t; c.vst = t; c.gwg = n;
+        r.sol = `Anschaffungskosten ${fmtNum(n)} netto, also höchstens € 1.000,00: geringwertiges Wirtschaftsgut, sofort zur Gänze Ausgabe (Spalte GWG).`; break;
+      }
+      case "einzahlung": {
+        const a = eaNet(rng, 500, 1500, 50);
+        r.text = `Wir zahlen € ${fmtNum(a)} aus der Kassa auf das Bankkonto ein.`; r.short = "Bareinzahlung Bank"; c.kA = a; c.bE = a;
+        r.sol = "Geld wechselt nur von der Kassa auf die Bank: keine Einnahme und keine Ausgabe, also keine Aufgliederung."; break;
+      }
+      case "abhebung": {
+        const a = eaNet(rng, 200, 800, 50);
+        r.text = `Wir heben € ${fmtNum(a)} vom Bankkonto ab und legen das Geld in die Kassa.`; r.short = "Barabhebung"; c.bA = a; c.kE = a;
+        r.sol = "Nur ein Geldtransfer zwischen Bank und Kassa, keine Aufgliederung."; break;
+      }
+    }
+    return r;
+  }
+  function bwMakeVt(rng) {
+    const n = { kompakt: 6, normal: 9, gross: 12 }[bwSize], m = Math.floor(rng() * 11);
+    const must = ["losung", "hwbank", pickR(rng, ["einzahlung", "abhebung"]), pickR(rng, ["tanken", "service"])];
+    const rest = ["kunde", "provision", "miete", "hwbar", "buero", "telefon", "versich", "strom", "gwg", "losung", "tanken", "service", "hwbank"].sort(() => rng() - 0.5);
+    const kinds = [...must, ...rest].slice(0, n).sort(() => rng() - 0.5);
+    const days = [...new Set(Array.from({ length: n * 3 }, () => 1 + Math.floor(rng() * 28)))].slice(0, n).sort((a, b) => a - b);
+    while (days.length < n) days.push(28);
+    const kAB = eaNet(rng, 1500, 3500, 10), bAB = eaNet(rng, 6000, 20000, 10);
+    let kassa = kAB;
+    const rows = [];
+    kinds.forEach((k, i) => {
+      let r = vtCase(k, rng, m, days[i]);
+      // die Kassa darf nie negativ werden: zu große Barausgaben über die Bank
+      if ((r.cols.kA || 0) > kassa) r = vtCase("abhebung", rng, m, days[i]);
+      kassa += (r.cols.kE || 0) - (r.cols.kA || 0);
+      rows.push(r);
+    });
+    let kNo = 0, bNo = 0;
+    rows.forEach((r, i) => { r.nr = i + 1; r.beleg = r.cols.kE || r.cols.kA ? (r.cols.bE || r.cols.bA ? `K${++kNo}/B${++bNo}` : `K${++kNo}`) : `B${++bNo}`; });
+    const fields = [], sum = {};
+    VT_COLS.forEach(([k]) => { sum[k] = rows.reduce((s, r) => s + (r.cols[k] || 0), 0); });
+    rows.forEach(r => VT_COLS.forEach(([k]) => fields.push({ id: `vt-${r.nr}-${k}`, amt: r.cols[k] || 0, zeroOk: true, blank: !r.cols[k] })));
+    VT_COLS.forEach(([k]) => fields.push({ id: `vt-s-${k}`, amt: sum[k], zeroOk: true, blank: !sum[k] }));
+    const kEnd = kAB + sum.kE - sum.kA, bEnd = bAB + sum.bE - sum.bA, ein = sum.erl + sum.ueb, aus = VT_OUT.reduce((s, k) => s + sum[k], 0);
+    fields.push({ id: "vt-kend", amt: kEnd }, { id: "vt-bend", amt: bEnd }, { id: "vt-ein", amt: ein }, { id: "vt-aus", amt: aus }, { id: "vt-erg", amt: ein - aus });
+    const sols = rows.map(r => `${r.nr}. ${r.short}: ${r.sol}`);
+    sols.push(`Kassa: Anfangsbestand ${fmtNum(kAB)} + Einzahlungen ${fmtNum(sum.kE)} − Auszahlungen ${fmtNum(sum.kA)} = ${fmtNum(kEnd)}. Bank: ${fmtNum(bAB)} + ${fmtNum(sum.bE)} − ${fmtNum(sum.bA)} = ${fmtNum(bEnd)}.`);
+    sols.push(`Betriebseinnahmen netto ${fmtNum(ein)} − Betriebsausgaben netto ${fmtNum(aus)} = ${ein - aus >= 0 ? "Überschuss" : "Verlust"} ${fmtNum(Math.abs(ein - aus))}. USt und VSt sind durchlaufende Posten und zählen nicht zum Ergebnis.`);
+    return { type: "vt", title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, fields, choices: [], books: [], sols };
+  }
+  function bwRenderVt() {
+    const inp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`;
+    const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><b>${r.nr}.</b> <span class="mono">${eaD(r.dt)}</span> <span class="chip">${esc(r.beleg)}</span></div><p>${esc(r.text)}</p>${r.doc ? `<div class="beleg-wrap">${r.doc}</div>` : ""}</div>`).join("");
+    const rows = bw.rows.map(r => `<tr><td class="mono">${r.nr}</td><td class="mono">${eaD(r.dt)}</td><td class="mono">${esc(r.beleg)}</td><td class="vt-text">${esc(r.short)}</td>${VT_COLS.map(([k, l]) => `<td>${inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${l.replace(/­/g, "")}`)}</td>`).join("")}</tr>`).join("");
+    return `<div class="ab-sec"><h2>${esc(US.name)} · Einnahmen-Ausgaben-Rechnung</h2>
+        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Leere Felder zählen als 0. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
+      <div class="ab-sec"><h2>Geschäftsfälle</h2><div class="ea-cases">${cases}</div></div>
+      <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} 2026</span></div>
+        <div class="ab-scroll"><table class="av-table vt-table">
+          <thead><tr><th rowspan="2">Lfd. Nr.</th><th rowspan="2">Datum</th><th rowspan="2">Beleg</th><th rowspan="2">Text</th><th colspan="2" class="c">Kassa (brutto)</th><th colspan="2" class="c">Bank (brutto)</th><th colspan="2"></th><th colspan="2" class="c">Aufgliederung Einnahmen (netto)</th><th colspan="7" class="c">Aufgliederung Ausgaben (netto)</th></tr>
+            <tr>${VT_COLS.map(([, l]) => `<th class="num">${l}</th>`).join("")}</tr></thead>
+          <tbody><tr class="vt-ab"><td></td><td class="mono">01.${pad(bw.m + 1)}.</td><td></td><td>Anfangsbestand</td><td class="num">${fmtNum(bw.kAB)}</td><td></td><td class="num">${fmtNum(bw.bAB)}</td><td colspan="12"></td></tr>${rows}</tbody>
+          <tfoot><tr><td colspan="4">Summe</td>${VT_COLS.map(([k, l]) => `<td>${inp(`vt-s-${k}`, `Summe ${l.replace(/­/g, "")}`)}</td>`).join("")}</tr></tfoot>
+        </table></div>
+        <div class="bw-in ea-res">
+          <label for="vt-kend">Kassa-Endbestand</label>${inp("vt-kend", "Kassa-Endbestand")}
+          <label for="vt-bend">Bank-Endbestand</label>${inp("vt-bend", "Bank-Endbestand")}
+          <label for="vt-ein">Betriebseinnahmen netto (Erlöse + übrige Einnahmen)</label>${inp("vt-ein", "Betriebseinnahmen")}
+          <label for="vt-aus">Betriebsausgaben netto</label>${inp("vt-aus", "Betriebsausgaben")}
+          <label for="vt-erg">Überschuss (Verlust mit Minus)</label>${inp("vt-erg", "Überschuss oder Verlust")}
+        </div>
+        <span class="ab-msg" id="bw-msg"></span></div>`;
+  }
+
+  // ---------- Wareneingangsbuch ----------
+  function bwMakeWeb(rng) {
+    const n = { kompakt: 3, normal: 4, gross: 6 }[bwSize], m = Math.floor(rng() * 10);
+    const days = [...new Set(Array.from({ length: n * 3 }, () => 1 + Math.floor(rng() * 26)))].slice(0, n).sort((a, b) => a - b);
+    while (days.length < n) days.push(27);
+    const pays = ["skonto", "voll", "offen", "mahn", "skonto", "voll"].sort(() => rng() - 0.5);
+    const rows = [], fields = [], sols = [], sups = EA_WAREN.slice().sort(() => rng() - 0.5);
+    for (let i = 0; i < n; i++) {
+      const s = sups[i % sups.length], deliv = eaDate(m, days[i]), date = eaDate(m, Math.min(28, days[i] + Math.floor(rng() * 2)));
+      const goods = GOODS.slice().sort(() => rng() - 0.5).slice(0, rng() < 0.5 ? 1 : 2);
+      const lines = goods.map(g => { const q = 3 + Math.floor(rng() * 14), u = rndStep(rng, [g.u[0] / 100, g.u[1] / 100, 1]) * 100; return [q, g.item, u, q * u]; });
+      let net = lines.reduce((a, l) => a + l[3], 0);
+      const rab = pickR(rng, [0, 0, 5, 10]);
+      if (rab) { const ra = Math.round(net * rab / 100); lines.push([1, `− ${rab} % Rabatt`, -ra, -ra]); net -= ra; }
+      const tax = net / 5, gross = net + tax, pay = pays[i % pays.length], sk = pickR(rng, [2, 3]);
+      let abz = 0, zus = 0, paid = "", ptxt;
+      if (pay === "skonto") { abz = Math.round(gross * sk / 100); paid = avDate(avAdd(date, 7 + Math.floor(rng() * 6))); ptxt = `Bezahlt am ${paid} per Banküberweisung unter Abzug von ${sk} % Skonto.`; }
+      else if (pay === "voll") { paid = avDate(avAdd(date, 20 + Math.floor(rng() * 9))); ptxt = `Bezahlt am ${paid} per Banküberweisung ohne Abzug.`; }
+      else if (pay === "mahn") { zus = rndStep(rng, [8, 20, 1]) * 100; paid = avDate(avAdd(date, 40 + Math.floor(rng() * 10))); ptxt = `Wir haben die Zahlungsfrist übersehen. Bezahlt am ${paid} per Banküberweisung samt Mahnspesen von € ${fmtNum(zus)}.`; }
+      else ptxt = "Die Rechnung ist noch nicht bezahlt.";
+      const doc = bwInvoice({ rng, issuer: s, recipient: bwUs(), date, deliv, lines: lines.map(l => [l[0], l[1], l[2], l[3]]), net, R: 20, tax, pay: `Zahlbar innerhalb von 14 Tagen mit ${pay === "skonto" ? sk : pickR(rng, [2, 3])} % Skonto oder innerhalb von 30 Tagen ohne Abzug.` });
+      const id = `web-${i + 1}`;
+      rows.push({ id, nr: i + 1, beleg: `ER ${i + 1}`, s, goods, deliv, gross, tax, net, abz, zus, paid, ptxt, doc });
+      fields.push({ id: id + "-dat", date: avDate(deliv) }, { id: id + "-lief", text: s[0] }, { id: id + "-bez", text: goods.map(g => g.pl).join(", ") },
+        { id: id + "-br", amt: gross }, { id: id + "-pct", amt: 2000, pct: true, nd: 5 }, { id: id + "-vst", amt: tax }, { id: id + "-net", amt: net },
+        { id: id + "-abz", amt: abz, zeroOk: true, blank: !abz }, { id: id + "-zus", amt: zus, zeroOk: true, blank: !zus }, { id: id + "-paid", date: paid, blank: !paid });
+      sols.push(`ER ${i + 1} (${s[0]}): Lieferdatum ${avDate(deliv)}, brutto ${fmtNum(gross)}, VSt 20 % ${fmtNum(tax)}, netto ${fmtNum(net)}.${rab ? ` Der Rabatt steht schon auf der Rechnung und ist im Betrag enthalten.` : ""} ${pay === "skonto" ? `Abzüge: ${sk} % Skonto vom Bruttobetrag = ${fmtNum(abz)}.` : pay === "mahn" ? `Zusatzkosten: Mahnspesen ${fmtNum(zus)}.` : ""} ${paid ? `Bezahlt am ${paid}.` : "Noch offen, „Bezahlt am“ bleibt leer."}`.replace(/\s+/g, " "));
+    }
+    const sum = k => rows.reduce((a, r) => a + r[k], 0);
+    [["br", "gross"], ["vst", "tax"], ["net", "net"], ["abz", "abz"], ["zus", "zus"]].forEach(([f, k]) => fields.push({ id: `web-s-${f}`, amt: sum(k), zeroOk: true, blank: !sum(k) }));
+    return { type: "web", title: `Führe das Wareneingangsbuch für ${MONTHS[m]} 2026`, m, rows, fields, choices: [], books: [], sols };
+  }
+  function bwRenderWeb() {
+    const inp = (id, lbl, cls = "") => `<input id="${id}" class="${cls}" inputmode="${cls ? "text" : "decimal"}" aria-label="${esc(lbl)}">`;
+    const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><span class="chip">${r.beleg}</span></div><p>${esc(r.ptxt)}</p><div class="beleg-wrap">${r.doc}</div></div>`).join("");
+    const rows = bw.rows.map(r => `<tr><td class="mono">${r.nr}</td><td>${inp(r.id + "-dat", `${r.beleg} Lieferdatum`, "an-date")}</td><td class="mono">${r.beleg}</td>
+      <td>${inp(r.id + "-lief", `${r.beleg} Lieferant`, "an-txt")}</td><td>${inp(r.id + "-bez", `${r.beleg} Bezeichnung Ware`, "an-txt ea-bez")}</td>
+      <td>${inp(r.id + "-br", `${r.beleg} Bruttobetrag`)}</td><td>${inp(r.id + "-pct", `${r.beleg} Vorsteuer Prozent`, "an-sm ea-num")}</td><td>${inp(r.id + "-vst", `${r.beleg} Vorsteuer EUR`)}</td><td>${inp(r.id + "-net", `${r.beleg} Nettobetrag`)}</td>
+      <td>${inp(r.id + "-abz", `${r.beleg} Abzüge brutto`)}</td><td>${inp(r.id + "-zus", `${r.beleg} Zusatzkosten brutto`)}</td><td>${inp(r.id + "-paid", `${r.beleg} bezahlt am`, "an-date")}</td></tr>`).join("");
+    return `<div class="ab-sec"><h2>${esc(US.name)} · Wareneingangsbuch</h2>
+        <p class="note">Trag alle Eingangsrechnungen für Handelswaren in das Wareneingangsbuch ein. Lieferant und Bezeichnung der Ware werden nicht automatisch geprüft. Datum im Format TT.MM.JJJJ. Leere Felder bei Abzügen und Zusatzkosten zählen als 0. Ist eine Rechnung noch nicht bezahlt, bleibt „Bezahlt am“ leer.</p></div>
+      <div class="ab-sec"><h2>Eingangsrechnungen</h2><div class="ea-cases">${cases}</div></div>
+      <div class="ab-sec"><div class="av-title"><b>Wareneingangsbuch</b><span>${MONTHS[bw.m]} 2026</span></div>
+        <div class="ab-scroll"><table class="av-table an-table web-table">
+          <thead><tr><th rowspan="2">Nr.</th><th rowspan="2">Liefer&shy;datum</th><th rowspan="2">Beleg</th><th rowspan="2">Lieferant</th><th rowspan="2">Bezeichnung Ware</th><th rowspan="2" class="num">Brutto&shy;betrag</th><th colspan="2" class="c">Vorsteuer</th><th rowspan="2" class="num">Netto&shy;betrag</th><th colspan="2" class="c">Brutto</th><th rowspan="2">Bezahlt am</th></tr>
+            <tr><th>%</th><th class="num">EUR</th><th class="num">Abzüge</th><th class="num">Zusatz&shy;kosten</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><td colspan="5">Summe</td><td>${inp("web-s-br", "Summe Brutto")}</td><td></td><td>${inp("web-s-vst", "Summe Vorsteuer")}</td><td>${inp("web-s-net", "Summe Netto")}</td><td>${inp("web-s-abz", "Summe Abzüge")}</td><td>${inp("web-s-zus", "Summe Zusatzkosten")}</td><td></td></tr></tfoot>
+        </table></div>
+        <span class="ab-msg" id="bw-msg"></span></div>`;
+  }
+  // Anlagenverzeichnis in der E/A-Rechnung: wie „Verzeichnis ergänzen“, aber ohne Buchungssätze
+  function bwMakeEav(rng) {
+    const o = bwMakeAn(rng);
+    return Object.assign(o, { type: "eav", books: [], title: "Ergänze das Anlagenverzeichnis (E/A-Rechnung)", sols: [...o.sols, "In der Einnahmen-Ausgaben-Rechnung ist der Kauf einer Anlage (über € 1.000,00 netto) keine Betriebsausgabe. Ausgabe ist nur die AfA laut Anlagenverzeichnis."] });
   }
 
   // ---------- Ausscheiden von Anlagen: Verkauf und Schadensfall ----------
@@ -3682,9 +3912,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ---------- gemeinsam: anzeigen, prüfen, Lösung ----------
   function bwRender() {
-    $("bw-count").textContent = `Bewertung · Aufgabe ${bwNo}`;
+    $("bw-count").textContent = `${bwArea === "ea" ? "E/A-Rechnung" : "Bewertung"} · Aufgabe ${bwNo}`;
     $("bw-title").textContent = bw.title;
-    $("bw-body").innerHTML = bw.type === "av" ? bwRenderAv() : bw.type === "an" ? bwRenderAn() : bw.type === "lk" ? bwRenderLk() : bw.type === "fo" ? bwRenderFo()
+    $("bw-body").innerHTML = bw.type === "av" ? bwRenderAv() : bw.type === "an" || bw.type === "eav" ? bwRenderAn() : bw.type === "vt" ? bwRenderVt() : bw.type === "web" ? bwRenderWeb() : bw.type === "lk" ? bwRenderLk() : bw.type === "fo" ? bwRenderFo()
       : bw.type === "ag" ? bwRenderCases("Geschäftsjahr = Kalenderjahr 2026, lineare Abschreibung mit Halbjahresregel. Verbuche bei jedem Fall alle Schritte: den Verkauf bzw. die Versicherungsentschädigung während des Jahres, am 31.12. die Abschreibung bis zum Ausscheiden und das Ausbuchen des Restbuchwerts.")
       : bw.type === "um" ? bwRenderCases("Entscheide bei jeder Rechnung: Erhaltung (sofort Aufwand) oder Umbau/Erweiterung (aktivieren)? Bei einem Umbau rechnest du am 31.12.2026 die Abschreibung mit der Restnutzungsdauer und verbuchst sie.")
       : bw.type === "ra" ? bwRenderCases("Geschäftsjahr = Kalenderjahr. Buche jeden Fall zum Zahlungszeitpunkt, am 31.12.2026 (Abgrenzung) und am 01.01.2027 (Auflösung). Abgegrenzt wird immer der Nettobetrag.")
@@ -3703,8 +3933,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     if (!bw) return;
     let ok = 0, total = 0, bOk = 0;
     bw.fields.forEach(f => {
-      const el = $(f.id), raw = el.value.trim(), v = f.date ? anDate(raw) : parseAmount(raw.replace(/\s*%$/, ""));
-      const good = raw ? v === (f.date || f.amt) : (f.zeroOk && f.amt === 0);
+      if (f.text !== undefined) return; // Bezeichnungen werden nicht geprüft
+      const isD = f.date !== undefined, el = $(f.id), raw = el.value.trim(), v = isD ? anDate(raw) : parseAmount(raw.replace(/\s*%$/, ""));
+      // blank: Feld soll leer bleiben (oder 0) und zählt nur, wenn trotzdem etwas Falsches drinsteht
+      if (f.blank && (!raw || (!isD && v === 0))) { el.classList.remove("ok", "err"); return; }
+      const good = raw ? v === (isD ? f.date : f.amt) : (f.zeroOk && f.amt === 0);
       el.classList.remove("ok", "err");
       if (raw || !good) el.classList.add(good ? "ok" : "err");
       total++; if (good) ok++;
@@ -3725,22 +3958,34 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   function bwReveal() {
     if (!bw) return;
-    bw.fields.forEach(f => { const el = $(f.id); el.value = f.date || (f.qty ? String(f.amt / 100).replace(".", ",") : f.pct ? anPctTxt(f.nd).replace(" %", "") : fmtNum(f.amt)); el.classList.remove("ok", "err"); });
-    if (bw.type === "an") bw.rows.filter(r => !r.old).forEach(r => { $(r.id + "-name").value = r.name; $(r.id + "-sup").value = r.sup; });
+    bw.fields.forEach(f => { const el = $(f.id); el.value = f.blank ? "" : f.text !== undefined ? f.text : f.date !== undefined ? f.date : (f.qty ? String(f.amt / 100).replace(".", ",") : f.pct ? anPctTxt(f.nd).replace(" %", "") : fmtNum(f.amt)); el.classList.remove("ok", "err"); });
+    if (bw.type === "an" || bw.type === "eav") bw.rows.filter(r => !r.old).forEach(r => { $(r.id + "-name").value = r.name; $(r.id + "-sup").value = r.sup; });
     bw.choices.forEach(c => { const sg = $(c.id); sg.classList.remove("ok", "err"); sg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === c.v))); });
     (bw.books || []).forEach(b => bwFillBook(b, true));
     let body;
     if (bw.type === "lk") body = bwSolLk();
-    else body = `<ul class="bw-sol">${bw.sols.map(s => `<li>${esc(s)}</li>`).join("")}</ul><p class="note">Die Buchungssätze sind oben eingetragen.</p>`;
+    else body = `<ul class="bw-sol">${bw.sols.map(s => `<li>${esc(s)}</li>`).join("")}</ul>${(bw.books || []).length ? `<p class="note">Die Buchungssätze sind oben eingetragen.</p>` : ""}`;
     $("bw-feedback").innerHTML = `<div class="feedback info"><div class="feedback-title">Lösung</div><div style="display:grid;gap:8px">${body}</div><div class="actions"><button class="btn primary" type="button" id="bw-next2">Neue Aufgabe</button></div></div>`;
     $("bw-next2").addEventListener("click", bwBuild);
   }
   $("bw-new").addEventListener("click", bwBuild);
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
-  const bwPickType = other => v => { bwType = v; store.set("bwType", v); $(other).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false")); bwBuild(); };
-  renderSeg("bw-seg-type-a", BW_TYPES_A, bwType, bwPickType("bw-seg-type-u"));
-  renderSeg("bw-seg-type-u", BW_TYPES_U, bwType, bwPickType("bw-seg-type-a"));
+  const bwSyncSegs = () => ["a", "u", "e"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bwType))));
+  const bwPickType = v => { bwType = v; store.set(bwArea === "ea" ? "eaType" : "bwType", v); bwSyncSegs(); bwBuild(); };
+  // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
+  function bwSetArea(a, type) {
+    if (a !== bwArea || type) {
+      bwArea = a; bwType = type || store.get(a === "ea" ? "eaType" : "bwType", a === "ea" ? "vt" : "av");
+      if (type) store.set(a === "ea" ? "eaType" : "bwType", type);
+      bw = null;
+    }
+    $("bw-tg-a").hidden = $("bw-tg-u").hidden = a === "ea"; $("bw-tg-e").hidden = a !== "ea";
+    bwSyncSegs();
+  }
+  renderSeg("bw-seg-type-a", BW_TYPES_A, bwType, bwPickType);
+  renderSeg("bw-seg-type-u", BW_TYPES_U, bwType, bwPickType);
+  renderSeg("bw-seg-type-e", BW_TYPES_E, bwType, bwPickType);
   renderSeg("bw-seg-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], bwSize, v => { bwSize = v; store.set("bwSize", v); bwBuild(); });
   renderSeg("bw-seg-bw", [[false, "vorgegeben"], [true, "selbst berechnen"]], bwCalcBw, v => { bwCalcBw = v; store.set("bwCalcBw", v); bwBuild(); });
 
@@ -3780,6 +4025,19 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rules: ["Bestandskonten werden über das <b>Schlussbilanzkonto (9850)</b> abgeschlossen, Erfolgskonten über die <b>Gewinn- und Verlustrechnung (9890 GuV)</b>.", "Gewinn = Erträge − Aufwände. Ein Gewinn steht in der GuV im Soll, ein Verlust im Haben.", "Das Privatkonto wird über das Kapitalkonto abgeschlossen: Endkapital = Anfangskapital + Gewinn − Privatentnahmen + Privateinlagen.", "Kontrolle: In der Schlussbilanz muss die Summe der Aktiva gleich der Summe der Passiva sein."],
       accs: ["ek", "privat"], go: [["tk"], ["ab"]] },
 
+    { id: "ear", g: 7, title: "Einnahmen-Ausgaben-Rechnung",
+      text: "Kleine Unternehmen, die keine doppelte Buchhaltung führen müssen (Umsatz bis € 700.000,00 im Jahr), ermitteln ihren Gewinn mit der <b>Einnahmen-Ausgaben-Rechnung</b>: Betriebseinnahmen − Betriebsausgaben = Gewinn (Überschuss). Aufgezeichnet wird im Kassa- und Bankbuch mit Verteilungstabelle.",
+      rules: ["<b>Zufluss-Abfluss-Prinzip</b>: Eine Einnahme oder Ausgabe zählt erst, wenn das Geld tatsächlich fließt. Eine offene Rechnung wird noch nicht eingetragen.", "Kassa und Bank werden <b>brutto</b> eingetragen, die Aufgliederung erfolgt <b>netto</b>. Umsatzsteuer und Vorsteuer stehen in eigenen Spalten.", "Pkw: kein Vorsteuerabzug, der Bruttobetrag kommt in die Spalte PKW. Versicherungen sind ohne Umsatzsteuer.", "Geringwertige Wirtschaftsgüter (bis € 1.000,00 netto) sind sofort zur Gänze Ausgabe. Teurere Anlagen kommen ins Anlagenverzeichnis, Ausgabe ist dann nur die AfA.", "Geld von der Kassa auf die Bank (oder umgekehrt) ist weder Einnahme noch Ausgabe."],
+      ex: [{ t: "Wir tanken den betrieblichen Pkw um € 72,00 inkl. 20 % USt und bezahlen bar.", s: [], h: [], n: "Kassa Auszahlungen 72,00 und PKW 72,00. Die Spalte VSt bleibt leer, weil es beim Pkw keinen Vorsteuerabzug gibt." }],
+      go: [["ea", "vt"]] },
+    { id: "web", g: 7, title: "Wareneingangsbuch",
+      text: "Unternehmen mit Einnahmen-Ausgaben-Rechnung, die Waren einkaufen, führen ein <b>Wareneingangsbuch</b>. Darin wird jede Eingangsrechnung für Handelswaren in der Reihenfolge der Lieferung eingetragen, unabhängig davon, ob sie schon bezahlt ist.",
+      rules: ["Spalten: Nr., Lieferdatum, Beleg, Lieferant, Bezeichnung der Ware, Bruttobetrag, Vorsteuer (% und EUR), Nettobetrag, Abzüge und Zusatzkosten (brutto), Bezahlt am.", "Ein Rabatt steht schon auf der Rechnung und ist im Betrag enthalten.", "Abzüge wie Skonto werden erst bei der Zahlung bekannt: Skonto = Bruttobetrag × Skontosatz.", "Zusatzkosten sind zum Beispiel Mahnspesen bei verspäteter Zahlung.", "Die Spalte „Bezahlt am“ bleibt leer, solange die Rechnung offen ist."],
+      go: [["ea", "web"]] },
+    { id: "eav", g: 7, title: "Anlagenverzeichnis in der E/A-Rechnung",
+      text: "Anlagen mit Anschaffungskosten über € 1.000,00 netto werden nicht sofort als Ausgabe abgesetzt, sondern über die Nutzungsdauer verteilt. Dafür führt man ein <b>Anlagenverzeichnis</b>. Die jährliche AfA ist die Betriebsausgabe.",
+      rules: ["Spalten: Nr., Bezeichnung und Lieferant, Anschaffungsdatum und Inbetriebnahme, Nutzungsdauer und AfA-Satz, Anschaffungswert, Buchwert 1.1., AfA, kumulierte AfA, Buchwert 31.12.", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im zweiten Halbjahr = halbe AfA im ersten Jahr.", "Buchwert 31.12. = Buchwert 1.1. − AfA = Anschaffungswert − kumulierte AfA."],
+      go: [["ea", "eav"]] },
     { id: "einkauf", g: 0, tp: "einkauf", title: "Einkauf von Handelswaren",
       text: "Handelswaren kaufen wir ein, um sie unverändert weiterzuverkaufen, im Modehaus also Kleidung und Accessoires. Der Einkauf wird sofort als Aufwand auf <b>5010 Handelswareneinsatz</b> gebucht.",
       rules: ["5010 Handelswareneinsatz (netto) und 2500 Vorsteuer im Soll.", "Im Haben steht, wie bezahlt wird: 2700 Kassa (bar), 2800 Bank (Überweisung) oder 3300 Lieferverbindlichkeiten (auf Ziel, also auf Rechnung).", "„Auf Ziel“ heißt: Wir bezahlen später. Bezahlt wird dann mit 3300 / 2800."] },
@@ -3871,9 +4129,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       text: "Rückstellungen sind Schulden, deren Höhe oder Zeitpunkt noch nicht genau feststeht, etwa für Steuerberatung, Prozesskosten, Urlaub oder Garantien. Sie werden am 31.12. als Aufwand gebildet.",
       rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
   ];
-  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS];
+  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)"];
+  const LEX_ORDER = [0, 8, 1, 2, 3, 4, 5, 6, 7];
   const LEX_TYPES = { aktiv: "aktives Bestandskonto", passiv: "passives Bestandskonto", aufwand: "Aufwandskonto", ertrag: "Ertragskonto", erlmind: "Erlösminderung", aufwmind: "Aufwandsminderung", privat: "Privatkonto", korr: "Wertberichtigung (Korrekturposten)" };
-  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben" };
+  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben" };
   let lexQuery = "", lexOpen = store.get("lexOpen", "konten");
 
   // Lehrbeispiele aus dem Trainer: fest gewählt (immer dieselben), damit das Lexikon ruhig bleibt
@@ -3886,7 +4145,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   function lexSolHtml(t) {
     const reasons = [...t.soll.map(([k]) => why(k, "soll")), ...t.haben.map(([k]) => why(k, "haben")), t.note, t.calc].filter(Boolean);
-    return bookingHtml(t.soll, t.haben) + (reasons.length ? `<ul class="why">${reasons.map(r => `<li>${r}</li>`).join("")}</ul>` : "");
+    return (t.soll.length ? bookingHtml(t.soll, t.haben) : "") + (reasons.length ? `<ul class="why">${reasons.map(r => `<li>${r}</li>`).join("")}</ul>` : "");
   }
   const lexExHtml = (t, label) => `<div class="lex-ex"><span class="field-label">${label}</span><p>${t.text}</p>${lexSolHtml(t)}</div>`;
   function lexAccs(e) {
@@ -3896,13 +4155,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function lexEntryHtml(e) {
     const ex = lexExamples(e);
     const buttons = [e.tp ? `<button class="btn primary" type="button" data-lexgo="bs" data-v="${e.tp}">Buchungssätze üben</button>` : "",
-      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : m === "bw" ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
+      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : m === "bw" || m === "ea" ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
     return `<div class="lex-body">
         <p>${e.text}</p>
         ${e.rules ? `<div class="lex-rules"><span class="field-label">Das solltest du dir merken</span><ul>${e.rules.map(r => `<li>${r}</li>`).join("")}</ul></div>` : ""}
         ${ex.map((t, i) => lexExHtml(t, ex.length > 1 ? `Lehrbeispiel ${i + 1}` : "Lehrbeispiel")).join("")}
         ${e.tp ? `<div id="lex-more-${e.id}"></div>` : ""}
-        <div class="lex-accs"><span class="field-label">Wichtige Konten</span><div>${lexAccs(e)}</div></div>
+        ${lexAccs(e) ? `<div class="lex-accs"><span class="field-label">Wichtige Konten</span><div>${lexAccs(e)}</div></div>` : ""}
         <div class="actions">${e.tp ? `<button class="btn" type="button" data-lexmore="${e.id}">Weiteres Beispiel</button>` : ""}${buttons}</div>
       </div>`;
   }
@@ -3912,8 +4171,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const q = lexQuery.trim().toLowerCase(), re = new RegExp("(^|[^a-zäöüß0-9])" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
     const hits = LEX.filter(e => !q || re.test(lexPlain(e.title + " " + e.text + " " + (e.rules || []).join(" ")))
       || (e.accs || []).some(k => P.acc[k] && re.test((P.acc[k][0] + " " + P.acc[k][1]).toLowerCase())));
-    $("lex-list").innerHTML = hits.length ? LEX_GROUPS.map((gname, gi) => {
-      const items = hits.filter(e => e.g === gi - 1);
+    $("lex-list").innerHTML = hits.length ? LEX_ORDER.map(gi => {
+      const gname = LEX_GROUPS[gi], items = hits.filter(e => e.g === gi - 1);
       if (!items.length) return "";
       return `<div class="lex-group"><div class="eyebrow">${esc(gname)}</div>${items.map(e => `
         <details class="lex-item" id="lex-${e.id}"${(q ? hits.length <= 3 : lexOpen === e.id) ? " open" : ""}>
@@ -3939,11 +4198,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       if (m === "bs") {
         practiceTopics.clear(); practiceTopics.add(v); store.set("topics2", [...practiceTopics]); renderTopics("practice");
         if (mode === "test") { saveTestAnswer(); } setView("practice"); showModule("bs"); buildPractice();
-      } else if (m === "bw") {
-        bwType = v; store.set("bwType", v);
-        ["bw-seg-type-a", "bw-seg-type-u"].forEach(id => $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === v))));
-        bw = null; showModule("bw");
-      } else showModule(m);
+      } else if (m === "bw" || m === "ea") { bwSetArea(m, v); showModule(m); }
+      else showModule(m);
     }));
   }
   window.addEventListener("hashchange", () => {
@@ -3968,13 +4224,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("buchungssaetze").hidden = m !== "bs" && m !== "test";
     $("tkonten").hidden = m !== "tk";
     $("abschluss").hidden = m !== "ab";
-    $("bewertung").hidden = m !== "bw";
+    $("bewertung").hidden = m !== "bw" && m !== "ea";
     $("lexikon").hidden = m !== "lex";
     syncNav();
     store.set("module", m);
     if (m === "tk" && !tk) tkBuild();
     if (m === "ab" && !ab) abBuild();
-    if (m === "bw" && !bw) bwBuild();
+    if (m === "bw" || m === "ea") { bwSetArea(m); if (!bw) bwBuild(); }
     if (m === "lex" && !$("lex-list").innerHTML) lexRender();
     window.scrollTo({ top: 0 });
   }
@@ -3992,8 +4248,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h === "#bewertung") showModule("bw");
     else if (h === "#test") showModule("test");
     else if (h === "#lexikon") showModule("lex");
+    else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "test", "lex"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "ea", "test", "lex"].includes(saved)) showModule(saved);
   }
   connectDb();
 })();
