@@ -3430,16 +3430,16 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const inp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`, plain = l => l.replace(/\u00AD/g, "");
     // Gruppengrenzen für die senkrechten Trennlinien: Kassa | Bank | Steuern | Einnahmen | Ausgaben
     const starts = new Set(["kE", "bE", "ust", bw.cols[6][0], bw.cols[6 + bw.nIn][0]]), grp = k => starts.has(k) ? "g" : "";
-    const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><b>${r.nr}.</b> <span class="mono">${eaD(r.dt)}</span> <span class="chip">${esc(r.beleg)}</span></div><p>${esc(r.text)}</p>${r.doc ? `<div class="beleg-wrap">${r.doc}</div>` : ""}</div>`).join("");
+    const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><b>${r.nr}.</b> <span class="mono">${eaD(r.dt)}</span></div><p>${esc(r.text)}</p>${r.doc ? `<div class="beleg-wrap">${r.doc}</div>` : ""}</div>`).join("");
     const cell = (k, html) => `<td class="${grp(k)}">${html}</td>`;
-    const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)} · ${esc(r.beleg)}</span>${esc(r.short)}<label class="vt-skip"><input type="checkbox" id="vt-${r.nr}-skip"> nicht eintragen</label></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
+    const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)}</span>${esc(r.short)}<label class="vt-skip"><input type="checkbox" id="vt-${r.nr}-skip"> nicht eintragen</label></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
     const ab = bw.cols.map(([k]) => cell(k, k === "kE" ? `<span class="vt-given">${fmtNum(bw.kAB)}</span>` : k === "bE" ? `<span class="vt-given">${fmtNum(bw.bAB)}</span>` : "")).join("");
     return `<div class="ab-sec"><h2>${esc(US.name)} · Einnahmen-Ausgaben-Rechnung</h2>
         <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Gehört ein Fall gar nicht ins Kassa-/Bankbuch, kreuze „nicht eintragen“ an. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
       <div class="ab-sec"><h2>Geschäftsfälle</h2><div class="ea-cases">${cases}</div></div>
       <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} 2026</span></div>
         <div class="ab-scroll"><table class="vt-table">
-          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum · Beleg<br>Text</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
+          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum<br>Text</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
             <tr class="vt-h2">${bw.cols.map(([k, l]) => `<th class="${grp(k)}">${l}</th>`).join("")}</tr></thead>
           <tbody><tr class="vt-ab"><td class="vt-text"><span class="vt-meta">01.${pad(bw.m + 1)}.</span>Anfangsbestand</td>${ab}</tr>${rows}</tbody>
           <tfoot><tr><td class="vt-text">Summe</td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-s-${k}`, `Summe ${plain(l)}`))).join("")}</tr></tfoot>
