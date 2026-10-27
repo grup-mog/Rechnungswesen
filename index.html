@@ -260,6 +260,29 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .rc-code { font-size: 0.8rem; letter-spacing: 0; text-transform: none; word-break: break-all; user-select: all; margin-top: 4px; }
 .rc-eval summary { cursor: pointer; list-style: none; } .rc-eval summary::-webkit-details-marker { display: none; }
 .rc-eval summary h2 { display: inline-flex; gap: 8px; align-items: center; margin: 0; } .rc-eval summary h2::before { content: "▸"; color: var(--muted); } .rc-eval[open] summary h2::before { content: "▾"; }
+.kr-schemes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.kr-box { min-width: 0; }
+.kr-scheme { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.kr-scheme th { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-align: left; padding: 2px 6px; }
+.kr-scheme td { padding: 3px 6px; vertical-align: middle; }
+.kr-scheme .op { width: 1.4em; text-align: center; font-family: var(--font-mono); color: var(--muted); }
+.kr-scheme .pc { width: 6.5rem; white-space: nowrap; color: var(--muted); font-size: 0.85rem; }
+.kr-scheme .num, .kr-table .num { text-align: right; }
+.kr-scheme td.num { width: 9.5rem; }
+.kr-scheme input { width: 100%; text-align: right; }
+.kr-scheme .kr-pin { width: 5.5rem; }
+.kr-scheme tr.sum td { border-top: 1.5px solid var(--ink); font-weight: 600; }
+.kr-form { max-width: 560px; }
+.kr-info { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.kr-choice { display: grid; gap: 6px; margin-top: 10px; }
+.kr-table input { width: 100%; min-width: 6.5rem; text-align: right; }
+.kr-table td { vertical-align: middle; }
+.kr-table .seg { flex-wrap: nowrap; }
+.kr-key { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.kr-given { display: block; text-align: right; padding: 0 4px; }
+.kr-base { display: block; font-size: 0.72rem; color: var(--muted); }
+.kr-kv { max-width: 560px; }
+@media (max-width: 520px) { .kr-scheme .pc { width: 4.6rem; font-size: 0.78rem; } .kr-scheme td.num { width: 7.5rem; } .kr-scheme { font-size: 0.85rem; } }
 .hu-bar { display: grid; gap: 10px; margin-bottom: 14px; border: 2px solid var(--accent); border-radius: 12px; padding: 14px; background: var(--accent-soft); min-width: 0; }
 .hu-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
 .hu-score { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; } .hu-score .big { font-size: 1.6rem; font-weight: 700; }
@@ -538,6 +561,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       <button type="button" data-module="ab" aria-current="false">Abschluss</button>
       <button type="button" data-module="bw" aria-current="false">Bewertung</button>
       <button type="button" data-module="ea" aria-current="false">E/A-Rechnung</button>
+      <button type="button" data-module="kr" aria-current="false">Kostenrechnung</button>
       <button type="button" data-module="test" aria-current="false">Test / Schularbeit</button>
       <button type="button" data-module="hu" aria-current="false">Hausübung</button>
       <button type="button" data-module="lex" aria-current="false">Lexikon</button>
@@ -891,6 +915,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <div class="bw-tgroup" id="bw-tg-a"><span class="field-label">Anlagevermögen</span><div class="seg bw-type" id="bw-seg-type-a" role="group" aria-label="Aufgabe zum Anlagevermögen wählen"></div></div>
         <div class="bw-tgroup" id="bw-tg-u"><span class="field-label">Umlaufvermögen und Abgrenzungen</span><div class="seg bw-type" id="bw-seg-type-u" role="group" aria-label="Aufgabe zum Umlaufvermögen wählen"></div></div>
         <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
+        <div class="bw-tgroup" id="bw-tg-k1" hidden><span class="field-label">Kalkulation im Handel</span><div class="seg bw-type" id="bw-seg-type-k1" role="group" aria-label="Aufgabe zur Kalkulation im Handel wählen"></div></div>
+        <div class="bw-tgroup" id="bw-tg-k2" hidden><span class="field-label">Vollkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k2" role="group" aria-label="Aufgabe zur Vollkostenrechnung wählen"></div></div>
+        <div class="bw-tgroup" id="bw-tg-k3" hidden><span class="field-label">Teilkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k3" role="group" aria-label="Aufgabe zur Teilkostenrechnung wählen"></div></div>
       </div>
       <div class="hu-bar" id="hu-bar" hidden></div>
       <div id="bw-body" style="display:grid;gap:18px;min-width:0"></div>
@@ -2981,6 +3008,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   let bwType = store.get("bwType", "av"), bwSize = store.get("bwSize", "normal"), bwCalcBw = store.get("bwCalcBw", false), bw = null, bwNo = 0;
   const BW_TYPES_A = [["av", "Anlagen\u00ADverzeichnis"], ["an", "Verzeichnis ergänzen"], ["ag", "Verkauf & Schadensfall"], ["um", "Erhaltung & Umbau"]];
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
+  const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
+  const BW_TYPES_K2 = [["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
+  const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
+  // Bereiche, die sich die Bewertungs-Ansicht teilen: Typgruppen, Speicher-Schlüssel, Standard-Aufgabe
+  const BW_AREAS = { bw: { groups: ["a", "u"], key: "bwType", def: "av", name: "Bewertung" }, ea: { groups: ["e"], key: "eaType", def: "vt", name: "E/A-Rechnung" }, kr: { groups: ["k1", "k2", "k3"], key: "krType", def: "bk", name: "Kostenrechnung" } };
+  const bwAreaOf = t => [...BW_TYPES_E].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
   let bwArea = "bw";
   const BW_TYPES_U = [["lk", "Lagerkartei"], ["fo", "Forderungen"], ["ra", "Abgrenzungen"], ["rs", "Rückstellungen"]];
   const BW_STEPS = {
@@ -3001,7 +3034,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function bwBuild() {
     if (hu && hu.done) huEnd();
     const rng = hu ? mulberry32(hu.seed) : Math.random;
-    bw = ({ av: bwMakeAv, an: bwMakeAn, vt: bwMakeVt, web: bwMakeWeb, eav: bwMakeEav, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }[bwType] || bwMakeAv)(rng);
+    bw = (Object.assign({ av: bwMakeAv, an: bwMakeAn, vt: bwMakeVt, web: bwMakeWeb, eav: bwMakeEav, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }, KR_MAKE)[bwType] || bwMakeAv)(rng);
     bwNo++;
     bwRender();
   }
@@ -3997,6 +4030,390 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       ${bwBooksHtml(i)}</div>`).join("");
   }
 
+  // ================= Kostenrechnung =================
+  // Handel (Bezug, Absatz, BÜB): Modehaus Maier; Erzeugung (BAB, Zuschlag, Teilkosten): eigene Trachtenmanufaktur in Graz
+  const KR_PROD_FIRM = "Trachtenmanufaktur Lindner GmbH, Mariahilferstraße 9, 8020 Graz";
+  const KR_PROD = [
+    { n: "Dirndl „Ausseerland“", st: "Baumwollstoff", m: [25, 35], sp: [1800, 3200], zt: "Knöpfe, Borten und Schürzenband", z: [1500, 3200], h: [12, 20] },
+    { n: "Trachtenjanker „Schöckl“", st: "Loden", m: [18, 25], sp: [2800, 4600], zt: "Hirschhornknöpfe und Futter", z: [1800, 3600], h: [14, 22] },
+    { n: "Trachtenbluse „Edelweiß“", st: "Baumwollbatist", m: [12, 18], sp: [1200, 2200], zt: "Spitze und Knöpfe", z: [500, 1200], h: [5, 8] },
+    { n: "Trachtenhemd „Schlossberg“", st: "Leinen", m: [16, 22], sp: [1400, 2400], zt: "Knöpfe aus Hirschhorn", z: [400, 900], h: [4, 6] },
+    { n: "Dirndlschürze „Mur“", st: "Seidentaft", m: [10, 15], sp: [2200, 3800], zt: "Bänder", z: [200, 600], h: [2, 4] },
+    { n: "Lodenrock „Plabutsch“", st: "Loden", m: [12, 16], sp: [2800, 4400], zt: "Reißverschluss und Futter", z: [400, 900], h: [5, 8] },
+  ];
+  const krP = p => String(p).replace(".", ",") + " %";
+  const krPct = (b, p) => Math.round(b * p / 100);
+  const krHalf = (rng, [a, b]) => (a + Math.floor(rng() * (b - a + 1))) / 2; // Stunden in halben Schritten
+  const krTenth = (rng, [a, b]) => (a + Math.floor(rng() * (b - a + 1))) / 10; // Meter in Zehntel-Schritten
+  const krN = v => String(v).replace(".", ",");
+  // Schema-Zeilen: [Rechenzeichen, Bezeichnung, Prozent-Text, Betrag, Optionen]; Optionen: tol (Cent), given (fester Wert), pid (Prozent als Eingabe)
+  function krRows(fields, pre, rows) {
+    return rows.map(([op, l, p, a, o = {}], i) => {
+      const id = o.given ? null : `${pre}-${i}`;
+      if (id) fields.push({ id, amt: a, tol: o.tol || 0, zeroOk: a === 0 });
+      if (id && o.pid !== undefined) fields.push({ id: id + "-p", amt: o.pid, tol: o.ptol || 0 });
+      return { op, l, p, a, id, sum: op === "=", pid: o.pid !== undefined };
+    });
+  }
+  const krSchemeHtml = s => `<div class="kr-box">${s.head ? `<div class="av-title"><b>${esc(s.head)}</b>${s.sub ? `<span>${esc(s.sub)}</span>` : ""}</div>` : ""}
+    <table class="kr-scheme"><thead><tr><th></th><th></th><th class="pc">%</th><th class="num">EUR</th></tr></thead><tbody>${s.rows.map(r => `<tr${r.sum ? ' class="sum"' : ""}><td class="op">${r.op}</td><td>${esc(r.l)}</td>
+      <td class="pc">${r.pid ? `<input id="${r.id}-p" class="kr-pin" inputmode="decimal" aria-label="${esc(r.l)} in Prozent">` : esc(r.p || "")}</td>
+      <td class="num">${r.id ? `<input id="${r.id}" inputmode="decimal" aria-label="${esc((s.head ? s.head + ": " : "") + r.l)}">` : `<span class="mono">${fmtNum(r.a)}</span>`}</td></tr>`).join("")}</tbody></table></div>`;
+  const krForm = items => `<div class="bw-in kr-form">${items.map(([id, l]) => `<label for="${id}">${l}</label>${bwInp(id, l.replace(/<[^>]+>/g, ""))}`).join("")}</div>`;
+  function krRenderParts() {
+    return `<div class="ab-sec"><h2>${esc(bw.firm)}</h2><p class="note">${bw.intro}</p></div>` + bw.parts.map(p => `<div class="ab-sec kr-part"><h2>${esc(p.h)}</h2>
+      ${p.text ? `<p>${p.text}</p>` : ""}
+      ${p.kv ? `<div class="bw-kv kr-kv">${p.kv.map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("")}</div>` : ""}
+      ${p.html || ""}
+      ${p.schemes ? `<div class="kr-schemes">${p.schemes.map(krSchemeHtml).join("")}</div>` : ""}
+      ${p.form ? krForm(p.form) : ""}
+      ${p.choice ? `<div class="kr-choice"><span class="field-label">${esc(p.choice.q)}</span>${bwSeg(p.choice.id, p.choice.opts, p.choice.q)}</div>` : ""}</div>`).join("");
+  }
+  const krTask = (type, title, firm, intro, parts, fields, choices, sols) => ({ type, title, firm, intro, parts, fields, choices, books: [], sols });
+
+  // ---------- Bezugskalkulation ----------
+  function krBezugProg(fields, pre, { lep, r, s, bk, q }) {
+    const rab = krPct(lep, r), zep = lep - rab, sk = krPct(zep, s), kep = zep - sk, ep = kep + bk;
+    const rows = [["", "Listeneinkaufspreis", "", lep], ["−", "Liefererrabatt", krP(r), rab], ["=", "Zieleinkaufspreis", "", zep], ["−", "Liefererskonto", krP(s), sk], ["=", "Kassaeinkaufspreis", "", kep], ["+", "Bezugskosten", "", bk], ["=", "Einstandspreis", "", ep]];
+    if (q) rows.push(["", "Einstandspreis je Stück", `÷ ${q} Stk.`, Math.round(ep / q), { tol: 1 }]);
+    return { ep, epS: q ? Math.round(ep / q) : ep, rows: krRows(fields, pre, rows) };
+  }
+  function krBezugRetro(fields, pre, { ep, r, s, bk }) {
+    const kep = ep - bk, zep = Math.round(kep * 100 / (100 - s)), sk = zep - kep, lep = Math.round(zep * 100 / (100 - r)), rab = lep - zep;
+    const rows = [["", "Einstandspreis", "", ep], ["−", "Bezugskosten", "", bk], ["=", "Kassaeinkaufspreis", "", kep], ["+", "Liefererskonto", krP(s) + " i. H.", sk, { tol: 1 }], ["=", "Zieleinkaufspreis", "", zep, { tol: 1 }], ["+", "Liefererrabatt", krP(r) + " i. H.", rab, { tol: 2 }], ["=", "Listeneinkaufspreis", "", lep, { tol: 2 }]];
+    return { lep, rows: krRows(fields, pre, rows) };
+  }
+  function krMakeBk(rng) {
+    const fields = [], choices = [], parts = [], sols = [];
+    const goods = GOODS.slice().sort(() => rng() - 0.5), sups = EA_WAREN.slice().sort(() => rng() - 0.5);
+    const unit = g => rndStep(rng, [Math.round(g.u[0] / 200), Math.round(g.u[1] / 200), 1]) * 100;
+    const R = () => pickR(rng, [5, 10, 15, 20, 25]), S = () => pickR(rng, [2, 2.5, 3]);
+    if (bwSize === "kompakt") {
+      const g = goods[0], lep = unit(g), r = R(), s = S(), bk = rndStep(rng, [100, 600, 50]);
+      const k = krBezugProg(fields, "kr-a", { lep, r, s, bk });
+      parts.push({ h: "Einkauf je Stück", text: `Wir kaufen bei ${esc(sups[0][0])} ${esc(g.pl)} ein. Der Listeneinkaufspreis beträgt ${P.fmt(lep)} je Stück. Der Lieferant gewährt ${krP(r)} Rabatt und ${krP(s)} Skonto. Für Fracht rechnen wir mit ${P.fmt(bk)} je Stück. Berechne den Einstandspreis je Stück.`, schemes: [{ head: g.item, sub: "progressiv, je Stück", rows: k.rows }] });
+      sols.push(`Einstandspreis je Stück: ${P.fmt(k.ep)}. Rabatt vom Listeneinkaufspreis, Skonto vom Zieleinkaufspreis, danach die Bezugskosten dazu.`);
+    } else {
+      const g = goods[0], q = rndStep(rng, [10, 60, 5]);
+      if (bwSize === "normal") {
+        const lepS = unit(g), r = R(), s = S(), f1 = rndStep(rng, [40, 160, 5]) * 100, f2 = rndStep(rng, [10, 40, 1]) * 100;
+        const k = krBezugProg(fields, "kr-a", { lep: lepS * q, r, s, bk: f1 + f2, q });
+        parts.push({ h: "Teil 1: Einstandspreis berechnen", text: `Wir bestellen bei ${esc(sups[0][0])} ${q} Stück ${esc(g.item)} zum Listeneinkaufspreis von ${P.fmt(lepS)} je Stück. Der Lieferant gewährt ${krP(r)} Mengenrabatt und ${krP(s)} Skonto. Für die Lieferung zahlen wir Fracht ${P.fmt(f1)} und Transportversicherung ${P.fmt(f2)}.`, schemes: [{ head: `${q} Stk. ${g.pl}`, sub: "progressiv", rows: k.rows }] });
+        sols.push(`Teil 1: Listeneinkaufspreis ${q} × ${P.fmt(lepS)} = ${P.fmt(lepS * q)}, Bezugskosten ${P.fmt(f1)} + ${P.fmt(f2)} = ${P.fmt(f1 + f2)}, Einstandspreis ${P.fmt(k.ep)}, je Stück ${P.fmt(k.epS)}.`);
+      } else {
+        let A, B, a, b;
+        for (let t = 0; t < 50; t++) {
+          const base = unit(g);
+          a = { lepS: base, r: R(), s: S(), bk: rndStep(rng, [60, 200, 5]) * 100 };
+          b = { lepS: base + rndStep(rng, [-4, 4, 1]) * 100, r: R(), s: S(), bk: rng() < 0.5 ? 0 : rndStep(rng, [20, 90, 5]) * 100 };
+          const fa = [], fb = [];
+          A = krBezugProg(fa, "x", { lep: a.lepS * q, r: a.r, s: a.s, bk: a.bk, q }); B = krBezugProg(fb, "x", { lep: b.lepS * q, r: b.r, s: b.s, bk: b.bk, q });
+          if (a.r !== b.r && Math.abs(A.ep - B.ep) >= 1000) break;
+        }
+        A = krBezugProg(fields, "kr-a", { lep: a.lepS * q, r: a.r, s: a.s, bk: a.bk, q }); B = krBezugProg(fields, "kr-b", { lep: b.lepS * q, r: b.r, s: b.s, bk: b.bk, q });
+        const txt = (x, s) => `${esc(s[0])}: ${P.fmt(x.lepS)} je Stück, ${krP(x.r)} Rabatt, ${krP(x.s)} Skonto, ${x.bk ? `Fracht ${P.fmt(x.bk)}` : "Lieferung frei Haus"}`;
+        parts.push({ h: "Teil 1: Angebotsvergleich", text: `Wir brauchen ${q} Stück ${esc(g.item)} und haben zwei Angebote eingeholt. Berechne für beide Angebote den Einstandspreis und entscheide, welches günstiger ist.<br>Angebot A von ${txt(a, sups[0])}.<br>Angebot B von ${txt(b, sups[1])}.`,
+          schemes: [{ head: "Angebot A", sub: sups[0][0], rows: A.rows }, { head: "Angebot B", sub: sups[1][0], rows: B.rows }], choice: { id: "kr-ch", q: "Welches Angebot ist günstiger?", opts: [["a", "Angebot A"], ["b", "Angebot B"]] } });
+        choices.push({ id: "kr-ch", v: A.ep < B.ep ? "a" : "b" });
+        sols.push(`Teil 1: Angebot A ${P.fmt(A.ep)} (je Stück ${P.fmt(A.epS)}), Angebot B ${P.fmt(B.ep)} (je Stück ${P.fmt(B.epS)}). Günstiger ist Angebot ${A.ep < B.ep ? "A" : "B"}. Entscheidend ist der Einstandspreis, nicht der Listenpreis.`);
+      }
+      const g2 = goods[1], ep = rndStep(rng, [Math.round(g2.u[0] / 200), Math.round(g2.u[1] / 200), 1]) * 100, bk = rndStep(rng, [100, 500, 50]), r = R(), s = S();
+      const k2 = krBezugRetro(fields, "kr-r", { ep, r, s, bk });
+      parts.push({ h: "Teil 2: Höchster Listeneinkaufspreis", text: `Damit wir ${esc(g2.pl)} zu unserem geplanten Verkaufspreis anbieten können, darf uns ein Stück höchstens ${P.fmt(ep)} kosten (Einstandspreis). Der Lieferant ${esc(sups[2][0])} gewährt ${krP(r)} Rabatt und ${krP(s)} Skonto, die Bezugskosten betragen ${P.fmt(bk)} je Stück. Wie hoch darf der Listeneinkaufspreis je Stück höchstens sein?`, schemes: [{ head: g2.item, sub: "retrograd, je Stück", rows: k2.rows }] });
+      sols.push(`Teil 2: retrograd vom Einstandspreis ${P.fmt(ep)} aus. Skonto und Rabatt werden im Hundert gerechnet (Basis ist der höhere Preis): Zieleinkaufspreis = Kassaeinkaufspreis × 100 ÷ (100 − ${krN(s)}), Listeneinkaufspreis = Zieleinkaufspreis × 100 ÷ (100 − ${r}) = ${P.fmt(k2.lep)}.`);
+    }
+    return krTask("bk", "Berechne den Einstandspreis", `${US.name} · Bezugskalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. Bei retrograden Rechnungen werden Abweichungen von 1–2 Cent durch Rundung akzeptiert.", parts, fields, choices, sols);
+  }
+
+  // ---------- Absatzkalkulation ----------
+  function krAbsatzProg(fields, pre, { ep, rk, gw, s, r }) {
+    const rkB = krPct(ep, rk), sk = ep + rkB, gB = krPct(sk, gw), kvp = sk + gB, rows = [["", "Einstandspreis", "", ep], ["+", "Regiekosten", krP(rk), rkB], ["=", "Selbstkosten", "", sk], ["+", "Gewinn", krP(gw), gB], ["=", s ? "Kassaverkaufspreis" : "Verkaufspreis netto", "", kvp]];
+    let net = kvp, t = 0;
+    if (s) { const zvp = Math.round(kvp * 100 / (100 - s)); rows.push(["+", "Kundenskonto", krP(s) + " i. H.", zvp - kvp, { tol: 1 }], ["=", "Zielverkaufspreis", "", zvp, { tol: 1 }]); net = zvp; t = 1; }
+    if (r) { const lvp = Math.round(net * 100 / (100 - r)); rows.push(["+", "Kundenrabatt", krP(r) + " i. H.", lvp - net, { tol: 2 }], ["=", "Listenverkaufspreis netto", "", lvp, { tol: 2 }]); net = lvp; t = 2; }
+    const u = krPct(net, 20);
+    rows.push(["+", "Umsatzsteuer", "20 %", u, { tol: t }], ["=", r ? "Listenverkaufspreis brutto" : "Verkaufspreis brutto", "", net + u, { tol: t ? 3 : 0 }]);
+    return { net, brutto: net + u, rows: krRows(fields, pre, rows) };
+  }
+  // von unten (Listenverkaufspreis brutto) bis zum Kassaverkaufspreis
+  function krAbsatzDown(b, r, s) {
+    const net = Math.round(b * 100 / 120), u = b - net, rab = krPct(net, r), zvp = net - rab, sko = krPct(zvp, s), kvp = zvp - sko;
+    return { net, u, rab, zvp, sko, kvp };
+  }
+  function krMakeAk(rng) {
+    const fields = [], parts = [], sols = [], goods = GOODS.slice().sort(() => rng() - 0.5);
+    const RK = () => rndStep(rng, [20, 45, 5]), GW = () => pickR(rng, [8, 10, 12, 15, 20]), S = () => pickR(rng, [2, 3]), R = () => pickR(rng, [5, 10, 15, 20]);
+    const epOf = g => rndStep(rng, [Math.round(g.u[0] / 200), Math.round(g.u[1] / 200), 1]) * 100;
+    const nb = bwSize === "kompakt";
+    { const g = goods[0], ep = epOf(g), rk = RK(), gw = GW(), s = nb ? 0 : S(), r = nb ? 0 : R();
+      const k = krAbsatzProg(fields, "kr-p", { ep, rk, gw, s, r });
+      parts.push({ h: nb ? "Verkaufspreis berechnen" : "Teil 1: Progressive Absatzkalkulation", text: `Wir verkaufen ${esc(g.pl)} (${esc(g.item)}). Der Einstandspreis beträgt ${P.fmt(ep)} je Stück. Wir rechnen mit ${krP(rk)} Regiekosten und ${krP(gw)} Gewinn${s ? `. Den Kundinnen und Kunden gewähren wir ${krP(s)} Skonto und ${krP(r)} Rabatt` : ""}. Berechne den ${r ? "Listenverkaufspreis" : "Verkaufspreis"} brutto (20 % USt).`, schemes: [{ head: g.item, sub: "progressiv", rows: k.rows }] });
+      sols.push(`${nb ? "" : "Teil 1: "}Regiekosten vom Einstandspreis, Gewinn von den Selbstkosten${s ? ", Kundenskonto und Kundenrabatt im Hundert (vom höheren Preis)" : ""}. ${r ? "Listenverkaufspreis" : "Verkaufspreis"} brutto: ${P.fmt(k.brutto)}.`);
+    }
+    if (!nb) {
+      const g = goods[1], b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - 10, rk = RK(), gw = GW(), s = S(), r = R();
+      const d = krAbsatzDown(b, r, s), sk = Math.round(d.kvp * 100 / (100 + gw)), ep = Math.round(sk * 100 / (100 + rk));
+      const rows = [["", "Listenverkaufspreis brutto", "", b], ["−", "Umsatzsteuer", "20 % a. H.", d.u], ["=", "Listenverkaufspreis netto", "", d.net], ["−", "Kundenrabatt", krP(r), d.rab, { tol: 1 }], ["=", "Zielverkaufspreis", "", d.zvp, { tol: 1 }], ["−", "Kundenskonto", krP(s), d.sko, { tol: 1 }], ["=", "Kassaverkaufspreis", "", d.kvp, { tol: 2 }], ["−", "Gewinn", krP(gw) + " a. H.", d.kvp - sk, { tol: 2 }], ["=", "Selbstkosten", "", sk, { tol: 2 }], ["−", "Regiekosten", krP(rk) + " a. H.", sk - ep, { tol: 2 }], ["=", "Einstandspreis", "", ep, { tol: 3 }]];
+      parts.push({ h: "Teil 2: Retrograde Absatzkalkulation", text: `Die Konkurrenz in der Grazer Innenstadt verkauft ${esc(g.pl)} um ${P.fmt(b)} inkl. 20 % USt. Wir wollen gleich teuer sein. Wir rechnen mit ${krP(rk)} Regiekosten, ${krP(gw)} Gewinn, ${krP(s)} Kundenskonto und ${krP(r)} Kundenrabatt. Wie hoch darf der Einstandspreis höchstens sein?`, schemes: [{ head: g.item, sub: "retrograd", rows: krRows(fields, "kr-r", rows) }] });
+      sols.push(`Teil 2: Die USt steckt im Bruttopreis (auf Hundert: ÷ 120 × 20). Rabatt und Skonto werden vom jeweiligen Preis abgezogen, Gewinn und Regiekosten stecken im Betrag (auf Hundert). Höchster Einstandspreis: ${P.fmt(ep)}.`);
+    }
+    if (bwSize === "gross") {
+      const g = goods[2], rk = RK(), s = S(), r = R(), b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - 10;
+      const d = krAbsatzDown(b, r, s), gw0 = 4 + rng() * 16, ep = Math.round(d.kvp / (1 + gw0 / 100) / (1 + rk / 100) / 100) * 100;
+      const rkB = krPct(ep, rk), sk = ep + rkB, gB = d.kvp - sk, gp = Math.round(gB / sk * 10000);
+      const rows = [["", "Einstandspreis", "", ep], ["+", "Regiekosten", krP(rk), rkB], ["=", "Selbstkosten", "", sk], ["+", "Gewinn", "", gB, { tol: 2, pid: gp, ptol: 2 }], ["=", "Kassaverkaufspreis", "", d.kvp, { tol: 2 }], ["+", "Kundenskonto", krP(s) + " i. H.", d.sko, { tol: 1 }], ["=", "Zielverkaufspreis", "", d.zvp, { tol: 1 }], ["+", "Kundenrabatt", krP(r) + " i. H.", d.rab, { tol: 1 }], ["=", "Listenverkaufspreis netto", "", d.net], ["+", "Umsatzsteuer", "20 %", d.u], ["=", "Listenverkaufspreis brutto", "", b, { given: true }]];
+      parts.push({ h: "Teil 3: Differenzkalkulation", text: `Für ${esc(g.item)} ist der Preis vom Hersteller mit ${P.fmt(b)} inkl. USt vorgegeben. Der Einstandspreis beträgt ${P.fmt(ep)}, die Regiekosten ${krP(rk)}. Wir gewähren ${krP(s)} Skonto und ${krP(r)} Rabatt. Wie viel Gewinn bleibt uns in Euro und in Prozent der Selbstkosten?`, schemes: [{ head: g.item, sub: "Differenzkalkulation", rows: krRows(fields, "kr-d", rows) }] });
+      sols.push(`Teil 3: Oben progressiv bis zu den Selbstkosten (${P.fmt(sk)}), unten retrograd bis zum Kassaverkaufspreis (${P.fmt(d.kvp)}). Gewinn = Differenz = ${P.fmt(gB)}, das sind ${krN((gp / 100).toFixed(2))} % der Selbstkosten.`);
+    }
+    return krTask("ak", "Berechne den Verkaufspreis", `${US.name} · Absatzkalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. i. H. = im Hundert, a. H. = auf Hundert. Abweichungen von wenigen Cent durch Rundung werden akzeptiert.", parts, fields, [], sols);
+  }
+
+  // ---------- Kostenartenrechnung: Betriebsüberleitungsbogen ----------
+  function krMakeBue(rng) {
+    const E = (a, b, st) => rndStep(rng, [a, b, st]) * 100, info = [], sols = [], fields = [];
+    const rows = [
+      { l: "Handelswareneinsatz", auf: E(180000, 420000, 1000) },
+      { l: "Gehälter", auf: E(90000, 160000, 500) },
+    ];
+    rows.push({ l: "Gesetzlicher Sozialaufwand", auf: Math.round(rows[1].auf * 0.29 / 10000) * 10000 });
+    rows.push({ l: "Mietaufwand", auf: E(24000, 48000, 600) });
+    if (bwSize !== "kompakt") rows.push({ l: "Werbeaufwand", auf: E(6000, 18000, 100) });
+    if (bwSize === "gross") rows.push({ l: "Energieaufwand", auf: E(4000, 9000, 50) });
+    const afaB = E(12000, 30000, 100), afaK = E(14000, 36000, 100);
+    if (bwSize === "kompakt") info.push(`Die kalkulatorische Abschreibung beträgt ${P.fmt(afaK)}.`);
+    else { const nd = pickR(rng, [5, 8, 10]); info.push(`Kalkulatorische Abschreibung: Die Geschäftsausstattung hätte heute einen Wiederbeschaffungswert von ${P.fmt(afaK * nd)}, die Nutzungsdauer beträgt ${nd} Jahre (linear).`); }
+    rows.push({ l: "Abschreibungen", auf: afaB, neu: afaB, kalk: afaK });
+    const zb = E(2000, 9000, 50), zi = pickR(rng, [3, 4, 5, 6]);
+    let bnk = E(150000, 400000, 5000);
+    if (bwSize === "gross") {
+      const av = E(180000, 320000, 5000), nb = E(20000, 60000, 5000), uv = E(90000, 200000, 5000), ab = E(30000, 90000, 5000);
+      bnk = av + uv - nb - ab;
+      info.push(`Kalkulatorische Zinsen: ${zi} % vom betriebsnotwendigen Kapital. Anlagevermögen ${P.fmt(av)}, davon nicht betriebsnotwendig (vermietete Garage) ${P.fmt(nb)}, Umlaufvermögen ${P.fmt(uv)}. Abzugskapital (Lieferverbindlichkeiten und Kundenanzahlungen, zinsenfrei): ${P.fmt(ab)}.`);
+      sols.push(`Betriebsnotwendiges Kapital = ${P.fmt(av)} − ${P.fmt(nb)} + ${P.fmt(uv)} − ${P.fmt(ab)} = ${P.fmt(bnk)}.`);
+    } else info.push(`Kalkulatorische Zinsen: ${zi} % vom betriebsnotwendigen Kapital in Höhe von ${P.fmt(bnk)}.`);
+    const kz = Math.round(bnk * zi / 100);
+    rows.push({ l: "Zinsaufwand", auf: zb, neu: zb, kalk: kz });
+    if (bwSize === "gross") {
+      const fa = E(1500, 6000, 100), zu = E(200000, 500000, 10000), w = pickR(rng, [0.5, 0.8, 1, 1.2, 1.5]), kw = Math.round(zu * w / 100);
+      info.push(`Kalkulatorisches Wagnis: Im Durchschnitt fallen ${krP(w)} des Zielumsatzes aus. Der Zielumsatz beträgt ${P.fmt(zu)}.`);
+      rows.push({ l: "Forderungsabschreibung", auf: fa, neu: fa, kalk: kw });
+    }
+    const NEU = [["Spenden an das Kinderhilfswerk", [500, 3000, 100], "betriebsfremd"], ["Buchwert abgegangener Anlagen", [800, 6000, 100], "außerordentlich"], ["Steuernachzahlung für das Vorjahr", [400, 3000, 50], "periodenfremd"], ["Schaden durch Wasserrohrbruch (nicht versichert)", [1000, 8000, 100], "außerordentlich"], ["Aufwand für die privat vermietete Wohnung", [1200, 5000, 100], "betriebsfremd"]].sort(() => rng() - 0.5);
+    NEU.slice(0, { kompakt: 1, normal: 2, gross: 3 }[bwSize]).forEach(([l, rg, why]) => { const a = E(...rg); rows.push({ l, auf: a, neu: a, kalk: 0 }); sols.push(`${l}: neutraler Aufwand (${why}), keine Kosten.`); });
+    let ul, ulTxt;
+    if (bwSize === "kompakt") { ul = E(48000, 72000, 1000); ulTxt = `Der kalkulatorische Unternehmerlohn für die Inhaberin beträgt ${P.fmt(ul)} im Jahr.`; }
+    else { const m = E(3200, 4800, 50); ul = m * 14; ulTxt = `Kalkulatorischer Unternehmerlohn: Eine Filialleiterin würde ${P.fmt(m)} im Monat verdienen (14-mal im Jahr).`; }
+    info.push(ulTxt);
+    rows.push({ l: "Kalkulatorischer Unternehmerlohn", auf: 0, neu: 0, kalk: ul, nogv: true });
+    rows.forEach((r, i) => {
+      r.neu = r.neu || 0; r.kalk = r.kalk || 0; r.k = r.auf - r.neu + r.kalk; r.id = `kr-u${i}`;
+      fields.push({ id: r.id + "-n", amt: r.neu, zeroOk: true, blank: !r.neu }, { id: r.id + "-z", amt: r.kalk, zeroOk: true, blank: !r.kalk }, { id: r.id + "-k", amt: r.k });
+    });
+    const sum = k => rows.reduce((a, r) => a + r[k], 0);
+    fields.push({ id: "kr-us-n", amt: sum("neu") }, { id: "kr-us-z", amt: sum("kalk") }, { id: "kr-us-k", amt: sum("k") });
+    sols.unshift(`Bilanzielle Abschreibung (${P.fmt(afaB)}) und Zinsaufwand (${P.fmt(zb)}) werden abgezogen und durch die kalkulatorischen Werte ersetzt: kalkulatorische AfA ${P.fmt(afaK)}, kalkulatorische Zinsen ${P.fmt(kz)}.`, `Der kalkulatorische Unternehmerlohn (${P.fmt(ul)}) ist kein Aufwand, wird aber als Kosten dazugerechnet (Zusatzkosten).`);
+    sols.push(`Summe Kosten: ${P.fmt(sum("k"))} (Aufwand ${P.fmt(sum("auf"))} − Abzüge ${P.fmt(sum("neu"))} + Zurechnungen ${P.fmt(sum("kalk"))}).`);
+    return { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", rows, info, sumAuf: sum("auf"), fields, choices: [], books: [], sols };
+  }
+  function krRenderBue() {
+    const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
+    const rows = bw.rows.map(r => `<tr><td>${esc(r.l)}</td><td class="num mono">${r.nogv ? "–" : fmtNum(r.auf)}</td><td>${inp(r.id + "-n", r.l + " Abzug")}</td><td>${inp(r.id + "-z", r.l + " Zurechnung")}</td><td>${inp(r.id + "-k", r.l + " Kosten")}</td></tr>`).join("");
+    return `<div class="ab-sec"><h2>${esc(US.name)} · Kostenartenrechnung 2026</h2><p class="note">Übernimm die Aufwände aus der GuV in den Betriebsüberleitungsbogen (BÜB). <b>Abzüge</b>: neutrale Aufwände sowie die bilanzielle Abschreibung, der Zinsaufwand und die Forderungsabschreibung, die durch kalkulatorische Werte ersetzt werden. <b>Zurechnungen</b>: alle kalkulatorischen Kosten. Kosten = Aufwand − Abzüge + Zurechnungen. Leere Felder zählen als 0.</p></div>
+      <div class="ab-sec"><h2>Angaben zu den kalkulatorischen Kosten</h2><ul class="kr-info">${bw.info.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
+      <div class="ab-sec"><div class="av-title"><b>Betriebsüberleitungsbogen</b><span>2026, Beträge in EUR</span></div><div class="ab-scroll"><table class="av-table kr-table">
+        <thead><tr><th>Aufwandsart</th><th class="num">Aufwand lt. GuV</th><th class="num">− Abzüge</th><th class="num">+ Zurechnungen</th><th class="num">Kosten</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td>Summe</td><td class="num mono">${fmtNum(bw.sumAuf)}</td><td>${inp("kr-us-n", "Summe Abzüge")}</td><td>${inp("kr-us-z", "Summe Zurechnungen")}</td><td>${inp("kr-us-k", "Summe Kosten")}</td></tr></tfoot>
+      </table></div></div>`;
+  }
+
+  // ---------- Kostenstellenrechnung: Betriebsabrechnungsbogen ----------
+  const KR_KST = ["Material", "Fertigung", "Verwaltung", "Vertrieb"];
+  function krMakeBab(rng) {
+    const E = (a, b, st) => rndStep(rng, [a, b, st]), fields = [], sols = [], rows = [];
+    const direct = (l, rg) => rows.push({ l, key: "lt. Liste", dir: true, sh: rg.map(x => E(...x) * 100) });
+    const keyed = (l, unit, parts, cents, fmtK) => rows.push({ l, key: `${unit} ${parts.map(fmtK || fmtNumInt).join(" : ")}`, parts, sh: parts.map(p => p * cents) });
+    direct("Gehälter", [[8000, 14000, 100], [10000, 20000, 100], [40000, 70000, 100], [25000, 45000, 100]]);
+    if (bwSize !== "kompakt") direct("Hilfslöhne", [[6000, 12000, 100], [15000, 30000, 100], [0, 0, 1], [3000, 8000, 100]]);
+    keyed("Energie", "kWh", [E(4, 12, 1) * 500, E(30, 70, 1) * 500, E(3, 8, 1) * 500, E(3, 8, 1) * 500], E(18, 32, 1));
+    keyed("Miete", "m²", [E(8, 20, 1) * 10, E(25, 45, 1) * 10, E(5, 12, 1) * 10, E(6, 15, 1) * 10], E(120, 200, 5) * 100);
+    if (bwSize !== "kompakt") keyed("Kalk. Abschreibung", "Anlagenwerte (Tsd. €)", [E(15, 60, 5), E(150, 320, 10), E(20, 60, 5), E(25, 80, 5)], E(8, 15, 1) * 1000);
+    if (bwSize === "gross") keyed("Sonstige Gemeinkosten", "Schlüssel", [E(1, 3, 1), E(2, 6, 1), E(1, 4, 1), E(1, 3, 1)], E(30, 60, 1) * 10000);
+    rows.forEach((r, i) => { r.id = `kr-b${i}`; r.sum = r.sh.reduce((a, b) => a + b, 0); if (!r.dir) r.sh.forEach((v, j) => fields.push({ id: `${r.id}-${j}`, amt: v })); });
+    const gk = KR_KST.map((_, j) => rows.reduce((a, r) => a + r.sh[j], 0));
+    gk.forEach((v, j) => fields.push({ id: `kr-bs-${j}`, amt: v }));
+    const fm = Math.round(gk[0] / (E(10, 30, 1) / 100) / 10000) * 10000, fl = Math.round(gk[1] / (E(80, 200, 5) / 100) / 10000) * 10000;
+    const hk = fm + gk[0] + fl + gk[1], pc = (a, b) => Math.round(a / b * 10000);
+    fields.push({ id: "kr-bh-2", amt: hk }, { id: "kr-bh-3", amt: hk });
+    const z = [pc(gk[0], fm), pc(gk[1], fl), pc(gk[2], hk), pc(gk[3], hk)];
+    z.forEach((v, j) => fields.push({ id: `kr-bz-${j}`, amt: v, tol: 1 }));
+    rows.filter(r => !r.dir).forEach(r => sols.push(`${r.l}: ${fmtNum(r.sum)} ÷ ${fmtNumInt(r.parts.reduce((a, b) => a + b, 0))} Teile = ${fmtNum(r.sh[0] / r.parts[0])} je Teil.`));
+    sols.push(`Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten = ${fmtNum(fm)} + ${fmtNum(gk[0])} + ${fmtNum(fl)} + ${fmtNum(gk[1])} = ${fmtNum(hk)}.`,
+      `Zuschlagssätze: MGK ${krN((z[0] / 100).toFixed(2))} % vom Fertigungsmaterial, FGK ${krN((z[1] / 100).toFixed(2))} % von den Fertigungslöhnen, VwGK ${krN((z[2] / 100).toFixed(2))} % und VtGK ${krN((z[3] / 100).toFixed(2))} % von den Herstellkosten.`);
+    return { type: "bab", title: "Erstelle den Betriebsabrechnungsbogen", rows, fm, fl, fields, choices: [], books: [], sols };
+  }
+  const fmtNumInt = n => fmtNum(n * 100).replace(/,00$/, "");
+  function krRenderBab() {
+    const inp = (id, l, cls = "") => `<input id="${id}" class="${cls}" inputmode="decimal" aria-label="${esc(l)}">`;
+    const rows = bw.rows.map(r => `<tr><td>${esc(r.l)}</td><td class="kr-key">${esc(r.key)}</td><td class="num mono">${fmtNum(r.sum)}</td>${r.sh.map((v, j) => `<td>${r.dir ? `<span class="mono kr-given">${fmtNum(v)}</span>` : inp(`${r.id}-${j}`, `${r.l} ${KR_KST[j]}`)}</td>`).join("")}</tr>`).join("");
+    const total = bw.rows.reduce((a, r) => a + r.sum, 0);
+    return `<div class="ab-sec"><h2>${esc(KR_PROD_FIRM)}</h2><p class="note">Die Trachtenmanufaktur erzeugt Dirndl, Janker und Blusen. Verteile die Gemeinkosten des Monats nach den angegebenen Schlüsseln auf die vier Kostenstellen, bilde die Summen und berechne die Zuschlagssätze auf zwei Kommastellen. Fertigungsmaterial: ${P.fmt(bw.fm)}, Fertigungslöhne: ${P.fmt(bw.fl)}.</p></div>
+      <div class="ab-sec"><div class="av-title"><b>Betriebsabrechnungsbogen (BAB)</b><span>Beträge in EUR</span></div><div class="ab-scroll"><table class="av-table kr-table kr-bab">
+        <thead><tr><th>Gemeinkostenart</th><th>Schlüssel</th><th class="num">Betrag</th>${KR_KST.map(k => `<th class="num">${k}</th>`).join("")}</tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr><td colspan="2">Summe Gemeinkosten</td><td class="num mono">${fmtNum(total)}</td>${KR_KST.map((k, j) => `<td>${inp(`kr-bs-${j}`, `Summe ${k}`)}</td>`).join("")}</tr>
+          <tr><td colspan="3">Zuschlagsbasis</td><td><span class="kr-base">Fertigungsmaterial</span><span class="mono kr-given">${fmtNum(bw.fm)}</span></td><td><span class="kr-base">Fertigungslöhne</span><span class="mono kr-given">${fmtNum(bw.fl)}</span></td><td><span class="kr-base">Herstellkosten</span>${inp("kr-bh-2", "Herstellkosten Verwaltung")}</td><td><span class="kr-base">Herstellkosten</span>${inp("kr-bh-3", "Herstellkosten Vertrieb")}</td></tr>
+          <tr><td colspan="3">Zuschlagssatz in %</td>${KR_KST.map((k, j) => `<td>${inp(`kr-bz-${j}`, `Zuschlagssatz ${k}`)}</td>`).join("")}</tr>
+        </tfoot></table></div></div>`;
+  }
+
+  // ---------- Kostenträgerrechnung: differenzierende Zuschlagskalkulation ----------
+  function krZuschlag(fields, pre, c) {
+    const MG = krPct(c.fm, c.mgk), MK = c.fm + MG, FG = krPct(c.fl, c.fgk), FK = c.fl + FG + (c.se || 0), HK = MK + FK, VW = krPct(HK, c.vw), VT = krPct(HK, c.vt), SK = HK + VW + VT;
+    const rows = [["", "Fertigungsmaterial", "", c.fm], ["+", "Materialgemeinkosten", krP(c.mgk), MG], ["=", "Materialkosten", "", MK], ["", "Fertigungslöhne", "", c.fl], ["+", "Fertigungsgemeinkosten", krP(c.fgk), FG]];
+    if (c.se) rows.push(["+", "Sondereinzelkosten der Fertigung", "", c.se]);
+    rows.push(["=", "Fertigungskosten", "", FK], ["=", "Herstellkosten", "", HK], ["+", "Verwaltungsgemeinkosten", krP(c.vw), VW], ["+", "Vertriebsgemeinkosten", krP(c.vt), VT], ["=", "Selbstkosten", "", SK]);
+    let V = SK;
+    if (c.g) { const G = krPct(SK, c.g); V = SK + G; rows.push(["+", "Gewinn", krP(c.g), G], ["=", c.s ? "Kassaverkaufspreis" : "Verkaufspreis netto", "", V]); }
+    if (c.s) { const Z = Math.round(V * 100 / (100 - c.s)), L = Math.round(Z * 100 / (100 - c.r)); rows.push(["+", "Kundenskonto", krP(c.s) + " i. H.", Z - V, { tol: 1 }], ["=", "Zielverkaufspreis", "", Z, { tol: 1 }], ["+", "Kundenrabatt", krP(c.r) + " i. H.", L - Z, { tol: 2 }], ["=", "Listenverkaufspreis netto", "", L, { tol: 2 }]); V = L; }
+    return { HK, SK, V, rows: krRows(fields, pre, rows) };
+  }
+  function krProdData(rng, p) {
+    const m = krTenth(rng, p.m), sp = rndStep(rng, [p.sp[0] / 10, p.sp[1] / 10, 1]) * 10, z = rndStep(rng, [p.z[0] / 10, p.z[1] / 10, 1]) * 10;
+    const h = krHalf(rng, p.h), ls = rndStep(rng, [22, 30, 1]) * 100;
+    return { m, sp, z, h, ls, fm: Math.round(m * sp) + z, fl: Math.round(h * ls) };
+  }
+  function krMakeZk(rng) {
+    const fields = [], parts = [], sols = [], prods = KR_PROD.slice().sort(() => rng() - 0.5);
+    const pc = { mgk: rndStep(rng, [8, 25, 1]), fgk: rndStep(rng, [80, 180, 5]), vw: rndStep(rng, [8, 18, 1]), vt: rndStep(rng, [4, 12, 1]) };
+    const n = bwSize === "gross" ? 2 : 1, g = bwSize === "kompakt" ? 0 : rndStep(rng, [8, 20, 1]);
+    const ex = bwSize === "gross" ? { s: pickR(rng, [2, 3]), r: pickR(rng, [10, 15, 20]) } : {};
+    const pcTxt = `Zuschlagssätze laut BAB: Materialgemeinkosten ${krP(pc.mgk)}, Fertigungsgemeinkosten ${krP(pc.fgk)}, Verwaltungsgemeinkosten ${krP(pc.vw)} und Vertriebsgemeinkosten ${krP(pc.vt)} (beide von den Herstellkosten)${g ? `, Gewinn ${krP(g)}` : ""}${ex.s ? `, Kundenskonto ${krP(ex.s)}, Kundenrabatt ${krP(ex.r)}` : ""}.`;
+    for (let i = 0; i < n; i++) {
+      const p = prods[i], d = krProdData(rng, p), se = bwSize === "gross" && i === 0 ? rndStep(rng, [8, 25, 1]) * 100 : 0;
+      const k = krZuschlag(fields, `kr-z${i}`, Object.assign({ fm: d.fm, fl: d.fl, se, g }, pc, ex));
+      const text = bwSize === "kompakt" ? `Für ein Stück ${esc(p.n)} fallen ${P.fmt(d.fm)} Fertigungsmaterial und ${P.fmt(d.fl)} Fertigungslöhne an.`
+        : `Für ein Stück ${esc(p.n)} brauchen wir ${krN(d.m)} m ${esc(p.st)} zu ${P.fmt(d.sp)} je Meter und ${esc(p.zt)} um ${P.fmt(d.z)}. Die Näherin arbeitet ${krN(d.h)} Stunden daran, der Fertigungslohn beträgt ${P.fmt(d.ls)} je Stunde.${se ? ` Die Stickerei wird außer Haus vergeben und kostet ${P.fmt(se)} je Stück (Sondereinzelkosten der Fertigung).` : ""}`;
+      parts.push({ h: n > 1 ? `Produkt ${i + 1}` : "Kalkulation je Stück", text, schemes: [{ head: p.n, sub: "je Stück", rows: k.rows }] });
+      sols.push(`${p.n}: ${bwSize === "kompakt" ? "" : `Fertigungsmaterial = ${krN(d.m)} × ${fmtNum(d.sp)} + ${fmtNum(d.z)} = ${fmtNum(d.fm)}, Fertigungslöhne = ${krN(d.h)} × ${fmtNum(d.ls)} = ${fmtNum(d.fl)}. `}Herstellkosten ${P.fmt(k.HK)}, Selbstkosten ${P.fmt(k.SK)}${g ? `, ${ex.s ? "Listenverkaufspreis netto" : "Verkaufspreis netto"} ${P.fmt(k.V)}` : ""}.`);
+    }
+    sols.push("Materialgemeinkosten vom Fertigungsmaterial, Fertigungsgemeinkosten von den Fertigungslöhnen, Verwaltungs- und Vertriebsgemeinkosten von den Herstellkosten.");
+    return krTask("zk", "Kalkuliere mit der differenzierenden Zuschlagskalkulation", KR_PROD_FIRM, pcTxt + " Rechne auf Cent genau.", parts, fields, [], sols);
+  }
+
+  // ---------- Teilkostenrechnung: Deckungsbeitrag ----------
+  function krItems(rng, n) {
+    return KR_PROD.slice().sort(() => rng() - 0.5).slice(0, n).map(p => {
+      const d = krProdData(rng, p), kv = d.fm + d.fl, price = Math.round(kv * (1.25 + rng() * 0.9) / 100) * 100;
+      return { n: p.n, kv, p: price, db: price - kv };
+    });
+  }
+  function krMakeDb(rng) {
+    const fields = [], sols = [], parts = [], n = { kompakt: 2, normal: 3, gross: 4 }[bwSize];
+    if (bwSize === "gross") {
+      const kv = rndStep(rng, [20, 60, 1]) * 100, F = rndStep(rng, [60, 160, 5]) * 10000, m1 = rndStep(rng, [20, 50, 1]) * 10, m2 = m1 + rndStep(rng, [5, 20, 1]) * 10;
+      const p = pickR(rng, KR_PROD);
+      parts.push({ h: "Teil A: Kosten in fix und variabel zerlegen", text: `Bei ${esc(p.n)} sind im März bei ${m1} Stück Gesamtkosten von ${P.fmt(F + kv * m1)} angefallen, im April bei ${m2} Stück ${P.fmt(F + kv * m2)}. Berechne die variablen Kosten je Stück und die Fixkosten.`,
+        form: [["kr-da-kv", "Variable Kosten je Stück"], ["kr-da-f", "Fixkosten im Monat"]] });
+      fields.push({ id: "kr-da-kv", amt: kv }, { id: "kr-da-f", amt: F });
+      sols.push(`Teil A: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz = ${P.fmt(kv * (m2 - m1))} ÷ ${m2 - m1} = ${P.fmt(kv)}. Fixkosten = ${P.fmt(F + kv * m1)} − ${m1} × ${P.fmt(kv)} = ${P.fmt(F)}.`);
+    }
+    const items = krItems(rng, n).map((it, i) => Object.assign(it, { id: `kr-d${i}`, q: rndStep(rng, [20, 120, 5]) }));
+    items.forEach(it => { it.q2 = Math.round(it.db / it.p * 10000); it.dbg = it.db * it.q; fields.push({ id: it.id + "-db", amt: it.db }, { id: it.id + "-dq", amt: it.q2, tol: 1 }, { id: it.id + "-g", amt: it.dbg }); });
+    const sdb = items.reduce((a, it) => a + it.dbg, 0), F = Math.round(sdb * (0.55 + rng() * 0.5) / 100000) * 100000, be = sdb - F;
+    fields.push({ id: "kr-ds", amt: sdb }, { id: "kr-dbe", amt: be });
+    const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
+    parts.push({ h: bwSize === "gross" ? "Teil B: Deckungsbeitragsrechnung" : "Deckungsbeitragsrechnung", text: `Im Monat Mai verkauft die Trachtenmanufaktur folgende Produkte. Die variablen Kosten sind Material und Fertigungslohn je Stück. Die Fixkosten des Monats betragen ${P.fmt(F)}.`,
+      html: `<div class="ab-scroll"><table class="av-table kr-table"><thead><tr><th>Produkt</th><th class="num">Preis netto je Stk.</th><th class="num">var. Kosten je Stk.</th><th class="num">Menge</th><th class="num">DB je Stk.</th><th class="num">DB-Quote %</th><th class="num">DB gesamt</th></tr></thead>
+        <tbody>${items.map(it => `<tr><td>${esc(it.n)}</td><td class="num mono">${fmtNum(it.p)}</td><td class="num mono">${fmtNum(it.kv)}</td><td class="num mono">${it.q}</td><td>${inp(it.id + "-db", it.n + " DB je Stück")}</td><td>${inp(it.id + "-dq", it.n + " DB-Quote")}</td><td>${inp(it.id + "-g", it.n + " DB gesamt")}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="6">Summe Deckungsbeiträge</td><td>${inp("kr-ds", "Summe Deckungsbeiträge")}</td></tr><tr><td colspan="6">− Fixkosten</td><td class="num mono">${fmtNum(F)}</td></tr><tr><td colspan="6">= Betriebsergebnis</td><td>${inp("kr-dbe", "Betriebsergebnis")}</td></tr></tfoot></table></div>` });
+    sols.push(`DB je Stück = Preis − variable Kosten. DB-Quote = DB ÷ Preis × 100. ${items.map(it => `${it.n}: DB ${fmtNum(it.db)}, Quote ${krN((it.q2 / 100).toFixed(2))} %, gesamt ${fmtNum(it.dbg)}`).join("; ")}.`, `Betriebsergebnis = Summe DB ${P.fmt(sdb)} − Fixkosten ${P.fmt(F)} = ${P.fmt(be)}${be < 0 ? " (Verlust)" : ""}.`);
+    return krTask("db", "Berechne die Deckungsbeiträge und das Betriebsergebnis", KR_PROD_FIRM, "Beträge auf Cent, die DB-Quote in Prozent auf zwei Kommastellen. Ein Verlust wird mit Minus eingetragen.", parts, fields, [], sols);
+  }
+
+  // ---------- Preisuntergrenze und Break-even ----------
+  function krMakeBe(rng) {
+    const fields = [], choices = [], sols = [], parts = [];
+    const p = pickR(rng, KR_PROD), d = krProdData(rng, p), vk = rndStep(rng, [2, 8, 1]) * 100, kv = d.fm + d.fl + vk;
+    const M = rndStep(rng, [40, 160, 5]) * 10, price = Math.round(kv * (1.3 + rng() * 0.6) / 100) * 100, db = price - kv;
+    const F = rndStep(rng, [Math.round(db * M * 0.45 / 100000), Math.round(db * M * 0.85 / 100000), 1]) * 100000;
+    const kf = Math.round(F / M), sk = kv + kf, bem = Math.ceil(F / db);
+    parts.push({ h: "Angaben", text: `Die Trachtenmanufaktur plant für das nächste Jahr ${fmtNumInt(M)} Stück ${esc(p.n)}. Je Stück fallen ${P.fmt(d.fm)} Fertigungsmaterial, ${P.fmt(d.fl)} Fertigungslöhne und ${P.fmt(vk)} Verpackung und Versand an (alle variabel). Die Fixkosten der Produktlinie betragen ${P.fmt(F)} im Jahr. Der Verkaufspreis beträgt ${P.fmt(price)} netto.` });
+    const form1 = [["kr-e-kv", "Variable Kosten je Stück"], ["kr-e-kf", "Fixe Kosten je Stück"], ["kr-e-sk", "Selbstkosten je Stück"], ["kr-e-pl", "Langfristige Preisuntergrenze"], ["kr-e-pk", "Kurzfristige Preisuntergrenze"]];
+    fields.push({ id: "kr-e-kv", amt: kv }, { id: "kr-e-kf", amt: kf, tol: 1 }, { id: "kr-e-sk", amt: sk, tol: 1 }, { id: "kr-e-pl", amt: sk, tol: 1 }, { id: "kr-e-pk", amt: kv });
+    parts.push({ h: "Teil 1: Preisuntergrenzen", form: form1 });
+    sols.push(`Variable Kosten je Stück = ${fmtNum(d.fm)} + ${fmtNum(d.fl)} + ${fmtNum(vk)} = ${P.fmt(kv)}. Fixe Kosten je Stück = ${P.fmt(F)} ÷ ${fmtNumInt(M)} = ${P.fmt(kf)}.`, `Langfristige Preisuntergrenze = Selbstkosten je Stück (${P.fmt(sk)}), alle Kosten müssen gedeckt sein. Kurzfristige Preisuntergrenze = variable Kosten je Stück (${P.fmt(kv)}), die Fixkosten fallen ohnehin an.`);
+    const form2 = [["kr-e-db", "Deckungsbeitrag je Stück"], ["kr-e-bm", "Break-even-Menge (Stück, aufgerundet)"], ["kr-e-bu", "Break-even-Umsatz (Menge × Preis)"]];
+    fields.push({ id: "kr-e-db", amt: db }, { id: "kr-e-bm", amt: bem * 100, qty: true }, { id: "kr-e-bu", amt: bem * price });
+    if (bwSize === "gross") { form2.push(["kr-e-g", `Betriebsergebnis bei ${fmtNumInt(M)} Stück`]); fields.push({ id: "kr-e-g", amt: db * M - F }); }
+    parts.push({ h: "Teil 2: Break-even-Analyse", text: "Ab welcher Menge deckt der Deckungsbeitrag die Fixkosten?", form: form2 });
+    sols.push(`Break-even-Menge = Fixkosten ÷ DB je Stück = ${P.fmt(F)} ÷ ${P.fmt(db)} = ${krN((F / db).toFixed(2))}, aufgerundet ${fmtNumInt(bem)} Stück. Break-even-Umsatz = ${fmtNumInt(bem)} × ${P.fmt(price)} = ${P.fmt(bem * price)}.${bwSize === "gross" ? ` Betriebsergebnis bei ${fmtNumInt(M)} Stück = ${fmtNumInt(M)} × ${P.fmt(db)} − ${P.fmt(F)} = ${P.fmt(db * M - F)}.` : ""}`);
+    if (bwSize !== "kompakt") {
+      const yes = rng() < 0.6, q = rndStep(rng, [5, 20, 1]) * 10, off = yes ? Math.round((kv + rng() * (sk - kv) * 0.9 + 100) / 100) * 100 : Math.round((kv - rndStep(rng, [3, 15, 1]) * 100) / 100) * 100;
+      const ok = off > kv;
+      parts.push({ h: "Teil 3: Zusatzauftrag", text: `Ein Trachtengeschäft in Schladming bietet uns für ${q} Stück zusätzlich ${P.fmt(off)} je Stück. Wir haben freie Kapazitäten, die Fixkosten ändern sich nicht.`, form: [["kr-e-z", "Zusätzlicher Deckungsbeitrag (gesamt)"]], choice: { id: "kr-e-ch", q: "Nehmen wir den Zusatzauftrag an?", opts: [["ja", "annehmen"], ["nein", "ablehnen"]] } });
+      fields.push({ id: "kr-e-z", amt: (off - kv) * q }); choices.push({ id: "kr-e-ch", v: ok ? "ja" : "nein" });
+      sols.push(`Zusatzauftrag: ${P.fmt(off)} ${ok ? "liegt über" : "liegt unter"} der kurzfristigen Preisuntergrenze (${P.fmt(kv)}). Zusätzlicher DB = (${fmtNum(off)} − ${fmtNum(kv)}) × ${q} = ${P.fmt((off - kv) * q)}. ${ok ? "Annehmen, auch wenn der Preis unter den Selbstkosten liegt." : "Ablehnen, jedes Stück bringt einen negativen Deckungsbeitrag."}`);
+    }
+    return krTask("be", "Berechne Preisuntergrenzen und Break-even-Punkt", KR_PROD_FIRM, "Beträge auf Cent. Fixe Kosten je Stück auf Cent runden. Die Break-even-Menge wird auf ganze Stück aufgerundet.", parts, fields, choices, sols);
+  }
+
+  // ---------- Programmplanung ----------
+  function krMakePp(rng) {
+    const fields = [], choices = [], sols = [], eng = bwSize !== "kompakt", n = bwSize === "gross" ? 4 : 3;
+    const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
+    let items, cap;
+    for (let t = 0; t < 200; t++) {
+      items = krItems(rng, n).map((it, i) => Object.assign(it, { id: `kr-p${i}`, max: rndStep(rng, [10, 60, 5]) * 10, min: rndStep(rng, [4, 30, 1]) }));
+      if (!eng) { const bad = items[Math.floor(rng() * n)]; bad.p = Math.round(bad.kv * (0.8 + rng() * 0.15) / 100) * 100; bad.db = bad.p - bad.kv; if (bad.db >= 0) continue; break; }
+      items.forEach(it => { it.rel = Math.round(it.db / it.min); });
+      const byRel = items.slice().sort((a, b) => b.rel - a.rel), byDb = items.slice().sort((a, b) => b.db - a.db);
+      if (new Set(items.map(it => it.rel)).size < n || byRel.every((it, i) => it === byDb[i])) continue;
+      const need = items.reduce((a, it) => a + it.max * it.min, 0);
+      cap = Math.round(need * (0.55 + rng() * 0.25) / 100) * 100;
+      let rest = cap;
+      byRel.forEach((it, i) => { it.rank = i + 1; it.q = Math.min(it.max, Math.floor(rest / it.min)); rest -= it.q * it.min; });
+      if (byRel.some(it => it.q === 0) && bwSize !== "gross") continue;
+      break;
+    }
+    items.forEach(it => {
+      if (!eng) { it.q = it.db > 0 ? it.max : 0; choices.push({ id: it.id + "-ch", v: it.db > 0 ? "ja" : "nein" }); }
+      it.dbg = it.db * it.q;
+      fields.push({ id: it.id + "-db", amt: it.db });
+      if (eng) fields.push({ id: it.id + "-rel", amt: it.rel, tol: 1 }, { id: it.id + "-rk", amt: it.rank * 100, qty: true });
+      fields.push({ id: it.id + "-q", amt: it.q * 100, qty: true, zeroOk: true, blank: !it.q }, { id: it.id + "-g", amt: it.dbg, zeroOk: true, blank: !it.dbg });
+    });
+    const sdb = items.reduce((a, it) => a + it.dbg, 0), F = Math.round(sdb * (0.5 + rng() * 0.4) / 100000) * 100000;
+    fields.push({ id: "kr-ps", amt: sdb }, { id: "kr-pbe", amt: sdb - F });
+    const head = `<th>Produkt</th><th class="num">Preis</th><th class="num">var. Kosten</th><th class="num">max. Absatz</th>${eng ? `<th class="num">Min. je Stk.</th>` : ""}<th class="num">DB je Stk.</th>${eng ? `<th class="num">DB je Minute</th><th class="num">Rang</th>` : `<th>herstellen?</th>`}<th class="num">Menge</th><th class="num">DB gesamt</th>`;
+    const body = items.map(it => `<tr><td>${esc(it.n)}</td><td class="num mono">${fmtNum(it.p)}</td><td class="num mono">${fmtNum(it.kv)}</td><td class="num mono">${it.max}</td>${eng ? `<td class="num mono">${it.min}</td>` : ""}<td>${inp(it.id + "-db", it.n + " DB je Stück")}</td>${eng ? `<td>${inp(it.id + "-rel", it.n + " DB je Minute")}</td><td>${inp(it.id + "-rk", it.n + " Rang")}</td>` : `<td>${bwSeg(it.id + "-ch", [["ja", "ja"], ["nein", "nein"]], it.n + " herstellen")}</td>`}<td>${inp(it.id + "-q", it.n + " Menge")}</td><td>${inp(it.id + "-g", it.n + " DB gesamt")}</td></tr>`).join("");
+    const span = eng ? 9 : 7;
+    const html = `<div class="ab-scroll"><table class="av-table kr-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody>
+      <tfoot><tr><td colspan="${span}">Summe Deckungsbeiträge</td><td>${inp("kr-ps", "Summe Deckungsbeiträge")}</td></tr><tr><td colspan="${span}">− Fixkosten</td><td class="num mono">${fmtNum(F)}</td></tr><tr><td colspan="${span}">= Betriebsergebnis</td><td>${inp("kr-pbe", "Betriebsergebnis")}</td></tr></tfoot></table></div>`;
+    const text = eng ? `Alle Produkte werden auf der Stickmaschine bestickt. Sie steht im Monat nur ${fmtNumInt(cap)} Minuten zur Verfügung, das reicht nicht für alle Aufträge (Engpass). Plane das Produktionsprogramm mit dem höchsten Deckungsbeitrag. Die Fixkosten betragen ${P.fmt(F)}.`
+      : `Die Trachtenmanufaktur hat genug Kapazität für alle Aufträge. Entscheide für jedes Produkt, ob es hergestellt wird, und plane die Mengen. Die Fixkosten betragen ${P.fmt(F)} im Monat.`;
+    sols.push(...(eng ? [`DB je Minute = DB je Stück ÷ Minuten auf der Stickmaschine. Die Reihung erfolgt nach dem DB je Minute, nicht nach dem DB je Stück.`,
+      ...items.slice().sort((a, b) => a.rank - b.rank).map(it => `Rang ${it.rank}: ${it.n}, DB je Minute ${fmtNum(it.rel)}, Menge ${it.q} Stück (${it.q * it.min} Minuten), DB ${fmtNum(it.dbg)}.`)]
+      : [`Hergestellt wird jedes Produkt mit positivem Deckungsbeitrag, und zwar bis zum maximalen Absatz. ${items.filter(it => it.db < 0).map(it => `${it.n} hat einen negativen DB (${fmtNum(it.db)}) und wird nicht hergestellt.`).join(" ")}`]),
+      `Betriebsergebnis = ${P.fmt(sdb)} − ${P.fmt(F)} = ${P.fmt(sdb - F)}.`);
+    return krTask("pp", eng ? "Plane das Produktionsprogramm mit Engpass" : "Plane das Produktionsprogramm", KR_PROD_FIRM, "Beträge auf Cent, DB je Minute auf Cent gerundet. Mengen in ganzen Stück. Leere Felder zählen als 0.", [{ h: eng ? "Programmplanung mit Engpass" : "Programmplanung ohne Engpass", text, html }], fields, choices, sols);
+  }
+
+  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, bue: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
+  const KR_RENDER = { bue: krRenderBue, bab: krRenderBab };
+
+  Object.assign(BW_STEPS, {
+    bk: ["Progressiv (von oben nach unten): Listeneinkaufspreis − Liefererrabatt = Zieleinkaufspreis − Liefererskonto = Kassaeinkaufspreis + Bezugskosten = Einstandspreis.", "Der Rabatt wird vom Listeneinkaufspreis gerechnet, der Skonto vom Zieleinkaufspreis.", "Bezugskosten sind z. B. Fracht, Zustellung oder Transportversicherung. Bei einer Lieferung mehrerer Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd (von unten nach oben): Einstandspreis − Bezugskosten = Kassaeinkaufspreis. Skonto und Rabatt rechnest du dann im Hundert (i. H.), weil sie sich auf den höheren Preis beziehen: Zieleinkaufspreis = Kassaeinkaufspreis × 100 ÷ (100 − Skontosatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Listenpreis."],
+    ak: ["Progressiv: Einstandspreis + Regiekosten (vom Einstandspreis) = Selbstkosten + Gewinn (von den Selbstkosten) = Kassaverkaufspreis.", "Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil die Kundin sie später vom höheren Preis abzieht: Zielverkaufspreis = Kassaverkaufspreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis netto + 20 % USt = Listenverkaufspreis brutto.", "Retrograd vom Bruttopreis: Die USt steckt auf Hundert (a. H.) im Preis: netto = brutto × 100 ÷ 120. Rabatt und Skonto ziehst du vom jeweiligen Preis ab.", "Gewinn und Regiekosten stecken auf Hundert im Betrag: Selbstkosten = Kassaverkaufspreis × 100 ÷ (100 + Gewinnsatz), Einstandspreis = Selbstkosten × 100 ÷ (100 + Regiesatz).", "Differenzkalkulation: oben progressiv bis zu den Selbstkosten, unten retrograd bis zum Kassaverkaufspreis. Der Gewinn ist die Differenz, in Prozent der Selbstkosten."],
+    bue: ["Übernimm alle Aufwände aus der GuV in die Spalte „Aufwand lt. GuV“.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) sind keine Kosten: zur Gänze in die Spalte „Abzüge“.", "Bilanzielle Abschreibung, Zinsaufwand und Forderungsabschreibung werden ebenfalls abgezogen und durch die kalkulatorischen Werte ersetzt (Spalte „Zurechnungen“).", "Kalkulatorische Abschreibung = Wiederbeschaffungswert ÷ Nutzungsdauer. Kalkulatorische Zinsen = betriebsnotwendiges Kapital × Zinssatz.", "Betriebsnotwendiges Kapital = betriebsnotwendiges Anlage- und Umlaufvermögen − Abzugskapital (zinsenfreies Fremdkapital wie Lieferverbindlichkeiten oder Kundenanzahlungen).", "Kalkulatorischer Unternehmerlohn: Was die Inhaberin anderswo verdienen würde. Er steht nicht in der GuV und kommt nur als Zurechnung dazu.", "Kosten = Aufwand − Abzüge + Zurechnungen."],
+    bab: ["Gemeinkosten, die direkt einer Kostenstelle zugeordnet werden können (z. B. lt. Gehaltsliste), sind schon eingetragen.", "Alle anderen verteilst du nach dem Schlüssel: Betrag ÷ Summe der Schlüsselteile = Betrag je Teil, dann × Teile der Kostenstelle.", "Kontrolle: Die Summe der vier Kostenstellen muss den Gesamtbetrag ergeben.", "Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten.", "Zuschlagssätze: Materialgemeinkosten ÷ Fertigungsmaterial × 100, Fertigungsgemeinkosten ÷ Fertigungslöhne × 100, Verwaltungs- bzw. Vertriebsgemeinkosten ÷ Herstellkosten × 100."],
+    zk: ["Fertigungsmaterial = Stoffverbrauch × Meterpreis + Zutaten. Fertigungslöhne = Arbeitsstunden × Stundenlohn.", "Materialgemeinkosten in % vom Fertigungsmaterial, Fertigungsgemeinkosten in % von den Fertigungslöhnen.", "Materialkosten + Fertigungskosten = Herstellkosten. Sondereinzelkosten der Fertigung (z. B. Fremdstickerei) gehören zu den Fertigungskosten.", "Verwaltungs- und Vertriebsgemeinkosten rechnest du beide von den Herstellkosten.", "Selbstkosten + Gewinn = Verkaufspreis. Skonto und Rabatt werden wie in der Absatzkalkulation im Hundert aufgeschlagen."],
+    db: ["Variable Kosten ändern sich mit der Menge (Material, Fertigungslohn), fixe Kosten bleiben gleich (Miete, Gehälter, Abschreibung).", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz. Fixkosten = Gesamtkosten − Menge × variable Kosten je Stück.", "Deckungsbeitrag je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100. Sie zeigt, wie viel Prozent vom Preis zur Deckung der Fixkosten bleiben.", "DB gesamt = DB je Stück × Menge. Betriebsergebnis = Summe der Deckungsbeiträge − Fixkosten."],
+    be: ["Variable Kosten je Stück zusammenzählen. Fixe Kosten je Stück = Fixkosten ÷ geplante Menge.", "Langfristige Preisuntergrenze = Selbstkosten je Stück (variable + fixe Kosten je Stück).", "Kurzfristige Preisuntergrenze = variable Kosten je Stück. Darunter verliert man mit jedem Stück zusätzlich Geld.", "Break-even-Menge = Fixkosten ÷ DB je Stück, auf ganze Stück aufrunden. Ab dieser Menge gibt es Gewinn.", "Zusatzauftrag bei freier Kapazität: annehmen, wenn der Preis über den variablen Kosten liegt (positiver Deckungsbeitrag)."],
+    pp: ["DB je Stück = Preis − variable Kosten je Stück.", "Ohne Engpass: Jedes Produkt mit positivem Deckungsbeitrag wird bis zum maximalen Absatz hergestellt. Produkte mit negativem DB werden nicht hergestellt.", "Mit Engpass: Rechne den relativen Deckungsbeitrag = DB je Stück ÷ Engpasseinheiten je Stück (hier Minuten auf der Stickmaschine).", "Reihe die Produkte nach dem relativen DB. Das beste Produkt bekommt so viel Kapazität, wie es braucht, dann das nächste, bis die Minuten aufgebraucht sind.", "Restkapazität ÷ Minuten je Stück, abgerundet auf ganze Stück. DB gesamt = DB je Stück × Menge, Betriebsergebnis = Summe DB − Fixkosten."],
+  });
+
   // ---------- Buchungssätze in der Bewertung ----------
   function bwBooksHtml(caseNo) {
     return bw.books.filter(b => caseNo === undefined || b.case === caseNo).map(b => `<div class="bw-book" id="${b.id}">
@@ -4048,14 +4465,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ---------- gemeinsam: anzeigen, prüfen, Lösung ----------
   function bwRender() {
-    $("bw-count").textContent = `${bwArea === "ea" ? "E/A-Rechnung" : "Bewertung"} · Aufgabe ${bwNo}`;
+    $("bw-count").textContent = `${BW_AREAS[bwArea].name} · Aufgabe ${bwNo}`;
     $("bw-title").textContent = bw.title;
-    $("bw-body").innerHTML = bw.type === "av" ? bwRenderAv() : bw.type === "an" || bw.type === "eav" ? bwRenderAn() : bw.type === "vt" ? bwRenderVt() : bw.type === "web" ? bwRenderWeb() : bw.type === "lk" ? bwRenderLk() : bw.type === "fo" ? bwRenderFo()
+    $("bw-body").innerHTML = KR_RENDER[bw.type] ? KR_RENDER[bw.type]() : KR_MAKE[bw.type] ? krRenderParts() : bw.type === "av" ? bwRenderAv() : bw.type === "an" || bw.type === "eav" ? bwRenderAn() : bw.type === "vt" ? bwRenderVt() : bw.type === "web" ? bwRenderWeb() : bw.type === "lk" ? bwRenderLk() : bw.type === "fo" ? bwRenderFo()
       : bw.type === "ag" ? bwRenderCases("Geschäftsjahr = Kalenderjahr 2026, lineare Abschreibung mit Halbjahresregel. Verbuche bei jedem Fall alle Schritte: den Verkauf bzw. die Versicherungsentschädigung während des Jahres, am 31.12. die Abschreibung bis zum Ausscheiden und das Ausbuchen des Restbuchwerts.")
       : bw.type === "um" ? bwRenderCases("Entscheide bei jeder Rechnung: Erhaltung (sofort Aufwand) oder Umbau/Erweiterung (aktivieren)? Bei einem Umbau rechnest du am 31.12.2026 die Abschreibung mit der Restnutzungsdauer und verbuchst sie.")
       : bw.type === "ra" ? bwRenderCases("Geschäftsjahr = Kalenderjahr. Buche jeden Fall zum Zahlungszeitpunkt, am 31.12.2026 (Abgrenzung) und am 01.01.2027 (Auflösung). Abgegrenzt wird immer der Nettobetrag.")
       : bwRenderCases("Buche alle Schritte der Rückstellungen. Rückstellungen werden immer netto gebildet, die Vorsteuer wird erst bei Rechnungseingang gebucht.");
-    $("bewertung").classList.toggle("bw-wide", bw.type === "vt" || bw.type === "web");
+    $("bewertung").classList.toggle("bw-wide", ["vt", "web", "bue", "bab", "db", "pp"].includes(bw.type));
     $("bw-steps").innerHTML = BW_STEPS[bw.type].map(s => `<li>${esc(s)}</li>`).join("");
     $("bw-opt-wrap").hidden = bw.type !== "av";
     (bw.books || []).forEach(b => bwFillBook(b, false));
@@ -4087,7 +4504,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       const isD = f.date !== undefined, el = $(f.id), raw = el.value.trim(), v = isD ? anDate(raw) : parseAmount(raw.replace(/\s*%$/, ""));
       // blank: Feld soll leer bleiben (oder 0) und zählt nur, wenn trotzdem etwas Falsches drinsteht
       if (f.blank && (!raw || (!isD && v === 0))) { el.classList.remove("ok", "err"); return; }
-      const good = raw ? v === (isD ? f.date : f.amt) : (f.zeroOk && f.amt === 0);
+      const good = raw ? (isD ? v === f.date : Math.abs(v - f.amt) <= (f.tol || 0)) : (f.zeroOk && f.amt === 0);
       el.classList.remove("ok", "err");
       if (raw || !good) el.classList.add(good ? "ok" : "err");
       total++; if (good) ok++;
@@ -4122,21 +4539,24 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("bw-new").addEventListener("click", bwBuild);
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
-  const bwSyncSegs = () => ["a", "u", "e"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bwType))));
-  const bwPickType = v => { bwType = v; store.set(bwArea === "ea" ? "eaType" : "bwType", v); bwSyncSegs(); bwBuild(); };
+  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bwType))));
+  const bwPickType = v => { bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); bwBuild(); };
   // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
   function bwSetArea(a, type) {
     if (a !== bwArea || type) {
-      bwArea = a; bwType = type || store.get(a === "ea" ? "eaType" : "bwType", a === "ea" ? "vt" : "av");
-      if (type) store.set(a === "ea" ? "eaType" : "bwType", type);
+      bwArea = a; bwType = type || store.get(BW_AREAS[a].key, BW_AREAS[a].def);
+      if (type) store.set(BW_AREAS[a].key, type);
       bw = null;
     }
-    $("bw-tg-a").hidden = $("bw-tg-u").hidden = a === "ea"; $("bw-tg-e").hidden = a !== "ea";
+    Object.entries(BW_AREAS).forEach(([k, o]) => o.groups.forEach(g => { $("bw-tg-" + g).hidden = k !== a; }));
     bwSyncSegs();
   }
   renderSeg("bw-seg-type-a", BW_TYPES_A, bwType, bwPickType);
   renderSeg("bw-seg-type-u", BW_TYPES_U, bwType, bwPickType);
   renderSeg("bw-seg-type-e", BW_TYPES_E, bwType, bwPickType);
+  renderSeg("bw-seg-type-k1", BW_TYPES_K1, bwType, bwPickType);
+  renderSeg("bw-seg-type-k2", BW_TYPES_K2, bwType, bwPickType);
+  renderSeg("bw-seg-type-k3", BW_TYPES_K3, bwType, bwPickType);
   renderSeg("bw-seg-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], bwSize, v => { bwSize = v; store.set("bwSize", v); bwBuild(); });
   renderSeg("bw-seg-bw", [[false, "vorgegeben"], [true, "selbst berechnen"]], bwCalcBw, v => { bwCalcBw = v; store.set("bwCalcBw", v); bwBuild(); });
 
@@ -4280,15 +4700,66 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       text: "Rückstellungen sind Schulden, deren Höhe oder Zeitpunkt noch nicht genau feststeht, etwa für Steuerberatung, Prozesskosten, Urlaub oder Garantien. Sie werden am 31.12. als Aufwand gebildet.",
       rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
   ];
-  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)"];
-  const LEX_ORDER = [0, 8, 1, 2, 3, 4, 5, 6, 7];
+  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)", "Kostenrechnung"];
+  const LEX_ORDER = [0, 8, 1, 2, 3, 4, 5, 6, 7, 9];
   const LEX_TYPES = { aktiv: "aktives Bestandskonto", passiv: "passives Bestandskonto", aufwand: "Aufwandskonto", ertrag: "Ertragskonto", erlmind: "Erlösminderung", aufwmind: "Aufwandsminderung", privat: "Privatkonto", korr: "Wertberichtigung (Korrekturposten)" };
-  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben" };
+  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben", kr: "Kostenrechnung üben" };
+  // Kostenrechnung im Lexikon: Lehrbeispiele mit fertig gerechnetem Schema
+  {
+    const sch = (head, rows) => krSchemeHtml({ head, rows: rows.map(r => Object.assign(r, { id: null, pid: false })) });
+    const bk = krBezugProg([], "x", { lep: 10000, r: 10, s: 2, bk: 350 }), ak = krAbsatzProg([], "x", { ep: bk.ep, rk: 30, gw: 10, s: 2, r: 10 });
+    const zk = krZuschlag([], "x", { fm: 8240, fl: 22000, mgk: 15, fgk: 120, vw: 12, vt: 8, g: 10 });
+    LEX.push(
+      { id: "kr-grund", g: 8, title: "Aufwand und Kosten",
+        text: "Die Buchhaltung erfasst <b>Aufwände</b> (alles, was den Gewinn mindert). Die Kostenrechnung fragt: Was kostet uns der Betrieb wirklich? <b>Kosten</b> sind nur der betriebliche, normale und periodenrichtige Werteverzehr.",
+        rules: ["<b>Grundkosten</b>: Aufwand = Kosten, z. B. Handelswareneinsatz, Gehälter, Miete.", "<b>Neutrale Aufwände</b> sind keine Kosten: betriebsfremd (Spende), außerordentlich (Schaden, Buchwert abgegangener Anlagen) oder periodenfremd (Steuernachzahlung für das Vorjahr).", "<b>Kalkulatorische Kosten</b> ersetzen oder ergänzen Aufwände: kalkulatorische Abschreibung (vom Wiederbeschaffungswert), kalkulatorische Zinsen (vom betriebsnotwendigen Kapital), kalkulatorische Wagnisse und der kalkulatorische Unternehmerlohn.", "<b>Einzelkosten</b> kann man einem Produkt direkt zurechnen (Stoff, Fertigungslohn), <b>Gemeinkosten</b> nur über einen Schlüssel (Miete, Energie).", "<b>Variable Kosten</b> ändern sich mit der Menge, <b>fixe Kosten</b> bleiben gleich."],
+        ex: [{ t: "Laut GuV beträgt die Abschreibung € 18.000,00. Die kalkulatorische Abschreibung vom Wiederbeschaffungswert beträgt € 24.000,00.", s: [], h: [], n: "Im BÜB werden die € 18.000,00 abgezogen und € 24.000,00 als kalkulatorische Kosten zugerechnet. In die Kostenrechnung gehen € 24.000,00 ein." }],
+        go: [["kr", "bue"]] },
+      { id: "kr-bezug", g: 8, title: "Bezugskalkulation",
+        text: "Die Bezugskalkulation ermittelt den <b>Einstandspreis</b>: Was kostet uns eine Ware wirklich, bis sie bei uns im Geschäft ist? Progressiv rechnest du vom Listeneinkaufspreis nach unten, retrograd vom gewünschten Einstandspreis nach oben.",
+        rules: ["Listeneinkaufspreis − Liefererrabatt = Zieleinkaufspreis − Liefererskonto = Kassaeinkaufspreis + Bezugskosten = Einstandspreis.", "Rabatt vom Listeneinkaufspreis, Skonto vom Zieleinkaufspreis.", "Retrograd werden Skonto und Rabatt im Hundert gerechnet: Zieleinkaufspreis = Kassaeinkaufspreis × 100 ÷ (100 − Skontosatz).", "Beim Angebotsvergleich zählt der Einstandspreis."],
+        ex: [{ t: "Listeneinkaufspreis € 100,00, 10 % Rabatt, 2 % Skonto, Bezugskosten € 3,50.", s: [], h: [], html: sch("Bezugskalkulation", bk.rows), n: "Der Einstandspreis beträgt € 91,70." }],
+        go: [["kr", "bk"]] },
+      { id: "kr-absatz", g: 8, title: "Absatzkalkulation",
+        text: "Die Absatzkalkulation ermittelt den <b>Verkaufspreis</b>. Auf den Einstandspreis kommen die Regiekosten (Kosten des Geschäfts wie Miete und Gehälter), der Gewinn sowie Skonto und Rabatt für die Kundschaft, zum Schluss die Umsatzsteuer.",
+        rules: ["Einstandspreis + Regiekosten = Selbstkosten + Gewinn = Kassaverkaufspreis + Kundenskonto = Zielverkaufspreis + Kundenrabatt = Listenverkaufspreis netto + USt = Listenverkaufspreis brutto.", "Regiekosten vom Einstandspreis, Gewinn von den Selbstkosten.", "Kundenskonto und Kundenrabatt im Hundert aufschlagen (Basis ist der höhere Preis).", "Retrograd: USt, Gewinn und Regiekosten stecken auf Hundert im Betrag (÷ 120 × 100, ÷ (100 + Satz) × 100).", "Differenzkalkulation: Ist der Verkaufspreis vorgegeben, ergibt sich der Gewinn als Differenz zwischen Kassaverkaufspreis und Selbstkosten."],
+        ex: [{ t: `Einstandspreis ${P.fmt(bk.ep)}, 30 % Regiekosten, 10 % Gewinn, 2 % Kundenskonto, 10 % Kundenrabatt.`, s: [], h: [], html: sch("Absatzkalkulation", ak.rows), n: `Der Listenverkaufspreis brutto beträgt ${P.fmt(ak.brutto)}.` }],
+        go: [["kr", "ak"]] },
+      { id: "kr-bue", g: 8, title: "Kostenartenrechnung und BÜB",
+        text: "Die Kostenartenrechnung beantwortet die Frage: <b>Welche Kosten</b> sind entstanden? Im <b>Betriebsüberleitungsbogen (BÜB)</b> werden die Aufwände der GuV in Kosten übergeleitet.",
+        rules: ["Aufwand lt. GuV − Abzüge (neutrale und ersetzte Aufwände) + Zurechnungen (kalkulatorische Kosten) = Kosten.", "Kalkulatorische Abschreibung = Wiederbeschaffungswert ÷ Nutzungsdauer.", "Kalkulatorische Zinsen = betriebsnotwendiges Kapital × Zinssatz. Betriebsnotwendiges Kapital = betriebsnotwendiges Vermögen − Abzugskapital.", "Kalkulatorischer Unternehmerlohn: Gehalt, das die Inhaberin als Angestellte bekommen würde (14-mal im Jahr). Nur bei Einzelunternehmen und Personengesellschaften.", "Kalkulatorisches Wagnis: durchschnittliche Ausfälle statt der zufälligen Ausfälle des Jahres."],
+        go: [["kr", "bue"]] },
+      { id: "kr-bab", g: 8, title: "Kostenstellenrechnung und BAB",
+        text: "Die Kostenstellenrechnung beantwortet die Frage: <b>Wo</b> sind die Kosten entstanden? Im <b>Betriebsabrechnungsbogen (BAB)</b> werden die Gemeinkosten auf die Kostenstellen Material, Fertigung, Verwaltung und Vertrieb verteilt.",
+        rules: ["Direkt zurechenbare Gemeinkosten (lt. Liste) direkt eintragen, die anderen nach einem Schlüssel verteilen (m², kWh, Anlagenwerte).", "Betrag je Schlüsselteil = Betrag ÷ Summe der Teile.", "Zuschlagsbasis: Material → Fertigungsmaterial, Fertigung → Fertigungslöhne, Verwaltung und Vertrieb → Herstellkosten.", "Zuschlagssatz = Gemeinkosten der Kostenstelle ÷ Zuschlagsbasis × 100. Die Sätze braucht man für die Kalkulation."],
+        go: [["kr", "bab"]] },
+      { id: "kr-zuschlag", g: 8, title: "Differenzierende Zuschlagskalkulation",
+        text: "Die Kostenträgerrechnung beantwortet die Frage: <b>Wofür</b> sind die Kosten entstanden? In der differenzierenden Zuschlagskalkulation werden auf die Einzelkosten eines Produkts die Gemeinkosten mit den Zuschlagssätzen aus dem BAB aufgeschlagen.",
+        rules: ["Fertigungsmaterial + MGK = Materialkosten. Fertigungslöhne + FGK (+ Sondereinzelkosten der Fertigung) = Fertigungskosten.", "Materialkosten + Fertigungskosten = Herstellkosten.", "Herstellkosten + VwGK + VtGK = Selbstkosten. Beide Zuschläge werden von den Herstellkosten gerechnet.", "Selbstkosten + Gewinn = Verkaufspreis."],
+        ex: [{ t: "Ein Dirndl braucht Fertigungsmaterial um € 82,40 und 8 Stunden zu € 27,50 Fertigungslohn. Zuschläge: MGK 15 %, FGK 120 %, VwGK 12 %, VtGK 8 %, Gewinn 10 %.", s: [], h: [], html: sch("Zuschlagskalkulation", zk.rows), n: `Selbstkosten ${P.fmt(zk.SK)}, Verkaufspreis netto ${P.fmt(zk.V)}.` }],
+        go: [["kr", "zk"]] },
+      { id: "kr-db", g: 8, title: "Teilkostenrechnung und Deckungsbeitrag",
+        text: "Die Teilkostenrechnung rechnet einem Produkt nur die <b>variablen Kosten</b> zu. Was vom Preis übrig bleibt, ist der <b>Deckungsbeitrag</b>: Er deckt zuerst die Fixkosten, der Rest ist Gewinn.",
+        rules: ["DB je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100.", "Betriebsergebnis (einstufig) = Summe aller Deckungsbeiträge − Fixkosten.", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz."],
+        ex: [{ t: "Eine Trachtenbluse kostet € 89,00 netto, die variablen Kosten betragen € 52,40 je Stück. Verkauft werden 120 Stück.", s: [], h: [], n: "DB je Stück = € 36,60, DB-Quote = 41,12 %, DB gesamt = € 4.392,00." }],
+        go: [["kr", "db"]] },
+      { id: "kr-be", g: 8, title: "Preisuntergrenze und Break-even",
+        text: "Wie billig darf ein Produkt höchstens werden? Und ab welcher Menge verdient das Unternehmen Geld? Beides beantwortet die Teilkostenrechnung.",
+        rules: ["Langfristige Preisuntergrenze = Selbstkosten je Stück (alle Kosten sind gedeckt).", "Kurzfristige Preisuntergrenze = variable Kosten je Stück (die Fixkosten fallen ohnehin an).", "Break-even-Menge = Fixkosten ÷ DB je Stück, aufrunden. Break-even-Umsatz = Break-even-Menge × Preis.", "Zusatzauftrag bei freier Kapazität: annehmen, wenn der Preis über den variablen Kosten liegt."],
+        ex: [{ t: "Fixkosten € 30.000,00, Preis € 160,00, variable Kosten € 85,00 je Stück.", s: [], h: [], n: "DB je Stück € 75,00. Break-even-Menge = 30.000 ÷ 75 = 400 Stück, Break-even-Umsatz € 64.000,00." }],
+        go: [["kr", "be"]] },
+      { id: "kr-pp", g: 8, title: "Programmplanung",
+        text: "Welche Produkte sollen in welcher Menge hergestellt werden? Ziel ist der höchste Deckungsbeitrag.",
+        rules: ["Ohne Engpass: alle Produkte mit positivem DB bis zum maximalen Absatz herstellen.", "Mit Engpass (z. B. eine Maschine mit begrenzten Minuten): relativer DB = DB je Stück ÷ Engpasseinheiten je Stück.", "Produkte nach dem relativen DB reihen, nicht nach dem DB je Stück.", "Die Kapazität der Reihe nach vergeben, bis sie aufgebraucht ist."],
+        ex: [{ t: "Ein Janker bringt € 60,00 DB und braucht 20 Minuten auf der Stickmaschine, eine Bluse bringt € 30,00 DB und braucht 6 Minuten.", s: [], h: [], n: "Relativer DB: Janker € 3,00 je Minute, Bluse € 5,00 je Minute. Die Bluse kommt zuerst, obwohl ihr DB je Stück kleiner ist." }],
+        go: [["kr", "pp"]] },
+    );
+  }
   let lexQuery = "", lexOpen = store.get("lexOpen", "konten");
 
   // Lehrbeispiele aus dem Trainer: fest gewählt (immer dieselben), damit das Lexikon ruhig bleibt
   function lexExamples(e) {
-    if (e.ex) return e.ex.map(x => ({ text: esc(x.t), soll: x.s, haben: x.h, note: x.n, calc: "" }));
+    if (e.ex) return e.ex.map(x => ({ text: esc(x.t), soll: x.s, haben: x.h, note: x.n, calc: "", html: x.html || "" }));
     if (!e.tp) return [];
     const pool = CASES.filter(c => c.tp === e.tp);
     const picks = pool.length > 2 ? [pool[0], pool[Math.floor(pool.length / 2)]] : pool;
@@ -4298,7 +4769,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const reasons = [...t.soll.map(([k]) => why(k, "soll")), ...t.haben.map(([k]) => why(k, "haben")), t.note, t.calc].filter(Boolean);
     return (t.soll.length ? bookingHtml(t.soll, t.haben) : "") + (reasons.length ? `<ul class="why">${reasons.map(r => `<li>${r}</li>`).join("")}</ul>` : "");
   }
-  const lexExHtml = (t, label) => `<div class="lex-ex"><span class="field-label">${label}</span><p>${t.text}</p>${lexSolHtml(t)}</div>`;
+  const lexExHtml = (t, label) => `<div class="lex-ex"><span class="field-label">${label}</span><p>${t.text}</p>${t.html || ""}${lexSolHtml(t)}</div>`;
   function lexAccs(e) {
     const keys = e.accs || [...new Set(lexExamples(e).flatMap(t => [...t.soll, ...t.haben].map(x => x[0])))];
     return keys.filter(k => P.acc[k]).map(k => `<span class="lex-acc"><b>${P.acc[k][0]}</b> ${esc(P.acc[k][1])}<small>${LEX_TYPES[P.acc[k][2]] || ""}</small></span>`).join("");
@@ -4306,7 +4777,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function lexEntryHtml(e) {
     const ex = lexExamples(e);
     const buttons = [e.tp ? `<button class="btn primary" type="button" data-lexgo="bs" data-v="${e.tp}">Buchungssätze üben</button>` : "",
-      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : m === "bw" || m === "ea" ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
+      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : BW_AREAS[m] ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
     return `<div class="lex-body">
         <p>${e.text}</p>
         ${e.rules ? `<div class="lex-rules"><span class="field-label">Das solltest du dir merken</span><ul>${e.rules.map(r => `<li>${r}</li>`).join("")}</ul></div>` : ""}
@@ -4349,7 +4820,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       if (m === "bs") {
         practiceTopics.clear(); practiceTopics.add(v); store.set("topics2", [...practiceTopics]); renderTopics("practice");
         if (mode === "test") { saveTestAnswer(); } setView("practice"); showModule("bs"); buildPractice();
-      } else if (m === "bw" || m === "ea") { bwSetArea(m, v); showModule(m); }
+      } else if (BW_AREAS[m]) { bwSetArea(m, v); showModule(m); }
       else showModule(m);
     }));
   }
@@ -4364,7 +4835,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Hausübung: Aufgabe per Code (fester Startwert), Abgabe mit Ergebniscode =================
   // Code: HU-<Art>-<Umfang K/N/U><Buchwert selbst 0/1>-<Startwert>, z. B. HU-VT-N0-3KD9
-  const HU_TYPES = [...BW_TYPES_E, ...BW_TYPES_A, ...BW_TYPES_U];
+  const HU_TYPES = [...BW_TYPES_E, ...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
   const HU_SIZE = { kompakt: "K", normal: "N", gross: "U" }, HU_SIZE_R = { K: "kompakt", N: "normal", U: "gross" };
   const HU_SIZE_TXT = { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" };
   const HU_URL = "https://grup-mog.github.io/Rechnungswesen/";
@@ -4374,7 +4845,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const m = String(str).trim().toUpperCase().replace(/^#/, "").match(/^(?:HU-)?([A-Z]{2,3})-([KNU])([01])-([0-9A-Z]{1,10})$/);
     if (!m || !HU_TYPES.some(t => t[0] === m[1].toLowerCase())) return null;
     const c = { type: m[1].toLowerCase(), size: HU_SIZE_R[m[2]], calc: m[3] === "1", seed: parseInt(m[4], 36) };
-    c.code = huMakeCode(c); c.area = BW_TYPES_E.some(t => t[0] === c.type) ? "ea" : "bw";
+    c.code = huMakeCode(c); c.area = bwAreaOf(c.type);
     return c;
   }
   function huStart(c) {
@@ -4443,7 +4914,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   });
   $("hu-input").addEventListener("keydown", e => { if (e.key === "Enter") $("hu-load").click(); });
   // Lehrkraft: Code erstellen
-  $("hu-type").innerHTML = [["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U]]
+  $("hu-type").innerHTML = [["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3]]
     .map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map(([v, l]) => `<option value="${v}">${esc(l.replace(/­/g, ""))}</option>`).join("")}</optgroup>`).join("");
   let huSize = "normal";
   renderSeg("hu-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], huSize, v => { huSize = v; });
@@ -4463,21 +4934,21 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     document.querySelectorAll("nav.modules [data-module]").forEach(b => b.setAttribute("aria-current", b.dataset.module === m ? "page" : "false"));
   }
   function showModule(m) {
-    if (hu && !hu.done && (m === "bw" || m === "ea")) m = hu.area; // während der Hausübung zurück zur Hausübung
+    if (hu && !hu.done && BW_AREAS[m]) m = hu.area; // während der Hausübung zurück zur Hausübung
     curModule = m;
     if (m === "test") openTest();
     else if (m === "bs" && mode === "test") { saveTestAnswer(); setView("practice"); buildPractice(); }
     $("buchungssaetze").hidden = m !== "bs" && m !== "test";
     $("tkonten").hidden = m !== "tk";
     $("abschluss").hidden = m !== "ab";
-    $("bewertung").hidden = m !== "bw" && m !== "ea";
+    $("bewertung").hidden = !BW_AREAS[m];
     $("lexikon").hidden = m !== "lex";
     $("hausuebung").hidden = m !== "hu";
     syncNav();
     store.set("module", m);
     if (m === "tk" && !tk) tkBuild();
     if (m === "ab" && !ab) abBuild();
-    if (m === "bw" || m === "ea") { bwSetArea(m); if (!bw) bwBuild(); }
+    if (BW_AREAS[m]) { bwSetArea(m); if (!bw) bwBuild(); }
     if (m === "lex" && !$("lex-list").innerHTML) lexRender();
     if (m === "hu") huRunning();
     window.scrollTo({ top: 0 });
@@ -4499,8 +4970,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h === "#hausuebung") showModule("hu");
     else if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c) huStart(c); else showModule("hu"); }
     else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
+    else if (h === "#kr" || h === "#kostenrechnung") showModule("kr");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "ea", "test", "lex", "hu"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "ea", "kr", "test", "lex", "hu"].includes(saved)) showModule(saved);
   }
   connectDb();
 })();
