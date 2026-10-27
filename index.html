@@ -256,10 +256,14 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .progress { height: 6px; border-radius: 99px; background: var(--grid); overflow: hidden; }
 .progress span { display: block; height: 100%; background: var(--accent); }
 .results { display: grid; gap: 16px; min-width: 0; }
-.rc-panel { display: grid; gap: 10px; } #rc-name { text-transform: none; font-family: inherit; }
+.rc-panel { display: grid; gap: 10px; } #rc-name, #hu-name { text-transform: none; font-family: inherit; }
 .rc-code { font-size: 0.8rem; letter-spacing: 0; text-transform: none; word-break: break-all; user-select: all; margin-top: 4px; }
 .rc-eval summary { cursor: pointer; list-style: none; } .rc-eval summary::-webkit-details-marker { display: none; }
 .rc-eval summary h2 { display: inline-flex; gap: 8px; align-items: center; margin: 0; } .rc-eval summary h2::before { content: "▸"; color: var(--muted); } .rc-eval[open] summary h2::before { content: "▾"; }
+.hu-bar { display: grid; gap: 10px; margin-bottom: 14px; border: 2px solid var(--accent); border-radius: 12px; padding: 14px; background: var(--accent-soft); min-width: 0; }
+.hu-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.hu-score { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; } .hu-score .big { font-size: 1.6rem; font-weight: 700; }
+.hu-select { width: 100%; max-width: 100%; }
 .rc-eval { display: block; min-width: 0; max-width: 100%; } .rc-eval-body { display: grid; gap: 10px; margin-top: 10px; min-width: 0; } .rc-eval-body > * { min-width: 0; }
 .rc-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 0.85rem; }
 .rc-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); border-bottom: 2px solid var(--ink); padding: 6px; }
@@ -535,6 +539,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       <button type="button" data-module="bw" aria-current="false">Bewertung</button>
       <button type="button" data-module="ea" aria-current="false">E/A-Rechnung</button>
       <button type="button" data-module="test" aria-current="false">Test / Schularbeit</button>
+      <button type="button" data-module="hu" aria-current="false">Hausübung</button>
       <button type="button" data-module="lex" aria-current="false">Lexikon</button>
     </nav>
     <span class="plan-switch">Kontenplan Österreich · USt 20 % / 10 %</span>
@@ -650,16 +655,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           </div>
         </div>
       </div>
-      <details class="panel rc-eval">
-        <summary><h2>Ergebniscodes auswerten <span class="chip">für Lehrkräfte</span></h2></summary>
-        <div class="rc-eval-body">
-        <p class="note">Füge hier die abgegebenen Ergebniscodes ein, gern alle auf einmal und auch mit anderem Text dazwischen (z. B. kopiert aus Teams). Die Codes werden nur hier im Browser ausgewertet und nirgends gespeichert.</p>
-        <textarea id="rc-input" rows="5" class="an-neben" placeholder="RW1-…"></textarea>
-        <div class="actions"><button class="btn primary" id="rc-eval" type="button">Auswerten</button><button class="btn" id="rc-tsv" type="button" hidden>Tabelle für Excel kopieren</button><span class="note" id="rc-msg" aria-live="polite"></span></div>
-        <div class="ab-scroll"><table class="rc-table" id="rc-table" hidden></table></div>
-        <textarea id="rc-tsvbox" rows="4" class="an-neben" hidden aria-label="Tabelle zum Kopieren"></textarea>
-        </div>
-      </details>
+      <p class="note">Abgegebene Ergebniscodes wertest du im Reiter <b>Hausübung</b> aus.</p>
     </section>
 
     <!-- Testergebnis -->
@@ -896,6 +892,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <div class="bw-tgroup" id="bw-tg-u"><span class="field-label">Umlaufvermögen und Abgrenzungen</span><div class="seg bw-type" id="bw-seg-type-u" role="group" aria-label="Aufgabe zum Umlaufvermögen wählen"></div></div>
         <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
       </div>
+      <div class="hu-bar" id="hu-bar" hidden></div>
       <div id="bw-body" style="display:grid;gap:18px;min-width:0"></div>
       <div class="actions sticky-actions">
         <button class="btn primary" id="bw-check" type="button">Prüfen</button>
@@ -918,6 +915,54 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         </div>
       </div>
     </aside>
+  </div>
+</main>
+
+<main id="hausuebung" hidden>
+  <div class="wrap lex-wrap">
+    <div class="lex-head">
+      <div>
+        <div class="eyebrow">Hausübung</div>
+        <h1>Hausübung</h1>
+        <p class="note">Hast du von deiner Lehrkraft einen Hausübungscode oder Link bekommen? Gib den Code hier ein. Während der Hausübung gibt es kein „Lösung zeigen“. Wenn du fertig bist, gibst du ab und bekommst einen Ergebniscode für Teams.</p>
+      </div>
+    </div>
+    <div class="panel" id="hu-running" hidden></div>
+    <div class="panel">
+      <h2>Hausübung starten</h2>
+      <div class="code-row">
+        <input id="hu-input" placeholder="z. B. HU-VT-N0-3KD9" aria-label="Hausübungscode">
+        <button class="btn primary" id="hu-load" type="button">Starten</button>
+      </div>
+      <p class="note" id="hu-error" hidden></p>
+      <p class="note">Auch Testcodes aus „Test / Schularbeit“ funktionieren hier.</p>
+    </div>
+    <details class="panel rc-eval" id="hu-create">
+      <summary><h2>Hausübung erstellen <span class="chip">für Lehrkräfte</span></h2></summary>
+      <div class="rc-eval-body">
+        <p class="note">Wähle Aufgabe und Umfang. Alle, die denselben Code verwenden, bekommen genau dieselben Angaben und Belege. Gib den Link oder den Code in Teams als Aufgabe aus.</p>
+        <label class="field-label" for="hu-type">Aufgabe</label>
+        <select id="hu-type" class="hu-select"></select>
+        <span class="field-label">Umfang</span>
+        <div class="seg" id="hu-size"></div>
+        <div class="actions"><button class="btn primary" id="hu-make" type="button">Code erstellen</button></div>
+        <div id="hu-out" hidden>
+          <span class="field-label">Code</span><div class="code-box" id="hu-code"></div>
+          <span class="field-label">Link für die GitHub-Seite</span><div class="code-box rc-code" id="hu-link"></div>
+          <div class="actions"><button class="btn" id="hu-copy" type="button">Link kopieren</button><button class="btn" id="hu-try" type="button">Selbst ausprobieren</button><span class="note" id="hu-copied" aria-live="polite"></span></div>
+        </div>
+      </div>
+    </details>
+    <details class="panel rc-eval" id="hu-eval">
+        <summary><h2>Ergebniscodes auswerten <span class="chip">für Lehrkräfte</span></h2></summary>
+        <div class="rc-eval-body">
+        <p class="note">Füge hier die abgegebenen Ergebniscodes ein, gern alle auf einmal und auch mit anderem Text dazwischen (z. B. kopiert aus Teams). Die Codes werden nur hier im Browser ausgewertet und nirgends gespeichert.</p>
+        <textarea id="rc-input" rows="5" class="an-neben" placeholder="RW1-…"></textarea>
+        <div class="actions"><button class="btn primary" id="rc-eval" type="button">Auswerten</button><button class="btn" id="rc-tsv" type="button" hidden>Tabelle für Excel kopieren</button><span class="note" id="rc-msg" aria-live="polite"></span></div>
+        <div class="ab-scroll"><table class="rc-table" id="rc-table" hidden></table></div>
+        <textarea id="rc-tsvbox" rows="4" class="an-neben" hidden aria-label="Tabelle zum Kopieren"></textarea>
+        </div>
+      </details>
   </div>
 </main>
 
@@ -2387,10 +2432,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   const b64u = str => btoa(String.fromCharCode(...new TextEncoder().encode(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const unb64u = str => new TextDecoder().decode(Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)));
-  function rcMake(name) {
-    const r = test.result, body = b64u(JSON.stringify({ n: name, c: test.code, p: r.pts, m: r.max, s: Math.round((test.started || Date.now()) / 60000), e: Math.round((test.ended || Date.now()) / 60000) }));
+  function rcEncode(name, code, pts, max, started, ended) {
+    const body = b64u(JSON.stringify({ n: name, c: code, p: pts, m: max, s: Math.round((started || Date.now()) / 60000), e: Math.round((ended || Date.now()) / 60000) }));
     return `RW1-${body}.${rcHash(RC_SALT + body)}`;
   }
+  const rcMake = name => rcEncode(name, test.code, test.result.pts, test.result.max, test.started, test.ended);
   function rcParse(code) {
     const m = code.match(/^RW1-([A-Za-z0-9_-]+)\.([0-9a-z]+)$/);
     if (!m) return null;
@@ -2427,7 +2473,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("rc-msg").textContent = found.length ? `${rcRows.length} Ergebnis${rcRows.length === 1 ? "" : "se"} gefunden${multi ? ", Achtung: verschiedene Testcodes" : ""}.${broken ? ` ${broken} Code${broken === 1 ? " ist" : "s sind"} beschädigt und ${broken === 1 ? "kann" : "können"} nicht gelesen werden.` : ""}` : "Keine Ergebniscodes gefunden.";
     $("rc-table").hidden = !rcRows.length; $("rc-tsv").hidden = !rcRows.length;
     const counts = rcRows.reduce((m, r) => (m[r.name] = (m[r.name] || 0) + 1, m), {});
-    $("rc-table").innerHTML = `<thead><tr><th>Name</th><th>Testcode</th><th class="num">Punkte</th><th class="num">%</th><th>Note</th><th>Abgegeben</th><th class="num">Dauer</th><th>Hinweis</th></tr></thead><tbody>${rcRows.map(r => {
+    $("rc-table").innerHTML = `<thead><tr><th>Name</th><th>Code</th><th class="num">Punkte</th><th class="num">%</th><th>Note</th><th>Abgegeben</th><th class="num">Dauer</th><th>Hinweis</th></tr></thead><tbody>${rcRows.map(r => {
       const pct = r.max ? r.total / r.max * 100 : 0, mins = Math.max(0, Math.round((r.end - r.start) / 60000));
       const hint = [!r.valid && "Prüfsumme falsch, Code wurde verändert", counts[r.name] > 1 && "mehrere Versuche"].filter(Boolean).join(", ");
       r.row = [r.name, r.code, `${r.total}/${r.max}`, pct.toLocaleString("de-DE", { maximumFractionDigits: 1 }), r.valid ? gradeLabel(pct) : "?", rcTime(r.end), mins, hint];
@@ -2931,6 +2977,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
 
   // ================= Bewertung (Jahresabschluss) =================
+  let hu = null;
   let bwType = store.get("bwType", "av"), bwSize = store.get("bwSize", "normal"), bwCalcBw = store.get("bwCalcBw", false), bw = null, bwNo = 0;
   const BW_TYPES_A = [["av", "Anlagen\u00ADverzeichnis"], ["an", "Verzeichnis ergänzen"], ["ag", "Verkauf & Schadensfall"], ["um", "Erhaltung & Umbau"]];
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
@@ -2952,7 +2999,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const bwInp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`;
   const bwSeg = (id, opts, lbl) => `<div class="seg" id="${id}" role="group" aria-label="${esc(lbl)}">${opts.map(([v, t]) => `<button type="button" data-v="${v}" aria-pressed="false">${esc(t)}</button>`).join("")}</div>`;
   function bwBuild() {
-    const rng = Math.random;
+    if (hu && hu.done) huEnd();
+    const rng = hu ? mulberry32(hu.seed) : Math.random;
     bw = ({ av: bwMakeAv, an: bwMakeAn, vt: bwMakeVt, web: bwMakeWeb, eav: bwMakeEav, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }[bwType] || bwMakeAv)(rng);
     bwNo++;
     bwRender();
@@ -4057,6 +4105,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     if (books.length) parts.push(`${bOk} von ${books.length} Buchungssätzen`);
     $("bw-feedback").innerHTML = `<div class="feedback ${all ? "ok" : "err"}"><div class="feedback-title">${all ? "Alles richtig!" : "Noch nicht ganz"}</div><div>${parts.join(" und ")} richtig.${all ? "" : " Die rot markierten Stellen stimmen noch nicht."}</div>${all ? `<div class="actions"><button class="btn primary" type="button" id="bw-next2">Neue Aufgabe</button></div>` : ""}</div>`;
     const n = $("bw-next2"); if (n) { n.addEventListener("click", bwBuild); n.focus(); }
+    return { ok, total, bOk, nb: books.length };
   }
   function bwReveal() {
     if (!bw) return;
@@ -4306,11 +4355,105 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   window.addEventListener("hashchange", () => {
     const h = location.hash.toLowerCase();
+    if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c && !(hu && hu.code === c.code)) huStart(c); return; }
     if (!h.startsWith("#lex-") || !LEX.some(e => e.id === h.slice(5))) return;
     lexOpen = h.slice(5); lexQuery = ""; $("lex-search").value = ""; showModule("lex"); lexRender();
     $("lex-" + lexOpen).scrollIntoView({ block: "start" });
   });
   $("lex-search").addEventListener("input", () => { lexQuery = $("lex-search").value; lexRender(); });
+
+  // ================= Hausübung: Aufgabe per Code (fester Startwert), Abgabe mit Ergebniscode =================
+  // Code: HU-<Art>-<Umfang K/N/U><Buchwert selbst 0/1>-<Startwert>, z. B. HU-VT-N0-3KD9
+  const HU_TYPES = [...BW_TYPES_E, ...BW_TYPES_A, ...BW_TYPES_U];
+  const HU_SIZE = { kompakt: "K", normal: "N", gross: "U" }, HU_SIZE_R = { K: "kompakt", N: "normal", U: "gross" };
+  const HU_SIZE_TXT = { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" };
+  const HU_URL = "https://grup-mog.github.io/Rechnungswesen/";
+  const huName = t => (HU_TYPES.find(x => x[0] === t) || ["", t])[1].replace(/­/g, "");
+  const huMakeCode = c => `HU-${c.type.toUpperCase()}-${HU_SIZE[c.size]}${c.calc ? 1 : 0}-${c.seed.toString(36).toUpperCase()}`;
+  function huParse(str) {
+    const m = String(str).trim().toUpperCase().replace(/^#/, "").match(/^(?:HU-)?([A-Z]{2,3})-([KNU])([01])-([0-9A-Z]{1,10})$/);
+    if (!m || !HU_TYPES.some(t => t[0] === m[1].toLowerCase())) return null;
+    const c = { type: m[1].toLowerCase(), size: HU_SIZE_R[m[2]], calc: m[3] === "1", seed: parseInt(m[4], 36) };
+    c.code = huMakeCode(c); c.area = BW_TYPES_E.some(t => t[0] === c.type) ? "ea" : "bw";
+    return c;
+  }
+  function huStart(c) {
+    if (hu && !hu.done) huEnd();
+    hu = Object.assign({}, c, { started: Date.now(), done: false, prev: { size: bwSize, calc: bwCalcBw, area: bwArea, type: bwType } });
+    bwSize = c.size; bwCalcBw = c.calc;
+    bwSetArea(c.area, c.type); bw = null;
+    showModule(c.area);
+    huUi();
+  }
+  function huEnd() {
+    const p = hu.prev;
+    hu = null;
+    bwSize = p.size; bwCalcBw = p.calc;
+    huUi();
+  }
+  function huUi() {
+    const on = !!hu, running = on && !hu.done;
+    $("hu-bar").hidden = !on;
+    document.querySelector("#bewertung .bw-types").hidden = on;
+    $("bw-new").hidden = on; $("bw-check").hidden = running; $("bw-solution").hidden = running;
+    document.querySelectorAll("#bewertung aside .panel").forEach((pn, i) => { if (i > 0) pn.hidden = on; });
+    if (!on) return;
+    const head = `<div class="hu-head"><span class="eyebrow">Hausübung</span><b>${esc(huName(hu.type))}</b><span class="chip">${HU_SIZE_TXT[hu.size]}</span><span class="mono note">${hu.code}</span></div>`;
+    if (running) {
+      $("hu-bar").innerHTML = `${head}<p class="note">Arbeite die Aufgabe in Ruhe durch. „Prüfen“ und „Lösung zeigen“ sind während der Hausübung gesperrt. Wenn du fertig bist, gib deinen Namen ein und gib ab.</p>
+        <div class="code-row"><input id="hu-name" maxlength="40" placeholder="Vor- und Nachname" aria-label="Dein Name" autocomplete="name"><button class="btn primary" id="hu-submit" type="button">Abgeben</button></div>
+        <span class="note" id="hu-msg" aria-live="polite"></span>`;
+      $("hu-name").value = store.get("rcName", "");
+      $("hu-submit").addEventListener("click", huSubmit);
+    } else {
+      const r = hu.result, max = r.total + r.nb, pts = r.ok + r.bOk, pct = max ? pts / max * 100 : 0;
+      $("hu-bar").innerHTML = `${head}<div class="hu-score"><span class="big mono">${pts} / ${max}</span><span>${pct.toLocaleString("de-DE", { maximumFractionDigits: 1 })} % · ${gradeLabel(pct)}</span></div>
+        <p class="note">Abgegeben. Kopiere den Ergebniscode und gib ihn in Teams bei der Hausübung ab. Danach kannst du dir unten die Lösung ansehen.</p>
+        <div class="code-box rc-code" id="hu-rc">${esc(hu.rc)}</div>
+        <div class="actions"><button class="btn primary" id="hu-rc-copy" type="button">Code kopieren</button><button class="btn" id="hu-end" type="button">Hausübung beenden</button><span class="note" id="hu-rc-msg" aria-live="polite"></span></div>`;
+      $("hu-rc-copy").addEventListener("click", () => rcClip(hu.rc, $("hu-rc"), $("hu-rc-msg"), "Kopiert. Jetzt in Teams einfügen und abgeben."));
+      $("hu-end").addEventListener("click", () => { huEnd(); bwBuild(); });
+    }
+  }
+  function huSubmit() {
+    const name = $("hu-name").value.trim().replace(/\s+/g, " "), btn = $("hu-submit");
+    if (!name) { $("hu-name").classList.add("err"); $("hu-name").focus(); $("hu-msg").textContent = "Bitte gib zuerst deinen Namen ein."; return; }
+    if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Wirklich abgeben?"; $("hu-msg").textContent = "Nach der Abgabe kannst du nichts mehr ändern."; return; }
+    store.set("rcName", name);
+    hu.result = bwCheck(); hu.done = true; hu.ended = Date.now();
+    hu.rc = rcEncode(name, hu.code, [hu.result.ok, hu.result.bOk], hu.result.total + hu.result.nb, hu.started, hu.ended);
+    huUi();
+    $("hu-bar").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function huRunning() {
+    const box = $("hu-running");
+    box.hidden = !(hu && !hu.done);
+    if (box.hidden) return;
+    box.innerHTML = `<h2>Laufende Hausübung</h2><p>${esc(huName(hu.type))} · ${HU_SIZE_TXT[hu.size]} · <span class="mono">${hu.code}</span></p><div class="actions"><button class="btn primary" type="button" id="hu-resume">Weiterarbeiten</button><button class="btn" type="button" id="hu-abort">Abbrechen</button></div>`;
+    $("hu-resume").addEventListener("click", () => showModule(hu.area));
+    $("hu-abort").addEventListener("click", () => { huEnd(); bw = null; huRunning(); });
+  }
+  // Schüler:in: Code eingeben (auch Testcodes)
+  $("hu-load").addEventListener("click", () => {
+    const v = $("hu-input").value, c = huParse(v), t = !c && parseCode(v);
+    $("hu-error").hidden = !!(c || t);
+    if (c) huStart(c);
+    else if (t) { showModule("test"); startTest(t); }
+    else $("hu-error").textContent = "Diesen Code kenne ich nicht. Prüfe bitte die Schreibweise, z. B. HU-VT-N0-3KD9.";
+  });
+  $("hu-input").addEventListener("keydown", e => { if (e.key === "Enter") $("hu-load").click(); });
+  // Lehrkraft: Code erstellen
+  $("hu-type").innerHTML = [["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U]]
+    .map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map(([v, l]) => `<option value="${v}">${esc(l.replace(/­/g, ""))}</option>`).join("")}</optgroup>`).join("");
+  let huSize = "normal";
+  renderSeg("hu-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], huSize, v => { huSize = v; });
+  $("hu-make").addEventListener("click", () => {
+    const c = { type: $("hu-type").value, size: huSize, calc: false, seed: 1 + Math.floor(Math.random() * 2e9) };
+    const code = huMakeCode(c);
+    $("hu-code").textContent = code; $("hu-link").textContent = HU_URL + "#" + code.toLowerCase(); $("hu-out").hidden = false; $("hu-copied").textContent = "";
+  });
+  $("hu-copy").addEventListener("click", () => rcClip($("hu-link").textContent, $("hu-link"), $("hu-copied"), "Link kopiert."));
+  $("hu-try").addEventListener("click", () => { const c = huParse($("hu-code").textContent); if (c) huStart(c); });
 
   // ---------- Module umschalten ----------
   // Test / Schularbeit ist ein eigener Menüpunkt, nutzt aber die Ansichten des Buchungssätze-Trainers
@@ -4320,6 +4463,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     document.querySelectorAll("nav.modules [data-module]").forEach(b => b.setAttribute("aria-current", b.dataset.module === m ? "page" : "false"));
   }
   function showModule(m) {
+    if (hu && !hu.done && (m === "bw" || m === "ea")) m = hu.area; // während der Hausübung zurück zur Hausübung
     curModule = m;
     if (m === "test") openTest();
     else if (m === "bs" && mode === "test") { saveTestAnswer(); setView("practice"); buildPractice(); }
@@ -4328,12 +4472,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("abschluss").hidden = m !== "ab";
     $("bewertung").hidden = m !== "bw" && m !== "ea";
     $("lexikon").hidden = m !== "lex";
+    $("hausuebung").hidden = m !== "hu";
     syncNav();
     store.set("module", m);
     if (m === "tk" && !tk) tkBuild();
     if (m === "ab" && !ab) abBuild();
     if (m === "bw" || m === "ea") { bwSetArea(m); if (!bw) bwBuild(); }
     if (m === "lex" && !$("lex-list").innerHTML) lexRender();
+    if (m === "hu") huRunning();
     window.scrollTo({ top: 0 });
   }
   document.querySelectorAll("nav.modules [data-module]").forEach(b => b.addEventListener("click", () => showModule(b.dataset.module)));
@@ -4350,9 +4496,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h === "#bewertung") showModule("bw");
     else if (h === "#test") showModule("test");
     else if (h === "#lexikon") showModule("lex");
+    else if (h === "#hausuebung") showModule("hu");
+    else if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c) huStart(c); else showModule("hu"); }
     else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "ea", "test", "lex"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "ea", "test", "lex", "hu"].includes(saved)) showModule(saved);
   }
   connectDb();
 })();
