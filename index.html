@@ -161,9 +161,27 @@ main .wrap.lex-wrap { grid-template-columns: minmax(0, 1fr); gap: 18px; max-widt
 .lex-ex p { margin: 0; }
 .lex-try { border-left-color: var(--muted); }
 .lex-accs > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.vt-table { min-width: 1500px; } .vt-table input { width: 5.4rem; } .vt-table th.c, .web-table th.c { text-align: center; } .vt-table td.vt-text { min-width: 8rem; font-size: 0.8rem; }
+#bewertung.bw-wide > .wrap { grid-template-columns: minmax(0, 1fr); }
+#bewertung.bw-wide > .wrap > aside { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; align-items: start; }
+.vt-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.vt-table th { font-size: 0.68rem; font-weight: 700; color: var(--muted); padding: 5px 4px; line-height: 1.2; vertical-align: bottom; text-align: left; hyphens: manual; }
+.vt-table tr.vt-h1 th { text-align: center; color: var(--ink); background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+.vt-table tr.vt-h1 th[rowspan] { text-align: left; color: var(--muted); background: none; vertical-align: bottom; border-bottom: 2px solid var(--ink); }
+.vt-table tr.vt-h2 th { text-align: right; border-bottom: 2px solid var(--ink); }
+.vt-table td { border-bottom: 1px solid var(--line); padding: 3px 2px; vertical-align: middle; }
+.vt-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--accent-soft) 35%, transparent); }
+.vt-table .g { border-left: 2px solid var(--line); }
+.vt-table input { width: 4.7rem; padding: 4px 3px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-family: var(--font-mono); font-size: 0.8rem; text-align: right; color: inherit; }
+.vt-table input.ok { border-color: var(--ok); background: var(--ok-soft); } .vt-table input.err { border-color: var(--err); background: var(--err-soft); }
+.vt-table .vt-text { position: sticky; left: 0; z-index: 1; background: var(--surface); min-width: 8.5rem; max-width: 10rem; font-size: 0.78rem; line-height: 1.25; box-shadow: 1px 0 0 var(--line); }
+.vt-table tbody tr:nth-child(even) td.vt-text { background: var(--surface); }
+.vt-table .vt-meta { display: block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); font-style: normal; }
+.vt-table td.mono { font-family: var(--font-mono); color: var(--muted); white-space: nowrap; }
 .vt-table tr.vt-ab td { color: var(--muted); font-style: italic; }
-.web-table { min-width: 1350px; } .web-table input.ea-bez { width: 11rem; } .web-table input.ea-num { width: 3.2rem; }
+.vt-table .vt-given { display: block; text-align: right; font-family: var(--font-mono); padding-right: 5px; }
+.vt-table tfoot td { border-top: 3px double var(--ink); border-bottom: none; font-weight: 700; padding-top: 6px; }
+.web-table th.c { text-align: center; }
+.web-table { min-width: 1180px; } .web-table input.ea-bez { width: 11rem; } .web-table input.ea-num { width: 3.2rem; }
 .ea-cases { display: grid; gap: 14px; } .ea-case { display: grid; gap: 6px; border-left: 3px solid var(--line); padding-left: 12px; min-width: 0; } .ea-case p { margin: 0; }
 .ea-case-h { display: flex; gap: 8px; align-items: center; }
 .ea-res { max-width: 560px; margin-top: 12px; }
@@ -3212,10 +3230,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Einnahmen-Ausgaben-Rechnung (1. Klasse): Kassa-/Bankbuch mit Verteilungstabelle, Wareneingangsbuch =================
   const MONTHS = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
-  // Spalten der Verteilungstabelle (wie in der Vorlage von Patrick)
-  const VT_COLS = [["kE", "Einzahlungen"], ["kA", "Auszahlungen"], ["bE", "Einzahlungen"], ["bA", "Auszahlungen"], ["ust", "USt"], ["vst", "VSt"], ["erl", "Erlöse"], ["ueb", "Übrige Einnahmen"],
-    ["hw", "HW/ Material"], ["bm", "Büro­material"], ["pkw", "PKW"], ["tel", "Telefon"], ["ver", "Versiche­rung"], ["str", "Strom"], ["gwg", "GWG"]];
-  const VT_OUT = ["hw", "bm", "pkw", "tel", "ver", "str", "gwg"];
+  // Spalten der Verteilungstabelle: Kassa, Bank und Steuern immer, Einnahmen- und Ausgabenspalten nur, wenn sie im Monat gebraucht werden
+  const VT_BASE = [["kE", "Einzah\u00ADlungen"], ["kA", "Auszah\u00ADlungen"], ["bE", "Einzah\u00ADlungen"], ["bA", "Auszah\u00ADlungen"], ["ust", "USt"], ["vst", "VSt"]];
+  const VT_IN = [["erl", "Erlöse"], ["ueb", "Übrige Einnah\u00ADmen"]];
+  const VT_AUS = [["hw", "HW/ Material"], ["bm", "Büro\u00ADmaterial"], ["miete", "Miete"], ["pkw", "PKW"], ["tel", "Telefon"], ["str", "Strom"], ["ver", "Versiche\u00ADrung"], ["werb", "Werbung"], ["rein", "Reinigung"], ["lit", "Fach\u00ADliteratur"], ["gwg", "GWG"]];
   const EA_WAREN = [...PARTNERS.waren, ["Modegroßhandel Lend GmbH", "Lendplatz 12", "8020 Graz", "ATU 64410273"], ["Strickwaren Puntigam KG", "Triester Straße 180", "8055 Graz", "ATU 69920451"]];
   const EA_GWG = [["Tablet für die Präsentation der Online-Kollektion", 38000, 62000, "edv"], ["Schaufensterpuppe", 29000, 54000, "deko"], ["Standspiegel mit Holzrahmen", 24000, 48000, "deko"], ["Kartenterminal", 19000, 34000, "edv"], ["Etikettendrucker", 21000, 46000, "edv"], ["Rollständer für Kleider", 16000, 32000, "deko"]];
   const eaDate = (m, d) => new Date(2026, m, d);
@@ -3303,6 +3321,30 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         c[bar ? "kA" : "bA"] = n + t; c.vst = t; c.gwg = n;
         r.sol = `Anschaffungskosten ${fmtNum(n)} netto, also höchstens € 1.000,00: geringwertiges Wirtschaftsgut, sofort zur Gänze Ausgabe (Spalte GWG).`; break;
       }
+      case "mieteaus": {
+        const n = eaNet(rng, 800, 1500, 10), t = n / 5;
+        r.text = `Die Monatsmiete für das Geschäftslokal in der Annenstraße wird vom Bankkonto abgebucht: € ${fmtNum(n + t)} inkl. 20 % USt.`; r.short = "Miete Geschäftslokal";
+        if (rng() < 0.5) { r.doc = bwBank(rng, dt, `Dauerauftrag Miete Geschäftslokal ${MONTHS[m]} inkl. 20 % USt`, n + t, false); r.text = "Abbuchung der Geschäftsmiete (siehe Kontoauszug, 20 % USt enthalten)."; }
+        c.bA = n + t; c.vst = t; c.miete = n; r.sol = `Miete: Bank ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Miete ${fmtNum(n)}.`; break;
+      }
+      case "werbung": {
+        const s = pickR(rng, PARTNERS.werbung), n = eaNet(rng, 150, 900, 10), t = n / 5;
+        r.doc = inv(s, [[1, pickR(rng, ["Inserat „Herbstmode“ im Grazer Stadtmagazin", "Social-Media-Kampagne für die neue Kollektion", "Flyer für den Saisonschlussverkauf, Druck und Verteilung"]), n, n]], n, 20, { pay: "Zahlbar sofort ohne Abzug." });
+        r.text = `Wir überweisen die Rechnung am ${eaD(dt)} (siehe Beleg).`; r.short = "Werbung"; c.bA = n + t; c.vst = t; c.werb = n;
+        r.sol = `Werbung: Bank ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Werbung ${fmtNum(n)}.`; break;
+      }
+      case "reinigung": {
+        const s = PARTNERS.reinigung[0], n = eaNet(rng, 120, 420, 1), t = n / 5, bar = rng() < 0.4;
+        r.doc = inv(s, [[1, "Unterhaltsreinigung Verkaufsraum und Schaufenster", n, n]], n, 20, bar ? { pay: "Betrag bar erhalten.", cash: true } : { pay: "Zahlbar sofort ohne Abzug." });
+        r.text = bar ? "Die Reinigungsfirma wird bar bezahlt (siehe Beleg)." : `Wir überweisen die Rechnung der Reinigungsfirma am ${eaD(dt)} (siehe Beleg).`; r.short = "Reinigung";
+        c[bar ? "kA" : "bA"] = n + t; c.vst = t; c.rein = n; r.sol = `Reinigung: ${bar ? "Kassa" : "Bank"} ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Reinigung ${fmtNum(n)}.`; break;
+      }
+      case "literatur": {
+        const n = eaNet(rng, 18, 90, 1), t = n / 10;
+        r.doc = inv(["Buchhandlung am Hauptplatz", "Hauptplatz 9", "8010 Graz", "ATU 55128830"], [[1, pickR(rng, ["Fachzeitschrift „Textil & Mode“, Jahresausgabe", "Fachbuch „Schnitttechnik für Profis“", "Modeblatt Österreich, Sonderheft Trends"]), n, n]], n, 10, { pay: "Betrag bar erhalten.", cash: true });
+        r.text = "Kauf von Fachliteratur, bar bezahlt (siehe Beleg)."; r.short = "Fachliteratur"; c.kA = n + t; c.vst = t; c.lit = n;
+        r.sol = `Bücher und Zeitschriften haben nur 10 % USt: Kassa ${fmtNum(n + t)}, VSt ${fmtNum(t)}, Fachliteratur ${fmtNum(n)}.`; break;
+      }
       case "einzahlung": {
         const a = eaNet(rng, 500, 1500, 50);
         r.text = `Wir zahlen € ${fmtNum(a)} aus der Kassa auf das Bankkonto ein.`; r.short = "Bareinzahlung Bank"; c.kA = a; c.bE = a;
@@ -3317,9 +3359,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return r;
   }
   function bwMakeVt(rng) {
-    const n = { kompakt: 6, normal: 9, gross: 12 }[bwSize], m = Math.floor(rng() * 11);
-    const must = ["losung", "hwbank", pickR(rng, ["einzahlung", "abhebung"]), pickR(rng, ["tanken", "service"])];
-    const rest = ["kunde", "provision", "miete", "hwbar", "buero", "telefon", "versich", "strom", "gwg", "losung", "tanken", "service", "hwbank"].sort(() => rng() - 0.5);
+    const [lo, hi] = { kompakt: [5, 7], normal: [8, 10], gross: [11, 14] }[bwSize], n = lo + Math.floor(rng() * (hi - lo + 1)), m = Math.floor(rng() * 11);
+    const must = ["losung", pickR(rng, ["hwbank", "hwbar"]), pickR(rng, ["einzahlung", "abhebung"])];
+    const rest = ["kunde", "provision", "miete", "hwbar", "buero", "telefon", "versich", "strom", "gwg", "losung", "tanken", "service", "hwbank", "mieteaus", "werbung", "reinigung", "literatur", "kunde", "losung"].sort(() => rng() - 0.5);
     const kinds = [...must, ...rest].slice(0, n).sort(() => rng() - 0.5);
     const days = [...new Set(Array.from({ length: n * 3 }, () => 1 + Math.floor(rng() * 28)))].slice(0, n).sort((a, b) => a - b);
     while (days.length < n) days.push(28);
@@ -3335,35 +3377,41 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     });
     let kNo = 0, bNo = 0;
     rows.forEach((r, i) => { r.nr = i + 1; r.beleg = r.cols.kE || r.cols.kA ? (r.cols.bE || r.cols.bA ? `K${++kNo}/B${++bNo}` : `K${++kNo}`) : `B${++bNo}`; });
+    const used = k => rows.some(r => r.cols[k]);
+    const cIn = VT_IN.filter(([k]) => used(k)), cAus = VT_AUS.filter(([k]) => used(k)), cols = [...VT_BASE, ...cIn, ...cAus];
     const fields = [], sum = {};
-    VT_COLS.forEach(([k]) => { sum[k] = rows.reduce((s, r) => s + (r.cols[k] || 0), 0); });
-    rows.forEach(r => VT_COLS.forEach(([k]) => fields.push({ id: `vt-${r.nr}-${k}`, amt: r.cols[k] || 0, zeroOk: true, blank: !r.cols[k] })));
-    VT_COLS.forEach(([k]) => fields.push({ id: `vt-s-${k}`, amt: sum[k], zeroOk: true, blank: !sum[k] }));
-    const kEnd = kAB + sum.kE - sum.kA, bEnd = bAB + sum.bE - sum.bA, ein = sum.erl + sum.ueb, aus = VT_OUT.reduce((s, k) => s + sum[k], 0);
+    [...VT_BASE, ...VT_IN, ...VT_AUS].forEach(([k]) => { sum[k] = rows.reduce((s, r) => s + (r.cols[k] || 0), 0); });
+    rows.forEach(r => cols.forEach(([k]) => fields.push({ id: `vt-${r.nr}-${k}`, amt: r.cols[k] || 0, zeroOk: true, blank: !r.cols[k] })));
+    cols.forEach(([k]) => fields.push({ id: `vt-s-${k}`, amt: sum[k], zeroOk: true, blank: !sum[k] }));
+    const kEnd = kAB + sum.kE - sum.kA, bEnd = bAB + sum.bE - sum.bA, ein = sum.erl + sum.ueb, aus = VT_AUS.reduce((s, [k]) => s + sum[k], 0);
     fields.push({ id: "vt-kend", amt: kEnd }, { id: "vt-bend", amt: bEnd }, { id: "vt-ein", amt: ein }, { id: "vt-aus", amt: aus }, { id: "vt-erg", amt: ein - aus });
     const sols = rows.map(r => `${r.nr}. ${r.short}: ${r.sol}`);
     sols.push(`Kassa: Anfangsbestand ${fmtNum(kAB)} + Einzahlungen ${fmtNum(sum.kE)} − Auszahlungen ${fmtNum(sum.kA)} = ${fmtNum(kEnd)}. Bank: ${fmtNum(bAB)} + ${fmtNum(sum.bE)} − ${fmtNum(sum.bA)} = ${fmtNum(bEnd)}.`);
     sols.push(`Betriebseinnahmen netto ${fmtNum(ein)} − Betriebsausgaben netto ${fmtNum(aus)} = ${ein - aus >= 0 ? "Überschuss" : "Verlust"} ${fmtNum(Math.abs(ein - aus))}. USt und VSt sind durchlaufende Posten und zählen nicht zum Ergebnis.`);
-    return { type: "vt", title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, fields, choices: [], books: [], sols };
+    return { type: "vt", title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, cols, nIn: cIn.length, nAus: cAus.length, fields, choices: [], books: [], sols };
   }
   function bwRenderVt() {
-    const inp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`;
+    const inp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`, plain = l => l.replace(/\u00AD/g, "");
+    // Gruppengrenzen für die senkrechten Trennlinien: Kassa | Bank | Steuern | Einnahmen | Ausgaben
+    const starts = new Set(["kE", "bE", "ust", bw.cols[6][0], bw.cols[6 + bw.nIn][0]]), grp = k => starts.has(k) ? "g" : "";
     const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><b>${r.nr}.</b> <span class="mono">${eaD(r.dt)}</span> <span class="chip">${esc(r.beleg)}</span></div><p>${esc(r.text)}</p>${r.doc ? `<div class="beleg-wrap">${r.doc}</div>` : ""}</div>`).join("");
-    const rows = bw.rows.map(r => `<tr><td class="mono">${r.nr}</td><td class="mono">${eaD(r.dt)}</td><td class="mono">${esc(r.beleg)}</td><td class="vt-text">${esc(r.short)}</td>${VT_COLS.map(([k, l]) => `<td>${inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${l.replace(/­/g, "")}`)}</td>`).join("")}</tr>`).join("");
+    const cell = (k, html) => `<td class="${grp(k)}">${html}</td>`;
+    const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)} · ${esc(r.beleg)}</span>${esc(r.short)}</td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
+    const ab = bw.cols.map(([k]) => cell(k, k === "kE" ? `<span class="vt-given">${fmtNum(bw.kAB)}</span>` : k === "bE" ? `<span class="vt-given">${fmtNum(bw.bAB)}</span>` : "")).join("");
     return `<div class="ab-sec"><h2>${esc(US.name)} · Einnahmen-Ausgaben-Rechnung</h2>
-        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Leere Felder zählen als 0. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
+        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
       <div class="ab-sec"><h2>Geschäftsfälle</h2><div class="ea-cases">${cases}</div></div>
       <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} 2026</span></div>
-        <div class="ab-scroll"><table class="av-table vt-table">
-          <thead><tr><th rowspan="2">Lfd. Nr.</th><th rowspan="2">Datum</th><th rowspan="2">Beleg</th><th rowspan="2">Text</th><th colspan="2" class="c">Kassa (brutto)</th><th colspan="2" class="c">Bank (brutto)</th><th colspan="2"></th><th colspan="2" class="c">Aufgliederung Einnahmen (netto)</th><th colspan="7" class="c">Aufgliederung Ausgaben (netto)</th></tr>
-            <tr>${VT_COLS.map(([, l]) => `<th class="num">${l}</th>`).join("")}</tr></thead>
-          <tbody><tr class="vt-ab"><td></td><td class="mono">01.${pad(bw.m + 1)}.</td><td></td><td>Anfangsbestand</td><td class="num">${fmtNum(bw.kAB)}</td><td></td><td class="num">${fmtNum(bw.bAB)}</td><td colspan="12"></td></tr>${rows}</tbody>
-          <tfoot><tr><td colspan="4">Summe</td>${VT_COLS.map(([k, l]) => `<td>${inp(`vt-s-${k}`, `Summe ${l.replace(/­/g, "")}`)}</td>`).join("")}</tr></tfoot>
+        <div class="ab-scroll"><table class="vt-table">
+          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum · Beleg<br>Text</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
+            <tr class="vt-h2">${bw.cols.map(([k, l]) => `<th class="${grp(k)}">${l}</th>`).join("")}</tr></thead>
+          <tbody><tr class="vt-ab"><td class="vt-text"><span class="vt-meta">01.${pad(bw.m + 1)}.</span>Anfangsbestand</td>${ab}</tr>${rows}</tbody>
+          <tfoot><tr><td class="vt-text">Summe</td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-s-${k}`, `Summe ${plain(l)}`))).join("")}</tr></tfoot>
         </table></div>
         <div class="bw-in ea-res">
           <label for="vt-kend">Kassa-Endbestand</label>${inp("vt-kend", "Kassa-Endbestand")}
           <label for="vt-bend">Bank-Endbestand</label>${inp("vt-bend", "Bank-Endbestand")}
-          <label for="vt-ein">Betriebseinnahmen netto (Erlöse + übrige Einnahmen)</label>${inp("vt-ein", "Betriebseinnahmen")}
+          <label for="vt-ein">Betriebseinnahmen netto</label>${inp("vt-ein", "Betriebseinnahmen")}
           <label for="vt-aus">Betriebsausgaben netto</label>${inp("vt-aus", "Betriebsausgaben")}
           <label for="vt-erg">Überschuss (Verlust mit Minus)</label>${inp("vt-erg", "Überschuss oder Verlust")}
         </div>
@@ -3919,6 +3967,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       : bw.type === "um" ? bwRenderCases("Entscheide bei jeder Rechnung: Erhaltung (sofort Aufwand) oder Umbau/Erweiterung (aktivieren)? Bei einem Umbau rechnest du am 31.12.2026 die Abschreibung mit der Restnutzungsdauer und verbuchst sie.")
       : bw.type === "ra" ? bwRenderCases("Geschäftsjahr = Kalenderjahr. Buche jeden Fall zum Zahlungszeitpunkt, am 31.12.2026 (Abgrenzung) und am 01.01.2027 (Auflösung). Abgegrenzt wird immer der Nettobetrag.")
       : bwRenderCases("Buche alle Schritte der Rückstellungen. Rückstellungen werden immer netto gebildet, die Vorsteuer wird erst bei Rechnungseingang gebucht.");
+    $("bewertung").classList.toggle("bw-wide", bw.type === "vt" || bw.type === "web");
     $("bw-steps").innerHTML = BW_STEPS[bw.type].map(s => `<li>${esc(s)}</li>`).join("");
     $("bw-opt-wrap").hidden = bw.type !== "av";
     (bw.books || []).forEach(b => bwFillBook(b, false));
