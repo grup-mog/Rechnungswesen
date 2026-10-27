@@ -329,6 +329,26 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .company dd { margin: 0; min-width: 0; }
 @media (max-width: 560px) { .company dl { grid-template-columns: minmax(0, 1fr); gap: 2px; } .company dd { margin-bottom: 8px; } }
 .tipbox { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; font-size: 0.92rem; }
+/* ---------- Startseite ---------- */
+@media (max-width: 600px) { header.top .plan-switch { display: none; } }
+.crumb { border-bottom: 1px solid var(--line); background: var(--surface); }
+.crumb .wrap { display: flex; align-items: center; gap: 10px; padding-block: 8px; font-size: 0.92rem; color: var(--muted); }
+.crumb button { border: none; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; padding: 2px 0; }
+.crumb button:hover { text-decoration: underline; }
+.crumb b { color: var(--ink); }
+.linkbtn { border: none; background: none; padding: 0; font: inherit; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; }
+.home { display: grid; gap: 22px; }
+.home-group { display: grid; gap: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.tile { display: grid; align-content: start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-width: 0; }
+.tile-wide { grid-column: 1 / -1; }
+.tile-main { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border: none; background: none; font: inherit; color: inherit; cursor: pointer; }
+.tile-main b { font-size: 1.05rem; color: var(--accent); }
+.tile-main span { color: var(--muted); font-size: 0.92rem; }
+.tile-main:hover { background: var(--accent-soft); }
+.tile-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 14px; }
+.tile-chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 0.85rem; cursor: pointer; color: var(--ink); }
+.tile-chips button:hover { border-color: var(--accent); color: var(--accent); }
 /* ---------- Module ---------- */
 nav.modules button { font: inherit; font-size: 0.92rem; padding: 6px 12px; border-radius: 999px; white-space: nowrap; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--muted); font-weight: 600; }
 nav.modules button:hover { color: var(--accent); }
@@ -555,22 +575,31 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 <header class="top">
   <div class="wrap">
     <div class="brand"><span class="brand-mark" aria-hidden="true">S|H</span>Rechnungswesen üben</div>
-    <nav class="modules" aria-label="Themen">
-      <button type="button" data-module="bs" aria-current="page">Buchungssätze</button>
-      <button type="button" data-module="tk" aria-current="false">T-Konten</button>
-      <button type="button" data-module="ab" aria-current="false">Abschluss</button>
-      <button type="button" data-module="bw" aria-current="false">Bewertung</button>
-      <button type="button" data-module="ea" aria-current="false">E/A-Rechnung</button>
-      <button type="button" data-module="kr" aria-current="false">Kostenrechnung</button>
-      <button type="button" data-module="test" aria-current="false">Test / Schularbeit</button>
-      <button type="button" data-module="hu" aria-current="false">Hausübung</button>
+    <nav class="modules" aria-label="Bereiche">
+      <button type="button" data-module="home" aria-current="page">Themen</button>
+      <button type="button" data-module="hu" aria-current="false">Hausübung &amp; Test</button>
       <button type="button" data-module="lex" aria-current="false">Lexikon</button>
+      <button type="button" data-module="teach" aria-current="false">Für Lehrkräfte</button>
     </nav>
     <span class="plan-switch">Kontenplan Österreich · USt 20 % / 10 %</span>
   </div>
 </header>
+<div class="crumb" id="crumb" hidden><div class="wrap"><button type="button" id="crumb-back">← Alle Themen</button><span aria-hidden="true">/</span><b id="crumb-name"></b></div></div>
 
-<main id="buchungssaetze">
+<main id="start" hidden>
+  <div class="wrap lex-wrap">
+    <div class="lex-head">
+      <div>
+        <div class="eyebrow">Modehaus Maier e.U. · Graz</div>
+        <h1>Was möchtest du üben?</h1>
+        <p class="note">Wähle ein Thema. Jede Übung hat „Prüfen“, „Lösung zeigen“ und eine Anleitung. Hast du von deiner Lehrkraft einen Code oder Link bekommen? Dann geh zu <button type="button" class="linkbtn" data-go="hu">Hausübung &amp; Test</button>.</p>
+      </div>
+    </div>
+    <div id="home-tiles" class="home"></div>
+  </div>
+</main>
+
+<main id="buchungssaetze" hidden>
   <div class="wrap">
     <div class="topbar">
       <div class="modebar" id="modebar" role="group" aria-label="Ansicht" hidden>
@@ -679,7 +708,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           </div>
         </div>
       </div>
-      <p class="note">Abgegebene Ergebniscodes wertest du im Reiter <b>Hausübung</b> aus.</p>
+      <p class="note">Lehrkräfte: Abgegebene Ergebniscodes wertest du im Bereich <b>Für Lehrkräfte</b> aus.</p>
     </section>
 
     <!-- Testergebnis -->
@@ -949,23 +978,35 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   <div class="wrap lex-wrap">
     <div class="lex-head">
       <div>
-        <div class="eyebrow">Hausübung</div>
-        <h1>Hausübung</h1>
-        <p class="note">Hast du von deiner Lehrkraft einen Hausübungscode oder Link bekommen? Gib den Code hier ein. Während der Hausübung gibt es kein „Lösung zeigen“. Wenn du fertig bist, gibst du ab und bekommst einen Ergebniscode für Teams.</p>
+        <div class="eyebrow">Hausübung &amp; Test</div>
+        <h1>Aufgabe mit Code starten</h1>
+        <p class="note">Hast du von deiner Lehrkraft einen Code oder Link bekommen? Gib den Code hier ein. Während der Aufgabe gibt es kein „Lösung zeigen“. Wenn du fertig bist, gibst du ab und bekommst einen Ergebniscode für Teams.</p>
       </div>
     </div>
     <div class="panel" id="hu-running" hidden></div>
     <div class="panel">
-      <h2>Hausübung starten</h2>
+      <h2>Code eingeben</h2>
       <div class="code-row">
-        <input id="hu-input" placeholder="z. B. HU-VT-N0-3KD9" aria-label="Hausübungscode">
+        <input id="hu-input" placeholder="z. B. HU-VT-N0-3KD9" aria-label="Hausübungs- oder Testcode">
         <button class="btn primary" id="hu-load" type="button">Starten</button>
       </div>
       <p class="note" id="hu-error" hidden></p>
-      <p class="note">Auch Testcodes aus „Test / Schularbeit“ funktionieren hier.</p>
+      <p class="note">Hausübungscodes beginnen mit HU, Testcodes sehen so aus: 7VZ-10-3-K2J9.</p>
     </div>
-    <details class="panel rc-eval" id="hu-create">
-      <summary><h2>Hausübung erstellen <span class="chip">für Lehrkräfte</span></h2></summary>
+  </div>
+</main>
+
+<main id="lehrkraefte" hidden>
+  <div class="wrap lex-wrap">
+    <div class="lex-head">
+      <div>
+        <div class="eyebrow">Für Lehrkräfte</div>
+        <h1>Aufgaben vergeben und auswerten</h1>
+        <p class="note">So läuft es ab: Code oder Link erstellen, in Teams als Aufgabe ausgeben, die Schüler:innen lösen die Aufgabe und geben einen Ergebniscode ab, und du wertest die Codes hier aus. Es braucht keine Konten, gespeichert wird nichts.</p>
+      </div>
+    </div>
+    <div class="panel rc-eval" id="hu-create">
+      <h2>Hausübung erstellen</h2>
       <div class="rc-eval-body">
         <p class="note">Wähle Aufgabe und Umfang. Alle, die denselben Code verwenden, bekommen genau dieselben Angaben und Belege. Gib den Link oder den Code in Teams als Aufgabe aus.</p>
         <label class="field-label" for="hu-type">Aufgabe</label>
@@ -979,9 +1020,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           <div class="actions"><button class="btn" id="hu-copy" type="button">Link kopieren</button><button class="btn" id="hu-try" type="button">Selbst ausprobieren</button><span class="note" id="hu-copied" aria-live="polite"></span></div>
         </div>
       </div>
-    </details>
-    <details class="panel rc-eval" id="hu-eval">
-        <summary><h2>Ergebniscodes auswerten <span class="chip">für Lehrkräfte</span></h2></summary>
+    </div>
+    <div class="panel">
+      <h2>Test oder Schularbeit erstellen</h2>
+      <p class="note">Für Buchungssätze: Themengebiete, Anzahl und Aufgabenart wählen und den Test starten. Der Testcode steht dann rechts in der Testübersicht. Mit diesem Code bekommen alle dieselben Aufgaben.</p>
+      <div class="actions"><button class="btn" type="button" data-go="test">Test zusammenstellen</button></div>
+    </div>
+    <div class="panel rc-eval" id="hu-eval">
+        <h2>Ergebniscodes auswerten</h2>
         <div class="rc-eval-body">
         <p class="note">Füge hier die abgegebenen Ergebniscodes ein, gern alle auf einmal und auch mit anderem Text dazwischen (z. B. kopiert aus Teams). Die Codes werden nur hier im Browser ausgewertet und nirgends gespeichert.</p>
         <textarea id="rc-input" rows="5" class="an-neben" placeholder="RW1-…"></textarea>
@@ -989,7 +1035,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <div class="ab-scroll"><table class="rc-table" id="rc-table" hidden></table></div>
         <textarea id="rc-tsvbox" rows="4" class="an-neben" hidden aria-label="Tabelle zum Kopieren"></textarea>
         </div>
-      </details>
+      </div>
+    <div class="panel" id="teach-own" hidden>
+      <h2>Eigene Geschäftsfälle</h2>
+      <p class="note">Eigene Geschäftsfälle erscheinen bei allen Schüler:innen im gewählten Themengebiet.</p>
+      <div class="actions"><button class="btn" type="button" id="teach-own-go">Geschäftsfälle verwalten</button></div>
+    </div>
   </div>
 </main>
 
@@ -4850,6 +4901,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   window.addEventListener("hashchange", () => {
     const h = location.hash.toLowerCase();
     if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c && !(hu && hu.code === c.code)) huStart(c); return; }
+    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "ab", "#buchungssaetze": "bs", "#test": "test" }[h];
+    if (simple) { showModule(simple); return; }
     if (!h.startsWith("#lex-") || !LEX.some(e => e.id === h.slice(5))) return;
     lexOpen = h.slice(5); lexQuery = ""; $("lex-search").value = ""; showModule("lex"); lexRender();
     $("lex-" + lexOpen).scrollIntoView({ block: "start" });
@@ -4949,12 +5002,38 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("hu-copy").addEventListener("click", () => rcClip($("hu-link").textContent, $("hu-link"), $("hu-copied"), "Link kopiert."));
   $("hu-try").addEventListener("click", () => { const c = huParse($("hu-code").textContent); if (c) huStart(c); });
 
+  // ================= Startseite und Bereich für Lehrkräfte =================
+  const chipList = ts => ts.map(([v, l]) => [v, l.replace(/\u00AD/g, "")]);
+  const HOME = [
+    ["Doppelte Buchhaltung", [["bs", "Buchungssätze", `Geschäftsfälle verbuchen, mit Text oder Belegen, ${TOPICS.length} Themengebiete.`], ["tk", "T-Konten", "Geschäftsfälle auf T-Konten buchen und die Konten abschließen."], ["ab", "Abschluss", "Aus der Saldenliste GuV, Kapitalkonto und Schlussbilanz erstellen."]]],
+    ["Jahresabschluss", [["bw", "Bewertung", "Anlagen, Vorräte, Forderungen, Abgrenzungen und Rückstellungen bewerten und buchen.", chipList([...BW_TYPES_A, ...BW_TYPES_U])]]],
+    ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
+    ["Kostenrechnung", [["kr", "Kostenrechnung", "Kalkulation im Handel, Voll- und Teilkostenrechnung.", chipList([...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3])]]],
+    ["Wiederholen und testen", [["test", "Test / Schularbeit", "Stell dir selbst einen Test aus Buchungssätzen zusammen."], ["lex", "Lexikon", "Alle Themen kurz erklärt, mit Merksätzen und Lehrbeispielen."]]],
+  ];
+  $("home-tiles").innerHTML = HOME.map(([g, tiles]) => `<section class="home-group"><div class="eyebrow">${esc(g)}</div><div class="tiles">${tiles.map(([m, t, d, chips]) => `<div class="tile${chips ? " tile-wide" : ""}">
+      <button type="button" class="tile-main" data-go="${m}"><b>${esc(t)}</b><span>${esc(d)}</span></button>
+      ${chips ? `<div class="tile-chips">${chips.map(([v, l]) => `<button type="button" data-go="${m}" data-v="${v}">${esc(l)}</button>`).join("")}</div>` : ""}</div>`).join("")}</div></section>`).join("");
+  // data-go: Bereich öffnen, data-v: gleich die passende Aufgabe wählen
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-go]"); if (!b) return;
+    const m = b.dataset.go, v = b.dataset.v;
+    if (v && BW_AREAS[m]) bwSetArea(m, v);
+    showModule(m);
+  });
+  $("crumb-back").addEventListener("click", () => showModule("home"));
+  $("teach-own-go").addEventListener("click", () => { showModule("bs"); saveTestAnswer(); setView("edit"); renderOwnList(); });
+
   // ---------- Module umschalten ----------
   // Test / Schularbeit ist ein eigener Menüpunkt, nutzt aber die Ansichten des Buchungssätze-Trainers
+  // Name für die Brotkrumen-Leiste (Funktion, weil syncNav schon beim Start aufgerufen wird)
+  function modName(m) { return { bs: "Buchungssätze", tk: "T-Konten", ab: "Abschluss", bw: "Bewertung", ea: "E/A-Rechnung", kr: "Kostenrechnung", test: "Test / Schularbeit" }[m] || ""; }
   function syncNav() {
     const m = curModule === "bs" || curModule === "test" ? (mode === "test" ? "test" : "bs") : curModule;
     curModule = m;
-    document.querySelectorAll("nav.modules [data-module]").forEach(b => b.setAttribute("aria-current", b.dataset.module === m ? "page" : "false"));
+    const nav = ["hu", "lex", "teach"].includes(m) ? m : "home";
+    document.querySelectorAll("nav.modules [data-module]").forEach(b => b.setAttribute("aria-current", b.dataset.module === nav ? "page" : "false"));
+    $("crumb").hidden = !modName(m); $("crumb-name").textContent = modName(m);
   }
   function showModule(m) {
     if (hu && !hu.done && BW_AREAS[m]) m = hu.area; // während der Hausübung zurück zur Hausübung
@@ -4967,6 +5046,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("bewertung").hidden = !BW_AREAS[m];
     $("lexikon").hidden = m !== "lex";
     $("hausuebung").hidden = m !== "hu";
+    $("start").hidden = m !== "home";
+    $("lehrkraefte").hidden = m !== "teach";
+    if (m === "teach") $("teach-own").hidden = !(canEdit && db);
     syncNav();
     store.set("module", m);
     if (m === "tk" && !tk) tkBuild();
@@ -4984,18 +5066,22 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   renderSeg("tk-seg-bs", [[false, "nein"], [true, "ja"]], tkShowBs, v => { tkShowBs = v; store.set("tkBs", v); if (tk) tkRender(); });
   renderSeg("tk-seg-ab", [[true, "vorgegeben"], [false, "selbst eintragen"]], tkAbGiven, v => { tkAbGiven = v; store.set("tkAb", v); if (tk) tkRender(); });
   {
-    const h = location.hash.toLowerCase(), saved = store.get("module", "bs");
+    const h = location.hash.toLowerCase(), saved = store.get("module", "home");
     if (h === "#tkonten") showModule("tk");
     else if (h === "#abschluss") showModule("ab");
     else if (h === "#bewertung") showModule("bw");
     else if (h === "#test") showModule("test");
     else if (h === "#lexikon") showModule("lex");
     else if (h === "#hausuebung") showModule("hu");
+    else if (h === "#start") showModule("home");
+    else if (h === "#lehrkraefte") showModule("teach");
+    else if (h === "#buchungssaetze") showModule("bs");
     else if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c) huStart(c); else showModule("hu"); }
     else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
     else if (h === "#kr" || h === "#kostenrechnung") showModule("kr");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["tk", "ab", "bw", "ea", "kr", "test", "lex", "hu"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["bs", "tk", "ab", "bw", "ea", "kr", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-")) showModule("home");
   }
   connectDb();
 })();
