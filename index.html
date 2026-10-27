@@ -516,8 +516,19 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 .del-btn { background: none; border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; cursor: pointer; color: var(--err); font-size: 0.85rem; }
 .del-btn:hover { border-color: var(--err); }
 /* Anlagen */
-.bw-types { display: grid; grid-template-columns: 3fr 4fr; gap: 10px 14px; }
-@media (max-width: 700px) { .bw-types { grid-template-columns: minmax(0, 1fr); } }
+.bw-pick-groups { display: grid; grid-template-columns: 3fr 4fr; gap: 10px 14px; }
+@media (max-width: 700px) { .bw-pick-groups { grid-template-columns: minmax(0, 1fr); } }
+.bw-pick { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.bw-pick > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 14px; cursor: pointer; list-style: none; }
+.bw-pick > summary::-webkit-details-marker { display: none; }
+.bw-pick-l { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.bw-pick-size { color: var(--muted); font-size: 0.9rem; }
+.bw-pick-more { margin-left: auto; color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+.bw-pick-more::after { content: " ▾"; }
+.bw-pick[open] .bw-pick-more::after { content: " ▴"; }
+.bw-pick-body { display: grid; gap: 12px; padding: 4px 14px 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.bw-pick-opts { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+.bw-pick-opts .bw-tgroup { min-width: min(100%, 280px); }
 .bw-tgroup { display: grid; gap: 4px; min-width: 0; }
 .bw-types .bw-type { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
 .bw-types .bw-type button { font-size: 0.86rem; padding: 7px 6px; overflow-wrap: anywhere; hyphens: auto; }
@@ -940,14 +951,23 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         </div>
         <button class="btn" id="bw-new" type="button">Neue Aufgabe</button>
       </div>
-      <div class="bw-types">
-        <div class="bw-tgroup" id="bw-tg-a"><span class="field-label">Anlagevermögen</span><div class="seg bw-type" id="bw-seg-type-a" role="group" aria-label="Aufgabe zum Anlagevermögen wählen"></div></div>
-        <div class="bw-tgroup" id="bw-tg-u"><span class="field-label">Umlaufvermögen und Abgrenzungen</span><div class="seg bw-type" id="bw-seg-type-u" role="group" aria-label="Aufgabe zum Umlaufvermögen wählen"></div></div>
-        <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
-        <div class="bw-tgroup" id="bw-tg-k1" hidden><span class="field-label">Kalkulation im Handel</span><div class="seg bw-type" id="bw-seg-type-k1" role="group" aria-label="Aufgabe zur Kalkulation im Handel wählen"></div></div>
-        <div class="bw-tgroup" id="bw-tg-k2" hidden><span class="field-label">Vollkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k2" role="group" aria-label="Aufgabe zur Vollkostenrechnung wählen"></div></div>
-        <div class="bw-tgroup" id="bw-tg-k3" hidden><span class="field-label">Teilkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k3" role="group" aria-label="Aufgabe zur Teilkostenrechnung wählen"></div></div>
-      </div>
+      <details class="bw-types bw-pick" id="bw-pick">
+        <summary><span class="bw-pick-l">Aufgabe</span><b id="bw-pick-type"></b><span class="bw-pick-size" id="bw-pick-size"></span><span class="bw-pick-more">ändern</span></summary>
+        <div class="bw-pick-body">
+            <div class="bw-pick-groups">
+          <div class="bw-tgroup" id="bw-tg-a"><span class="field-label">Anlagevermögen</span><div class="seg bw-type" id="bw-seg-type-a" role="group" aria-label="Aufgabe zum Anlagevermögen wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-u"><span class="field-label">Umlaufvermögen und Abgrenzungen</span><div class="seg bw-type" id="bw-seg-type-u" role="group" aria-label="Aufgabe zum Umlaufvermögen wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-k1" hidden><span class="field-label">Kalkulation im Handel</span><div class="seg bw-type" id="bw-seg-type-k1" role="group" aria-label="Aufgabe zur Kalkulation im Handel wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-k2" hidden><span class="field-label">Vollkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k2" role="group" aria-label="Aufgabe zur Vollkostenrechnung wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-k3" hidden><span class="field-label">Teilkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k3" role="group" aria-label="Aufgabe zur Teilkostenrechnung wählen"></div></div>
+        </div>
+          <div class="bw-pick-opts">
+            <div class="bw-tgroup"><span class="field-label">Umfang</span><div class="seg" id="bw-seg-size"></div></div>
+            <div class="bw-tgroup" id="bw-opt-wrap"><span class="field-label">Buchwert am 01.01.</span><div class="seg" id="bw-seg-bw"></div></div>
+          </div>
+        </div>
+      </details>
       <div class="hu-bar" id="hu-bar" hidden></div>
       <div id="bw-body" style="display:grid;gap:18px;min-width:0"></div>
       <div class="actions sticky-actions">
@@ -961,14 +981,6 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       <div class="panel">
         <h2>So gehst du vor</h2>
         <ol class="steps" id="bw-steps"></ol>
-      </div>
-      <div class="panel">
-        <h2>Umfang</h2>
-        <div class="seg" id="bw-seg-size"></div>
-        <div id="bw-opt-wrap" style="display:grid;gap:6px">
-          <span class="field-label">Buchwert am 01.01.</span>
-          <div class="seg" id="bw-seg-bw"></div>
-        </div>
       </div>
     </aside>
   </div>
@@ -4540,6 +4552,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ---------- gemeinsam: anzeigen, prüfen, Lösung ----------
   function bwRender() {
     $("bw-count").textContent = `${BW_AREAS[bwArea].name} · Aufgabe ${bwNo}`;
+    // Zusammenfassung in der eingeklappten Aufgabenauswahl
+    const tn = [...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].find(x => x[0] === bw.type);
+    $("bw-pick-type").textContent = tn ? tn[1].replace(/\u00AD/g, "") : "";
+    $("bw-pick-size").textContent = "· " + { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" }[bwSize];
     $("bw-title").textContent = bw.title;
     $("bw-body").innerHTML = KR_RENDER[bw.type] ? KR_RENDER[bw.type]() : KR_MAKE[bw.type] ? krRenderParts() : bw.type === "av" ? bwRenderAv() : bw.type === "an" || bw.type === "eav" ? bwRenderAn() : bw.type === "vt" ? bwRenderVt() : bw.type === "web" ? bwRenderWeb() : bw.type === "lk" ? bwRenderLk() : bw.type === "fo" ? bwRenderFo()
       : bw.type === "ag" ? bwRenderCases("Geschäftsjahr = Kalenderjahr 2026, lineare Abschreibung mit Halbjahresregel. Verbuche bei jedem Fall alle Schritte: den Verkauf bzw. die Versicherungsentschädigung während des Jahres, am 31.12. die Abschreibung bis zum Ausscheiden und das Ausbuchen des Restbuchwerts.")
@@ -4614,7 +4630,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
   const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bwType))));
-  const bwPickType = v => { bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); bwBuild(); };
+  const bwPickType = v => { bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); $("bw-pick").open = false; bwBuild(); };
   // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
   function bwSetArea(a, type) {
     if (a !== bwArea || type) {
