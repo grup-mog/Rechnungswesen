@@ -329,6 +329,21 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .company dd { margin: 0; min-width: 0; }
 @media (max-width: 560px) { .company dl { grid-template-columns: minmax(0, 1fr); gap: 2px; } .company dd { margin-bottom: 8px; } }
 .tipbox { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; font-size: 0.92rem; }
+/* Breite Tabellen am Handy als Karten (Zeile für Zeile) */
+@media (max-width: 700px) {
+  #bw-body .ab-scroll:has(> table.m-cards) { overflow: visible; }
+  #bw-body table.m-cards, #bw-body table.m-cards tbody, #bw-body table.m-cards tfoot, #bw-body table.m-cards tr { display: block; width: 100%; min-width: 0; }
+  #bw-body table.m-cards thead { display: none; }
+  #bw-body table.m-cards tr { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; background: var(--surface); }
+  #bw-body table.m-cards tfoot tr { border-width: 2px; }
+  #bw-body table.m-cards td { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 10rem); align-items: center; gap: 8px; border: none !important; padding: 3px 0 !important; position: static !important; width: auto !important; min-width: 0 !important; max-width: none !important; text-align: right; box-shadow: none !important; background: none !important; }
+  #bw-body table.m-cards td::before { content: attr(data-label); text-align: left; font-family: var(--font-body); font-size: 0.8rem; color: var(--muted); font-weight: 600; letter-spacing: 0; }
+  #bw-body table.m-cards td.mc-title { display: block; text-align: left; font-weight: 700; font-size: 0.92rem; padding-bottom: 6px !important; }
+  #bw-body table.m-cards td.mc-title::before { content: none; }
+  #bw-body table.m-cards td.mc-empty { display: none; }
+  #bw-body table.m-cards input, #bw-body table.m-cards select { width: 100% !important; min-width: 0 !important; max-width: none !important; }
+  #bw-body table.m-cards .seg { justify-self: end; }
+}
 /* ---------- Startseite ---------- */
 @media (max-width: 600px) { header.top .plan-switch { display: none; } }
 .crumb { border-bottom: 1px solid var(--line); background: var(--surface); }
@@ -346,6 +361,10 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .tile-main b { font-size: 1.05rem; color: var(--accent); }
 .tile-main span { color: var(--muted); font-size: 0.92rem; }
 .tile-main:hover { background: var(--accent-soft); }
+.tile-prog { font-size: 0.82rem; color: var(--ok); font-weight: 600; }
+.pm { display: inline-block; margin-left: 6px; font-size: 0.72rem; font-weight: 700; color: var(--muted); background: var(--grid); border-radius: 999px; padding: 0 6px; vertical-align: 1px; }
+.pm.ok { color: var(--ok); background: transparent; font-size: 0.85rem; padding: 0; }
+.home-prog { gap: 6px; }
 .tile-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 14px; }
 .tile-chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 0.85rem; cursor: pointer; color: var(--ink); }
 .tile-chips button:hover { border-color: var(--accent); color: var(--accent); }
@@ -605,6 +624,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <h1>Was möchtest du üben?</h1>
         <p class="note">Wähle ein Thema. Jede Übung hat „Prüfen“, „Lösung zeigen“ und eine Anleitung. Hast du von deiner Lehrkraft einen Code oder Link bekommen? Dann geh zu <button type="button" class="linkbtn" data-go="hu">Hausübung &amp; Test</button>.</p>
       </div>
+    </div>
+    <div class="panel home-prog" id="home-prog" hidden>
+      <h2>Dein Fortschritt</h2>
+      <p class="note" id="home-prog-txt"></p>
+      <p class="note">Gespeichert wird nur hier im Browser, auf diesem Gerät.</p>
+      <div><button class="reset" id="home-prog-reset" type="button">Fortschritt zurücksetzen</button></div>
     </div>
     <div id="home-tiles" class="home"></div>
   </div>
@@ -2031,6 +2056,16 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   let testBrutto = store.get("testBrutto", true);
   let testForm = store.get("testForm", "mix");
   let stats = store.get("stats", { done: 0, first: 0, streak: 0 });
+  // Lernfortschritt je Übungsart, nur in diesem Browser: n = geübte Aufgaben, ok = davon ganz richtig, last = letztes Ergebnis in %
+  let prog = store.get("prog", {});
+  function progRecord(key, task, pct) {
+    if (!task) return;
+    const p = prog[key] || (prog[key] = { n: 0, ok: 0, last: 0 });
+    if (!task._pr) { task._pr = true; p.n++; }
+    p.last = Math.round(pct);
+    if (pct >= 100 && !task._pok && !task._rev) { task._pok = true; p.ok++; }
+    store.set("prog", prog);
+  }
   let current = null;
   let taskNo = 0;
   let test = null;
@@ -2913,12 +2948,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       if (cardRight) { card.classList.add("ok"); cardsOk++; }
     });
     const all = cardsOk === tk.keys.length;
+    progRecord("tk", tk, cardsOk / tk.keys.length * 100);
     $("tk-feedback").innerHTML = `<div class="feedback ${all ? "ok" : "err"}"><div class="feedback-title">${all ? "Alle Konten stimmen!" : "Noch nicht ganz"}</div>
       <div>${right} von ${total} Einträgen richtig, ${cardsOk} von ${tk.keys.length} Konten fertig.${all ? "" : " Schau dir die markierten Zeilen an."}</div>
       ${all ? `<div class="actions"><button class="btn primary" type="button" id="tk-next2">Neue Aufgabe</button></div>` : ""}</div>`;
     const n = $("tk-next2"); if (n) { n.addEventListener("click", tkBuild); n.focus(); }
   }
   function tkReveal() {
+    if (tk) tk._rev = true;
     if (!tk) return;
     $("tk-grid").querySelectorAll(".tcard").forEach(card => {
       const k = card.dataset.acc, exp = tk.acc[k];
@@ -3043,10 +3080,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("ab-bil-msg").textContent = bilOk ? `Richtig: Bilanzsumme ${P.fmt(ab.bestand.filter(e => P.acc[e.k][2] === "aktiv").reduce((s, e) => s + e.amt, 0))}.` : "Prüfe die markierten Felder. Aktive Bestandskonten auf die Aktivseite, Schulden und Kapital auf die Passivseite.";
     $("ab-bil-msg").className = "ab-msg " + (bilOk ? "ok" : "err");
     const all = ok === total;
+    progRecord("ab", ab, total ? ok / total * 100 : 0);
     $("ab-feedback").innerHTML = `<div class="feedback ${all ? "ok" : "err"}"><div class="feedback-title">${all ? "Abschluss komplett richtig!" : "Noch nicht ganz"}</div><div>${ok} von ${total} Feldern richtig.</div>${all ? `<div class="actions"><button class="btn primary" type="button" id="ab-next2">Neue Aufgabe</button></div>` : ""}</div>`;
     const n = $("ab-next2"); if (n) { n.addEventListener("click", abBuild); n.focus(); }
   }
   function abReveal() {
+    if (ab) ab._rev = true;
     if (!ab) return;
     document.querySelectorAll("#abschluss input").forEach(i => { i.value = ""; i.classList.remove("ok", "err"); });
     ab.erfolg.forEach(e => { $((P.acc[e.k][2] === "aufwand" ? "ab-g-s-" : "ab-g-h-") + e.k).value = fmtNum(e.amt); });
@@ -4571,7 +4610,33 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("bw-body").querySelectorAll(".seg").forEach(sg => sg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
       sg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); sg.classList.remove("ok", "err");
     })));
+    bwCardify();
     $("bw-feedback").innerHTML = "";
+  }
+  // Breite Tabellen werden am Handy (CSS unter 700px) zu Karten: Spaltenüberschrift steht dann vor jedem Feld
+  function bwCardify() {
+    $("bw-body").querySelectorAll("table.av-table, table.vt-table, table.lk-table").forEach(table => {
+      const grid = [];
+      [...(table.tHead ? table.tHead.rows : [])].forEach((tr, r) => {
+        grid[r] = grid[r] || []; let c = 0;
+        [...tr.cells].forEach(th => {
+          while (grid[r][c] !== undefined) c++;
+          const txt = [...th.childNodes].map(x => x.textContent.replace(/\u00AD/g, "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" / ");
+          for (let i = 0; i < th.rowSpan; i++) for (let j = 0; j < th.colSpan; j++) (grid[r + i] = grid[r + i] || [])[c + j] = txt;
+          c += th.colSpan;
+        });
+      });
+      const n = Math.max(0, ...grid.map(r => r.length)), labels = Array.from({ length: n }, (_, c) => [...new Set(grid.map(r => r[c]).filter(Boolean))].join(" "));
+      [...table.tBodies, ...(table.tFoot ? [table.tFoot] : [])].forEach(sec => [...sec.rows].forEach(tr => {
+        let c = 0;
+        [...tr.cells].forEach((td, i) => {
+          td.dataset.label = labels[c] || ""; c += td.colSpan;
+          if (!td.children.length && !td.textContent.trim()) td.classList.add("mc-empty");
+          if (i === 0 && !td.querySelector("input, select")) td.classList.add("mc-title");
+        });
+      }));
+      table.classList.add("m-cards");
+    });
   }
   function bwCheck() {
     if (!bw) return;
@@ -4607,6 +4672,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const books = bw.books || [];
     books.forEach(b => { if (bwCheckBook(b).correct) bOk++; });
     const all = ok === total && bOk === books.length;
+    progRecord(bw.type, bw, total + books.length ? (ok + bOk) / (total + books.length) * 100 : 0);
     const parts = [];
     if (total) parts.push(`${ok} von ${total} Feldern`);
     if (books.length) parts.push(`${bOk} von ${books.length} Buchungssätzen`);
@@ -4616,6 +4682,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   function bwReveal() {
     if (!bw) return;
+    bw._rev = true;
     bw.fields.forEach(f => { const el = $(f.id); if (f.check !== undefined) { el.checked = f.check; el.parentElement.classList.remove("ok", "err"); return; } el.value = f.code !== undefined ? f.code : f.blank ? "" : f.text !== undefined ? f.text : f.date !== undefined ? f.date : (f.qty ? String(f.amt / 100).replace(".", ",") : f.pct ? anPctTxt(f.nd).replace(" %", "") : fmtNum(f.amt)); el.classList.remove("ok", "err"); });
     if (bw.type === "an" || bw.type === "eav") bw.rows.filter(r => !r.old).forEach(r => { $(r.id + "-name").value = r.name; $(r.id + "-sup").value = r.sup; });
     bw.choices.forEach(c => { const sg = $(c.id); sg.classList.remove("ok", "err"); sg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === c.v))); });
@@ -5027,9 +5094,29 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     ["Kostenrechnung", [["kr", "Kostenrechnung", "Kalkulation im Handel, Voll- und Teilkostenrechnung.", chipList([...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3])]]],
     ["Wiederholen und testen", [["test", "Test / Schularbeit", "Stell dir selbst einen Test aus Buchungssätzen zusammen."], ["lex", "Lexikon", "Alle Themen kurz erklärt, mit Merksätzen und Lehrbeispielen."]]],
   ];
-  $("home-tiles").innerHTML = HOME.map(([g, tiles]) => `<section class="home-group"><div class="eyebrow">${esc(g)}</div><div class="tiles">${tiles.map(([m, t, d, chips]) => `<div class="tile${chips ? " tile-wide" : ""}">
-      <button type="button" class="tile-main" data-go="${m}"><b>${esc(t)}</b><span>${esc(d)}</span></button>
-      ${chips ? `<div class="tile-chips">${chips.map(([v, l]) => `<button type="button" data-go="${m}" data-v="${v}">${esc(l)}</button>`).join("")}</div>` : ""}</div>`).join("")}</div></section>`).join("");
+  // Fortschritt als kleines Zeichen am Knopf: ✓ = schon einmal ganz richtig, sonst letztes Ergebnis
+  const progMark = k => { const p = prog[k]; return !p ? "" : p.ok ? `<span class="pm ok" title="${p.n}× geübt, ${p.ok}× ganz richtig">✓</span>` : `<span class="pm" title="${p.n}× geübt, zuletzt ${p.last} %">${p.last} %</span>`; };
+  const progLine = (m, chips) => {
+    if (m === "bs") return stats.done ? `${stats.done} Geschäftsfälle gelöst, ${stats.first} auf Anhieb richtig` : "";
+    const keys = chips ? chips.map(c => c[0]) : [m], ps = keys.map(k => prog[k]).filter(Boolean);
+    if (!ps.length) return "";
+    const n = ps.reduce((a, p) => a + p.n, 0), ok = ps.reduce((a, p) => a + p.ok, 0);
+    return `${n} ${n === 1 ? "Aufgabe" : "Aufgaben"} geübt, ${ok} ganz richtig${chips ? ` · ${ps.length} von ${keys.length} Arten` : ""}`;
+  };
+  function renderHome() {
+    const all = Object.values(prog), n = all.reduce((a, p) => a + p.n, 0) + stats.done, ok = all.reduce((a, p) => a + p.ok, 0) + stats.first;
+    $("home-prog").hidden = !n;
+    $("home-prog-txt").innerHTML = `Du hast <b>${n}</b> ${n === 1 ? "Aufgabe" : "Aufgaben"} geübt, <b>${ok}</b> davon ganz richtig. Bei den Aufgabenarten zeigt ✓, was du schon einmal ganz richtig gelöst hast, sonst siehst du dein letztes Ergebnis.`;
+    $("home-tiles").innerHTML = HOME.map(([g, tiles]) => `<section class="home-group"><div class="eyebrow">${esc(g)}</div><div class="tiles">${tiles.map(([m, t, d, chips]) => { const pl = progLine(m, chips); return `<div class="tile${chips ? " tile-wide" : ""}">
+      <button type="button" class="tile-main" data-go="${m}"><b>${esc(t)}${chips ? "" : progMark(m)}</b><span>${esc(d)}</span>${pl ? `<span class="tile-prog">${pl}</span>` : ""}</button>
+      ${chips ? `<div class="tile-chips">${chips.map(([v, l]) => `<button type="button" data-go="${m}" data-v="${v}">${esc(l)}${progMark(v)}</button>`).join("")}</div>` : ""}</div>`; }).join("")}</div></section>`).join("");
+  }
+  $("home-prog-reset").addEventListener("click", () => {
+    const b = $("home-prog-reset");
+    if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Wirklich alles zurücksetzen?"; return; }
+    prog = {}; store.set("prog", prog); stats = { done: 0, first: 0, streak: 0 }; store.set("stats", stats); renderStats();
+    b.dataset.confirm = ""; b.textContent = "Fortschritt zurücksetzen"; renderHome();
+  });
   // data-go: Bereich öffnen, data-v: gleich die passende Aufgabe wählen
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-go]"); if (!b) return;
@@ -5063,6 +5150,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("lexikon").hidden = m !== "lex";
     $("hausuebung").hidden = m !== "hu";
     $("start").hidden = m !== "home";
+    if (m === "home") renderHome();
     $("lehrkraefte").hidden = m !== "teach";
     if (m === "teach") $("teach-own").hidden = !(canEdit && db);
     syncNav();
