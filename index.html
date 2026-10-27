@@ -173,8 +173,12 @@ main .wrap.lex-wrap { grid-template-columns: minmax(0, 1fr); gap: 18px; max-widt
 .vt-table .g { border-left: 2px solid var(--line); }
 .vt-table input { width: 4.7rem; padding: 4px 3px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-family: var(--font-mono); font-size: 0.8rem; text-align: right; color: inherit; }
 .vt-table input.ok { border-color: var(--ok); background: var(--ok-soft); } .vt-table input.err { border-color: var(--err); background: var(--err-soft); }
-.vt-table .vt-text { position: sticky; left: 0; z-index: 1; background: var(--surface); min-width: 8.5rem; max-width: 10rem; font-size: 0.78rem; line-height: 1.25; box-shadow: 1px 0 0 var(--line); }
+.vt-table .vt-text { position: sticky; left: 0; z-index: 1; background: var(--surface); width: 8.5rem; min-width: 8.5rem; max-width: 8.5rem; font-size: 0.78rem; line-height: 1.25; box-shadow: 1px 0 0 var(--line); }
 .vt-table tbody tr:nth-child(even) td.vt-text { background: var(--surface); }
+.vt-table .vt-bel { position: sticky; left: 8.5rem; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+.vt-table tbody tr:nth-child(even) td.vt-bel { background: var(--surface); }
+@media (max-width: 700px) { .vt-table .vt-text, .vt-table .vt-bel { position: static; } }
+.vt-table input.vt-belin { width: 4.4rem; text-align: left; text-transform: uppercase; }
 .vt-table .vt-skip { display: flex; gap: 4px; align-items: center; margin-top: 3px; font-size: 0.7rem; color: var(--muted); cursor: pointer; border-radius: 4px; padding: 1px 3px; width: fit-content; }
 .vt-table .vt-skip input { width: auto; min-width: 0; margin: 0; }
 .vt-table .vt-skip.ok { background: var(--ok-soft); color: var(--ok); } .vt-table .vt-skip.err { background: var(--err-soft); color: var(--err); }
@@ -2937,7 +2941,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     an: ["Anschaffungskosten = Kaufpreis − Rabatt + Anschaffungsnebenkosten (z. B. Lieferung, Montage), netto. Beim Pkw gibt es keinen Vorsteuerabzug: Anschaffungskosten = brutto.", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im ersten Halbjahr = ganze AfA, im zweiten Halbjahr = halbe AfA (entscheidend ist die Inbetriebnahme, nicht der Kauf).", "Bestehende Anlage: Buchwert 01.01. = Anschaffungswert − bisherige AfA. Neuanschaffung: Buchwert 01.01. = 0.", "Kum. AfA 31.12. = bisherige AfA + AfA 2026, Buchwert 31.12. = Anschaffungswert − kum. AfA.", "Buchungen: Kauf (Anlagenkonto + Vorsteuer / 3300) und am 31.12. die gesamte AfA: 7010 / Anlagenkonto."],
     ag: ["Verkauf: Zahlungsmittel bzw. Kunde / 4600 Erlöse aus dem Abgang von Anlagen 20 % und 3500 Umsatzsteuer. Gebrauchter Pkw ohne Vorsteuerabzug beim Kauf: 4601 (0 %, ohne USt).", "Schadensfall: Versicherungsentschädigung auf 4610, ohne Umsatzsteuer. Bei schriftlicher Zusage zuerst 2300 Sonstige Forderungen, bei der Zahlung Bank / 2300.", "31.12.: Abschreibung bis zum Ausscheiden. Erstes Halbjahr = halbe AfA, zweites Halbjahr = ganze AfA, höchstens der Buchwert.", "Restbuchwert = Buchwert 01.01. − AfA im Jahr des Ausscheidens.", "Restbuchwert ausbuchen: 7820 Buchwert abgegangener Anlagen / Anlagenkonto. Bei einem Schadensfall: 7819 Sonstige Schadensfälle / Anlagenkonto."],
     um: ["Erhaltung (Reparatur, Wartung, Ausmalen, gleichwertiger Ersatz): sofort Aufwand in Klasse 7, z. B. 7201 Instandhaltung Gebäude.", "Umbau oder Erweiterung (Verwendungszweck geändert oder Substanz vermehrt): auf das bestehende Anlagenkonto aktivieren, z. B. 0300.", "Bisherige Nutzungsdauer nach der Halbjahresregel zählen: erstes Jahr ½ oder 1, im Jahr des Umbaus ½ bei Inbetriebnahme im zweiten Halbjahr.", "Restnutzungsdauer = gesamte Nutzungsdauer − bisherige Nutzungsdauer.", "AfA gesamt = AfA der bestehenden Anlage + Umbaukosten ÷ Restnutzungsdauer (halbe AfA bei Inbetriebnahme im zweiten Halbjahr)."],
-    vt: ["Einnahmen und Ausgaben werden erst gezählt, wenn Geld fließt (Zufluss-Abfluss-Prinzip). Eine offene Rechnung kommt erst bei der Zahlung ins Buch.", "Nicht eingetragen werden Fälle ohne Geldfluss (Rechnung auf Ziel, Bestellung, Angebot) und private Ausgaben der Inhaberin aus privatem Geld: „nicht eintragen“ ankreuzen.", "Kassa bzw. Bank: Betrag brutto bei Einzahlung oder Auszahlung eintragen.", "Aufgliedern: Umsatzsteuer bzw. Vorsteuer in die Steuerspalte, den Nettobetrag in die passende Einnahmen- oder Ausgabenspalte.", "Pkw: kein Vorsteuerabzug, daher kommt der Bruttobetrag in die Spalte PKW. Versicherungen haben keine Umsatzsteuer.", "GWG bis € 1.000,00 netto sind sofort zur Gänze Ausgabe. Geldtransfers zwischen Kassa und Bank werden nicht aufgegliedert.", "Überschuss = Betriebseinnahmen netto − Betriebsausgaben netto."],
+    vt: ["Einnahmen und Ausgaben werden erst gezählt, wenn Geld fließt (Zufluss-Abfluss-Prinzip). Eine offene Rechnung kommt erst bei der Zahlung ins Buch.", "Belegnummern fortlaufend nach Datum: Kassa K1, K2, …, Bank B1, B2, …. Nicht eingetragen werden Fälle ohne Geldfluss (Rechnung auf Ziel, Bestellung, Angebot) und private Ausgaben der Inhaberin aus privatem Geld: Beleg „–“.", "Kassa bzw. Bank: Betrag brutto bei Einzahlung oder Auszahlung eintragen.", "Aufgliedern: Umsatzsteuer bzw. Vorsteuer in die Steuerspalte, den Nettobetrag in die passende Einnahmen- oder Ausgabenspalte.", "Pkw: kein Vorsteuerabzug, daher kommt der Bruttobetrag in die Spalte PKW. Versicherungen haben keine Umsatzsteuer.", "GWG bis € 1.000,00 netto sind sofort zur Gänze Ausgabe. Geldtransfers zwischen Kassa und Bank werden nicht aufgegliedert.", "Überschuss = Betriebseinnahmen netto − Betriebsausgaben netto."],
     web: ["Jede Eingangsrechnung für Handelswaren wird eingetragen, auch wenn sie noch nicht bezahlt ist.", "Lieferdatum, Lieferant und Ware stehen auf der Rechnung. Der Rabatt ist im Rechnungsbetrag schon abgezogen.", "Bruttobetrag = Rechnungsbetrag, Vorsteuer 20 %, Nettobetrag = brutto − Vorsteuer.", "Abzüge (z. B. Skonto) und Zusatzkosten (z. B. Mahnspesen) werden brutto eingetragen. Skonto = Bruttobetrag × Skontosatz.", "„Bezahlt am“ erst eintragen, wenn bezahlt wurde."],
     eav: ["Anlagen über € 1.000,00 netto kommen ins Anlagenverzeichnis, ihre Anschaffung ist keine sofortige Ausgabe.", "Anschaffungskosten = Kaufpreis − Rabatt + Lieferung/Montage, netto (Pkw brutto).", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im zweiten Halbjahr = halbe AfA.", "Buchwert 31.12. = Anschaffungswert − kumulierte AfA. Die AfA ist die Betriebsausgabe des Jahres."],
     lk: ["Nach jedem Zukauf wird ein neuer Durchschnittspreis berechnet: Bestandswert ÷ Bestandsmenge.", "Entnahmen bzw. Verkäufe werden mit dem aktuellen Durchschnittspreis bewertet. Der Durchschnittspreis ändert sich dadurch nicht.", "Schwund = (Sollbestand − Istbestand) × Durchschnittspreis.", "Abwertung: Ist der Preis am Bilanzstichtag niedriger, wird der Istbestand mit diesem niedrigeren Preis bewertet: Istbestand × (Ø-Preis − Tagespreis).", "Bilanzansatz = Istbestand × niedrigerer Preis. UB 1: Bestandsveränderung = Bilanzansatz − Anfangsbestand (AB > EB = Lagerabbau). UB 2: Wertminderung (Schwund + Abwertung) auf 7800 Abschreibung von Vorräten."],
@@ -3415,13 +3419,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const fields = [], sum = {};
     [...VT_BASE, ...VT_IN, ...VT_AUS].forEach(([k]) => { sum[k] = rows.reduce((s, r) => s + (r.cols[k] || 0), 0); });
     rows.forEach(r => {
-      fields.push({ id: `vt-${r.nr}-skip`, check: !!r.skip, blank: !r.skip });
+      fields.push({ id: `vt-${r.nr}-bel`, code: r.beleg, alts: r.beleg.includes("/") ? [r.beleg.split("/").reverse().join("/")] : r.beleg === "–" ? ["-"] : [] });
       cols.forEach(([k]) => fields.push({ id: `vt-${r.nr}-${k}`, amt: r.cols[k] || 0, zeroOk: true, blank: !r.cols[k] }));
     });
     cols.forEach(([k]) => fields.push({ id: `vt-s-${k}`, amt: sum[k], zeroOk: true, blank: !sum[k] }));
     const kEnd = kAB + sum.kE - sum.kA, bEnd = bAB + sum.bE - sum.bA, ein = sum.erl + sum.ueb, aus = VT_AUS.reduce((s, [k]) => s + sum[k], 0);
     fields.push({ id: "vt-kend", amt: kEnd }, { id: "vt-bend", amt: bEnd }, { id: "vt-ein", amt: ein }, { id: "vt-aus", amt: aus }, { id: "vt-erg", amt: ein - aus });
-    const sols = rows.map(r => `${r.nr}. ${r.short}: ${r.sol}`);
+    const sols = rows.map(r => `${r.nr}. ${r.short} (Beleg ${r.beleg}): ${r.sol}`);
     sols.push(`Kassa: Anfangsbestand ${fmtNum(kAB)} + Einzahlungen ${fmtNum(sum.kE)} − Auszahlungen ${fmtNum(sum.kA)} = ${fmtNum(kEnd)}. Bank: ${fmtNum(bAB)} + ${fmtNum(sum.bE)} − ${fmtNum(sum.bA)} = ${fmtNum(bEnd)}.`);
     sols.push(`Betriebseinnahmen netto ${fmtNum(ein)} − Betriebsausgaben netto ${fmtNum(aus)} = ${ein - aus >= 0 ? "Überschuss" : "Verlust"} ${fmtNum(Math.abs(ein - aus))}. USt und VSt sind durchlaufende Posten und zählen nicht zum Ergebnis.`);
     return { type: "vt", title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, cols, nIn: cIn.length, nAus: cAus.length, fields, choices: [], books: [], sols };
@@ -3432,17 +3436,17 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const starts = new Set(["kE", "bE", "ust", bw.cols[6][0], bw.cols[6 + bw.nIn][0]]), grp = k => starts.has(k) ? "g" : "";
     const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><b>${r.nr}.</b> <span class="mono">${eaD(r.dt)}</span></div><p>${esc(r.text)}</p>${r.doc ? `<div class="beleg-wrap">${r.doc}</div>` : ""}</div>`).join("");
     const cell = (k, html) => `<td class="${grp(k)}">${html}</td>`;
-    const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)}</span>${esc(r.short)}<label class="vt-skip"><input type="checkbox" id="vt-${r.nr}-skip"> nicht eintragen</label></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
+    const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)}</span>${esc(r.short)}</td><td class="vt-bel"><input id="vt-${r.nr}-bel" class="vt-belin" inputmode="text" aria-label="Zeile ${r.nr} Beleg" placeholder="K1, B1, –"></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
     const ab = bw.cols.map(([k]) => cell(k, k === "kE" ? `<span class="vt-given">${fmtNum(bw.kAB)}</span>` : k === "bE" ? `<span class="vt-given">${fmtNum(bw.bAB)}</span>` : "")).join("");
     return `<div class="ab-sec"><h2>${esc(US.name)} · Einnahmen-Ausgaben-Rechnung</h2>
-        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Gehört ein Fall gar nicht ins Kassa-/Bankbuch, kreuze „nicht eintragen“ an. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
+        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Vergib in der Spalte „Beleg“ die Belegnummer: Kassabelege K1, K2, …, Bankbelege B1, B2, … (fortlaufend nach Datum, Geldtransfer zwischen Kassa und Bank z. B. K3/B2). Gehört ein Fall nicht ins Kassa-/Bankbuch, schreib „–“ und lass die Zeile leer. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
       <div class="ab-sec"><h2>Geschäftsfälle</h2><div class="ea-cases">${cases}</div></div>
       <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} 2026</span></div>
         <div class="ab-scroll"><table class="vt-table">
-          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum<br>Text</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
+          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum<br>Text</th><th rowspan="2" class="vt-bel">Beleg</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
             <tr class="vt-h2">${bw.cols.map(([k, l]) => `<th class="${grp(k)}">${l}</th>`).join("")}</tr></thead>
-          <tbody><tr class="vt-ab"><td class="vt-text"><span class="vt-meta">01.${pad(bw.m + 1)}.</span>Anfangsbestand</td>${ab}</tr>${rows}</tbody>
-          <tfoot><tr><td class="vt-text">Summe</td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-s-${k}`, `Summe ${plain(l)}`))).join("")}</tr></tfoot>
+          <tbody><tr class="vt-ab"><td class="vt-text"><span class="vt-meta">01.${pad(bw.m + 1)}.</span>Anfangsbestand</td><td></td>${ab}</tr>${rows}</tbody>
+          <tfoot><tr><td class="vt-text">Summe</td><td></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-s-${k}`, `Summe ${plain(l)}`))).join("")}</tr></tfoot>
         </table></div>
         <div class="bw-in ea-res">
           <label for="vt-kend">Kassa-Endbestand</label>${inp("vt-kend", "Kassa-Endbestand")}
@@ -4019,6 +4023,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     let ok = 0, total = 0, bOk = 0;
     bw.fields.forEach(f => {
       if (f.text !== undefined) return; // Bezeichnungen werden nicht geprüft
+      if (f.code !== undefined) {
+        const el = $(f.id), norm = x => String(x).toUpperCase().replace(/\s+/g, "").replace(/[–—]/g, "-"), v = norm(el.value);
+        const good = [f.code, ...(f.alts || [])].some(c => norm(c) === v);
+        el.classList.remove("ok", "err"); el.classList.add(good ? "ok" : "err"); total++; if (good) ok++;
+        return;
+      }
       if (f.check !== undefined) {
         const box = $(f.id), lab = box.parentElement, good = box.checked === f.check;
         lab.classList.remove("ok", "err");
@@ -4050,7 +4060,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   function bwReveal() {
     if (!bw) return;
-    bw.fields.forEach(f => { const el = $(f.id); if (f.check !== undefined) { el.checked = f.check; el.parentElement.classList.remove("ok", "err"); return; } el.value = f.blank ? "" : f.text !== undefined ? f.text : f.date !== undefined ? f.date : (f.qty ? String(f.amt / 100).replace(".", ",") : f.pct ? anPctTxt(f.nd).replace(" %", "") : fmtNum(f.amt)); el.classList.remove("ok", "err"); });
+    bw.fields.forEach(f => { const el = $(f.id); if (f.check !== undefined) { el.checked = f.check; el.parentElement.classList.remove("ok", "err"); return; } el.value = f.code !== undefined ? f.code : f.blank ? "" : f.text !== undefined ? f.text : f.date !== undefined ? f.date : (f.qty ? String(f.amt / 100).replace(".", ",") : f.pct ? anPctTxt(f.nd).replace(" %", "") : fmtNum(f.amt)); el.classList.remove("ok", "err"); });
     if (bw.type === "an" || bw.type === "eav") bw.rows.filter(r => !r.old).forEach(r => { $(r.id + "-name").value = r.name; $(r.id + "-sup").value = r.sup; });
     bw.choices.forEach(c => { const sg = $(c.id); sg.classList.remove("ok", "err"); sg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === c.v))); });
     (bw.books || []).forEach(b => bwFillBook(b, true));
