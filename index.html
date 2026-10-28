@@ -5622,7 +5622,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const chipList = ts => ts.map(([v, l]) => [v, l.replace(/\u00AD/g, "")]);
   const HOME = [
     ["Grundlagen", [["wr", "Wirtschaftliches Rechnen", "Zahlen schreiben, runden, Prozent- und Schlussrechnung, Rabatt, Skonto und Umsatzsteuer.", chipList(BW_TYPES_W)]]],
-    ["Doppelte Buchhaltung", [["bs", "Buchungssätze", `Geschäftsfälle verbuchen, mit Text oder Belegen, ${TOPICS.length} Themengebiete.`], ["tk", "T-Konten", "Geschäftsfälle auf T-Konten buchen und die Konten abschließen."]]],
+    ["Doppelte Buchhaltung", [["bs", "Doppelte Buchhaltung", `Geschäftsfälle verbuchen (mit Text oder Belegen, ${TOPICS.length} Themengebiete) und auf T-Konten buchen und abschließen.`, [["bs", "Buchungssätze", "bs"], ["tk", "T-Konten", "tk"]]]]],
     ["Jahresabschluss", [["bw", "Bewertung", "Anlagen, Vorräte, Forderungen, Abgrenzungen und Rückstellungen bewerten und buchen.", chipList([...BW_TYPES_A, ...BW_TYPES_U])]]],
     ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
     ["Kostenrechnung", [["kr", "Kostenrechnung", "Kalkulation im Handel, Voll- und Teilkostenrechnung.", chipList([...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3])]]],
@@ -5632,7 +5632,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // Fortschritt als kleines Zeichen am Knopf: ✓ = schon einmal ganz richtig, sonst letztes Ergebnis
   const progMark = k => { const p = prog[k]; return !p ? "" : p.ok ? `<span class="pm ok" title="${p.n}× geübt, ${p.ok}× ganz richtig">✓</span>` : `<span class="pm" title="${p.n}× geübt, zuletzt ${p.last} %">${p.last} %</span>`; };
   const progLine = (m, chips) => {
-    if (m === "bs") return stats.done ? `${stats.done} Geschäftsfälle gelöst, ${stats.first} auf Anhieb richtig` : "";
+    if (m === "bs") { const t = prog.tk; return [stats.done ? `${stats.done} Geschäftsfälle gelöst, ${stats.first} auf Anhieb richtig` : "", t ? `T-Konten: ${t.n}× geübt, ${t.ok}× ganz richtig` : ""].filter(Boolean).join(" · "); }
     const keys = chips ? chips.map(c => c[0]) : [m], ps = keys.map(k => prog[k]).filter(Boolean);
     if (!ps.length) return "";
     const n = ps.reduce((a, p) => a + p.n, 0), ok = ps.reduce((a, p) => a + p.ok, 0);
@@ -5644,7 +5644,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("home-prog-txt").innerHTML = `Du hast <b>${n}</b> ${n === 1 ? "Aufgabe" : "Aufgaben"} geübt, <b>${ok}</b> davon ganz richtig. Bei den Aufgabenarten zeigt ✓, was du schon einmal ganz richtig gelöst hast, sonst siehst du dein letztes Ergebnis.`;
     $("home-tiles").innerHTML = HOME.map(([g, tiles]) => `<section class="home-group"><div class="eyebrow">${esc(g)}</div><div class="tiles">${tiles.map(([m, t, d, chips]) => { const pl = progLine(m, chips); return `<div class="tile${chips ? " tile-wide" : ""}">
       <button type="button" class="tile-main" data-go="${m}"><b>${esc(t)}${chips ? "" : progMark(m)}</b><span>${esc(d)}</span>${pl ? `<span class="tile-prog">${pl}</span>` : ""}</button>
-      ${chips ? `<div class="tile-chips">${chips.map(([v, l]) => `<button type="button" data-go="${m}" data-v="${v}">${esc(l)}${progMark(v)}</button>`).join("")}</div>` : ""}</div>`; }).join("")}</div></section>`).join("");
+      ${chips ? `<div class="tile-chips">${chips.map(([v, l, mod]) => mod ? `<button type="button" data-go="${mod}">${esc(l)}${mod === "bs" ? "" : progMark(v)}</button>` : `<button type="button" data-go="${m}" data-v="${v}">${esc(l)}${progMark(v)}</button>`).join("")}</div>` : ""}</div>`; }).join("")}</div></section>`).join("");
   }
   $("home-prog-reset").addEventListener("click", () => {
     const b = $("home-prog-reset");
