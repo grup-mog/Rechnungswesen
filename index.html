@@ -2775,7 +2775,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const TK_AB = { kassa: [1500, 6000], bank: [8000, 40000], ford: [2000, 15000], sonstford: [500, 3000], verb: [3000, 18000], darlehen: [20000, 80000], zahllast: [1000, 5000],
     bga: [8000, 30000], edv: [2000, 9000], lkw: [15000, 35000], pkw: [12000, 30000], masch: [3000, 12000], grund: [50000, 120000], gwgedv: [0, 0], gwgbga: [0, 0] };
   // Filter für den Einstieg: nur Bestandskonten bzw. ohne Umsatzsteuer
-  let tkKind = store.get("tkKind", "alle"), tkTax = store.get("tkTax", true);
+  let tkKind = store.get("tkKind", "best"), tkTax = store.get("tkTax", false);
   const TK_TAX = ["vst", "ust", "zahllast"];
   const tkFits = t => {
     const ks = t.soll.concat(t.haben).map(e => e[0]), ty = ks.map(tkAccType);
