@@ -3162,7 +3162,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const bwAvMap = t => t === "av" ? bwAvMode : t;
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
-  const BW_TYPES_K2 = [["kk", "Kalkulatorische Kosten"], ["bue", "BÜB für ein Jahr"], ["bum", "BÜB für einen Monat"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
+  const BW_TYPES_K2 = [["kk", "Kalkulatorische Kosten"], ["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
   const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
   const BW_TYPES_P = [["la", "Lohn und Gehalt abrechnen"], ["lu", "Abrechnung mit Überstunden"]];
   const BW_TYPES_W = [["zs", "Zahlen schreiben"], ["ru", "Kaufmännisch runden"], ["pr", "Prozent\u00ADrechnung"], ["sr", "Schluss\u00ADrechnung"], ["rsk", "Rabatt und Skonto"], ["us", "Umsatz\u00ADsteuer"]];
@@ -4458,6 +4458,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     });
   }
   function krMakeBue(rng) {
+    const r = rng();
+    return r < 0.34 ? krMakeBueJahr(rng) : krMakeBuePer(rng, r < 0.67 ? "q" : "m");
+  }
+  function krMakeBueJahr(rng) {
     const E = (a, b, st) => rndStep(rng, [a, b, st]) * 100, info = [], sols = [], rows = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
     const add = r => (rows.push(r), r);
     add({ kto: "5010", l: "Handelswareneinsatz", auf: E(180000, 420000, 10), why: "Grundkosten, unverändert übernehmen." });
@@ -4504,88 +4508,92 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     zi.rep = "Kalkulatorische Zinsen"; zi.why = `Fremdkapitalzinsen lt. GuV ${P.fmt(zi.auf)} + Eigenkapitalzinsen ${P.fmt(ek)} × ${krP(zs)} = ${P.fmt(zi.plus)}.`;
     krNeutral(rng, rows, { kompakt: 1, normal: 2, gross: 3 }[bwSize]);
     rows.filter(r => r.note).forEach(r => info.push(`Das Konto ${r.kto} enthält: ${r.note}.`));
-    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", head: `${US.name} · Kostenartenrechnung`, sub: "Saldenliste 31.12.2026, Werte in EUR", intro: "Übernimm die Salden der Aufwandskonten in den Betriebsüberleitungsbogen (BÜB)." });
+    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", head: `${US.name} · Kostenrechnung 2026`, sub: "Saldenliste 31.12.2026, Werte in EUR", intro: "Erstelle die Kostenüberleitung für das Jahr 2026." });
   }
 
-  // ---------- BÜB für einen Monat (Monatsabgrenzungen laut Buch) ----------
+  // ---------- BÜB für einen Monat oder ein Quartal (Abgrenzungen laut Buch) ----------
   const KR_MON = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
-  function krMakeBum(rng) {
+  function krMakeBuePer(rng, per) {
     const E = (a, b, st) => rndStep(rng, [a, b, st]) * 100, info = [], sols = [], rows = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
-    const mi = Math.floor(rng() * 12), mon = KR_MON[mi], add = r => (rows.push(r), r), d12 = v => Math.round(v / 12);
+    const mi = Math.floor(rng() * 12), qi = Math.floor(rng() * 4), mo = per === "m", n = mo ? 12 : 4, f = mo ? 1 : 3, add = r => (rows.push(r), r), d12 = v => Math.round(v / n);
+    const mon = mo ? KR_MON[mi] : `${qi + 1}. Quartal`, imP = `im ${mon}`, ImP = "I" + imP.slice(1), endeP = mo ? `Ende ${mon}` : `Ende des ${qi + 1}. Quartals`, fuerP = mo ? `für ${mon}` : `für das ${mon}`;
+    const hasJan = mo ? mi === 0 : qi === 0, Ef = (a, b, st) => E(a * f, b * f, st);
     // Monatsdurchschnitt statt gebuchtem Betrag (Abgrenzung − oder +)
     const avg = (kto, l, jahr, auf, txt) => {
       const r = add({ kto, l, auf, tol: 1 }), k = d12(jahr), d = k - auf;
       if (d < 0) r.minus = -d; else r.plus = d;
-      info.push(txt); r.why = `Kosten = ${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)}, daher ${P.fmt(Math.abs(d))} ${d < 0 ? "abziehen" : "zurechnen"}.`;
+      info.push(txt); r.why = `Kosten = ${P.fmt(jahr)} ÷ ${n} = ${P.fmt(k)}, daher ${P.fmt(Math.abs(d))} ${d < 0 ? "abziehen" : "zurechnen"}.`;
       return r;
     };
     const miete = (kto) => {
       const m = E(1800, 4500, 10);
-      if (mi % 3 === 0) { const r = add({ kto, l: "Mietaufwand", auf: 3 * m, minus: 2 * m }); info.push(`Auf dem Konto ${kto} wurde die Miete für das ganze ${mi / 3 + 1}. Quartal gebucht.`); r.why = `nur ein Drittel (${P.fmt(m)}) gehört in den ${mon}, ${P.fmt(2 * m)} abziehen.`; }
-      else add({ kto, l: "Mietaufwand", auf: m, why: "Monatsmiete, Grundkosten." });
+      if (mo && mi % 3 === 0) { const r = add({ kto, l: "Mietaufwand", auf: 3 * m, minus: 2 * m }); info.push(`Auf dem Konto ${kto} wurde die Miete (${P.fmt(m)} im Monat) für das ganze ${mi / 3 + 1}. Quartal gebucht.`); r.why = `nur ein Drittel (${P.fmt(m)}) gehört in den ${mon}, ${P.fmt(2 * m)} abziehen.`; }
+      else if (!mo && qi % 2 === 0) { const r = add({ kto, l: "Mietaufwand", auf: 6 * m, minus: 3 * m }); info.push(`Auf dem Konto ${kto} wurde die Miete (${P.fmt(m)} im Monat) für das ganze ${qi === 0 ? "1." : "2."} Halbjahr gebucht.`); r.why = `nur drei Monatsmieten (${P.fmt(3 * m)}) gehören ins ${mon}, ${P.fmt(3 * m)} abziehen.`; }
+      else add({ kto, l: "Mietaufwand", auf: m * f, why: `${mo ? "Monatsmiete" : "drei Monatsmieten"}, Grundkosten.` });
     };
     const ul = (jahr) => {
-      const k = d12(jahr), gsvg = (mi % 3) === 1;
-      if (gsvg) { const a = E(1200, 2600, 1), r = add({ kto: "7740", l: "Versicherungsbeiträge an die GSVG", auf: a, minus: a, plus: k, tol: 1, rep: "Kalkulatorischer Unternehmerlohn" }); r.why = `${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)} dazuschreiben.`; info.push(`Die GSVG-Beiträge der Inhaberin werden durch einen kalkulatorischen Unternehmerlohn von ${P.fmt(jahr)} im Jahr ersetzt.`); }
-      else { const r = add({ l: "Kalkulatorischer Unternehmerlohn", auf: null, plus: k, tol: 1 }); r.why = `${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)} dazuschreiben.`; info.push(`Die Inhaberin arbeitet selbst mit. Der kalkulatorische Unternehmerlohn beträgt ${P.fmt(jahr)} im Jahr.`); }
+      const k = d12(jahr), gsvg = !mo || (mi % 3) === 1;
+      if (gsvg) { const a = E(1200, 2600, 1) + (mo ? 0 : E(100, 400, 1)), r = add({ kto: "7740", l: "Versicherungsbeiträge an die GSVG", auf: a, minus: a, plus: k, tol: 1, rep: "Kalkulatorischer Unternehmerlohn" }); r.why = `${P.fmt(jahr)} ÷ ${n} = ${P.fmt(k)} dazuschreiben.`; info.push(`Die GSVG-Beiträge der Inhaberin werden durch einen kalkulatorischen Unternehmerlohn von ${P.fmt(jahr)} im Jahr ersetzt.`); }
+      else { const r = add({ l: "Kalkulatorischer Unternehmerlohn", auf: null, plus: k, tol: 1 }); r.why = `${P.fmt(jahr)} ÷ ${n} = ${P.fmt(k)} dazuschreiben.`; info.push(`Die Inhaberin arbeitet selbst mit. Der kalkulatorische Unternehmerlohn beträgt ${P.fmt(jahr)} im Jahr.`); }
     };
-    const kalk = (l, jahr, txt) => { const k = d12(jahr), r = add({ l, auf: null, plus: k, tol: 1 }); info.push(txt); r.why = `${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)} dazuschreiben.`; };
+    const kalk = (l, jahr, txt) => { const k = d12(jahr), r = add({ l, auf: null, plus: k, tol: 1 }); info.push(txt); r.why = `${P.fmt(jahr)} ÷ ${n} = ${P.fmt(k)} dazuschreiben.`; };
     const zinsen = (kto) => {
-      const a = E(150, 900, 1) + rndStep(rng, [0, 99, 1]), ek = E(60000, 400000, 1000), zs = pickR(rng, [3, 3.5, 4, 5]), ekz = Math.round(ek * zs / 1200);
+      const a = Ef(150, 900, 1) + rndStep(rng, [0, 99, 1]), ek = E(60000, 400000, 1000), zs = pickR(rng, [3, 3.5, 4, 5]), ekz = Math.round(ek * zs / 100 / n);
       const r = add({ kto, l: "Zinsenaufwand für Bankkredite", auf: a, minus: a, plus: a + ekz, tol: 1, rep: "Kalkulatorische Zinsen" });
       info.push(`Das Eigenkapital laut Bilanz beträgt ${P.fmt(ek)}. Dafür sollen ${krP(zs)} Zinsen pro Jahr angesetzt werden. Der Zinsenaufwand für Bankkredite wird in die kalkulatorischen Zinsen eingerechnet.`);
-      r.why = `Fremdkapitalzinsen lt. GuV ${P.fmt(a)} + Eigenkapitalzinsen ${P.fmt(ek)} × ${krP(zs)} ÷ 12 = ${P.fmt(r.plus)}.`;
+      r.why = `Fremdkapitalzinsen lt. GuV ${P.fmt(a)} + Eigenkapitalzinsen ${P.fmt(ek)} × ${krP(zs)} ÷ ${n} = ${P.fmt(r.plus)}.`;
     };
     let firm;
     if (!gross) {
       firm = US.name;
-      add({ kto: "5010", l: "Handelswareneinsatz", auf: E(18000, 42000, 1), why: "Grundkosten." });
-      const vp = add({ kto: "5340", l: "Verpackungsmaterialverbrauch", auf: E(600, 1800, 1) }); vp.minus = Math.round(vp.auf * rndStep(rng, [2, 5, 1]) / 1000) * 100;
-      info.push(`Im Konto 5340 sind Einkaufstaschen und Seidenpapier um ${P.fmt(vp.minus)} enthalten, die im ${mon} eingekauft und als Aufwand gebucht wurden, aber noch auf Lager liegen.`); vp.why = `Was noch auf Lager liegt, wurde nicht verbraucht: ${P.fmt(vp.minus)} abziehen.`;
-      const g = add({ kto: "6200", l: "Gehälter", auf: E(9000, 16000, 1) });
-      if (!big) { g.plus = E(1500, 2700, 1); info.push(`Auf dem Konto 6200 wurden die laufenden Monatsgehälter für ${mon} gebucht. Die anteiligen Sonderzahlungen betragen ${P.fmt(g.plus)}.`); }
-      else { g.plus = Math.round(g.auf / 6); g.tol = 1; info.push(`Auf dem Konto 6200 wurden die laufenden Monatsgehälter für ${mon} gebucht. Urlaubs- und Weihnachtsgeld (je ein Monatsgehalt) werden anteilig verrechnet, also ein Sechstel der Monatsgehälter.`); }
+      add({ kto: "5010", l: "Handelswareneinsatz", auf: Ef(18000, 42000, 1), why: "Grundkosten." });
+      const vp = add({ kto: "5340", l: "Verpackungsmaterialverbrauch", auf: Ef(600, 1800, 1) }); vp.minus = Math.round(vp.auf * rndStep(rng, [2, 5, 1]) / 1000) * 100;
+      info.push(`Im Konto 5340 sind Einkaufstaschen und Seidenpapier um ${P.fmt(vp.minus)} enthalten, die ${imP} eingekauft und als Aufwand gebucht wurden, aber ${endeP} noch auf Lager liegen.`); vp.why = `Was noch auf Lager liegt, wurde nicht verbraucht: ${P.fmt(vp.minus)} abziehen.`;
+      const g = add({ kto: "6200", l: "Gehälter", auf: Ef(9000, 16000, 1) });
+      if (!big) { g.plus = Ef(1500, 2700, 1); info.push(`Auf dem Konto 6200 wurden die laufenden Monatsgehälter ${fuerP} gebucht. Die anteiligen Sonderzahlungen betragen ${P.fmt(g.plus)}.`); }
+      else { g.plus = Math.round(g.auf / 6); g.tol = 1; info.push(`Auf dem Konto 6200 wurden die laufenden Monatsgehälter ${fuerP} gebucht. Urlaubs- und Weihnachtsgeld (je ein Monatsgehalt) werden anteilig verrechnet, also ein Sechstel der Monatsgehälter.`); }
       g.why = `anteilige Sonderzahlungen ${P.fmt(g.plus)} zurechnen${big ? " (2 ÷ 12 = ein Sechstel)" : ""}.`;
-      const sj = E(4000, 9000, 60); avg("7230", "Stromaufwand", sj, rng() < 0.5 ? E(150, 300, 1) : E(900, 1600, 1), `Der durchschnittliche jährliche Stromverbrauch kostet ${P.fmt(sj)}.`);
+      const sj = E(4000, 9000, 60); avg("7230", "Stromaufwand", sj, rng() < 0.5 ? Ef(150, 300, 1) : Ef(900, 1600, 1), `Der durchschnittliche jährliche Stromverbrauch kostet ${P.fmt(sj)}.`);
       miete("7400");
-      const wj = E(6000, 18000, 120), plakat = rng() < 0.5; avg("7650", "Werbeaufwand", wj, plakat ? E(1500, 4000, 1) : E(100, 300, 1), `Die Werbekosten betragen durchschnittlich ${P.fmt(wj)} im Jahr. Im ${mon} lief ${plakat ? "eine Plakatkampagne für die neue Kollektion" : "nur Werbung in den sozialen Medien"}.`);
+      const wj = E(6000, 18000, 120), plakat = rng() < 0.5; avg("7650", "Werbeaufwand", wj, plakat ? Ef(1500, 4000, 1) : Ef(100, 300, 1), `Die Werbekosten betragen durchschnittlich ${P.fmt(wj)} im Jahr. ${ImP} lief ${plakat ? "eine Plakatkampagne für die neue Kollektion" : "nur Werbung in den sozialen Medien"}.`);
       if (big) {
-        const vj = E(1200, 3600, 12), booked = rng() < 0.5;
-        avg("7700", "Versicherungsaufwand", vj, booked ? vj : 0, booked ? `Auf dem Konto 7700 wurde im ${mon} die Jahresprämie der Geschäftsversicherung (${P.fmt(vj)}) gebucht.` : `Die Jahresprämie der Geschäftsversicherung (${P.fmt(vj)}) wurde im Jänner gebucht. Im ${mon} gibt es keine Buchung.`);
-        const rm = E(80, 250, 1); avg("7750", "Rechtsberatungsaufwand", rm * 12, E(600, 2400, 1), `Die durchschnittlichen Rechtsberatungskosten betragen ${P.fmt(rm)} im Monat.`);
+        const vj = E(1200, 3600, 12), booked = hasJan || rng() < 0.5;
+        avg("7700", "Versicherungsaufwand", vj, booked ? vj : 0, booked ? `Auf dem Konto 7700 wurde ${imP} die Jahresprämie der Geschäftsversicherung (${P.fmt(vj)}) gebucht.` : `Die Jahresprämie der Geschäftsversicherung (${P.fmt(vj)}) wurde im Jänner gebucht. ${ImP} gibt es keine Buchung.`);
+        const rm = E(80, 250, 1); avg("7750", "Rechtsberatungsaufwand", rm * 12, Ef(600, 2400, 1), `Die durchschnittlichen Rechtsberatungskosten betragen ${P.fmt(rm)} im Monat.`);
       }
       zinsen("8280");
       const aj = E(12000, 36000, 120); kalk("Kalkulatorische Abschreibung", aj, `Die jährliche kalkulatorische Abschreibung beträgt ${P.fmt(aj)}.`);
       if (big) { const wj2 = E(1800, 6000, 120); kalk("Kalkulatorische Wagnisse", wj2, `Die kalkulatorischen Wagnisse betragen jährlich etwa ${P.fmt(wj2)}.`); }
       ul(E(42000, 66000, 120));
-      krNeutral(rng, rows, big ? 2 : 1, 4);
+      krNeutral(rng, rows, big ? 2 : 1, mo ? 4 : 2);
     } else {
       firm = "Trachtenmanufaktur Lindner GmbH";
-      const r1 = add({ kto: "5100", l: "Rohstoffverbrauch", auf: E(14000, 30000, 1) }); r1.plus = E(600, 2000, 1);
-      info.push(`Im ${mon} wurde Loden um ${P.fmt(r1.plus)} verbraucht, die Rechnung des Lieferanten ist aber noch nicht gebucht.`); r1.why = `verbrauchter, noch nicht verrechneter Loden ${P.fmt(r1.plus)} zurechnen.`;
-      const h = add({ kto: "5300", l: "Hilfsstoffverbrauch", auf: E(900, 2400, 1) }); h.minus = Math.round(h.auf * rndStep(rng, [2, 6, 1]) / 1000) * 100;
-      info.push(`Im Konto 5300 sind Knöpfe und Garne um ${P.fmt(h.minus)} enthalten, die Ende ${mon} noch auf Lager liegen.`); h.why = `noch auf Lager, nicht verbraucht: ${P.fmt(h.minus)} abziehen.`;
-      const sj = E(9000, 20000, 60); avg("5630", "Stromverbrauch", sj, rng() < 0.5 ? E(400, 800, 1) : E(1800, 3200, 1), `Der durchschnittliche jährliche Stromverbrauch kostet ${P.fmt(sj)}.`);
+      const r1 = add({ kto: "5100", l: "Rohstoffverbrauch", auf: Ef(14000, 30000, 1) }); r1.plus = E(600, 2000, 1);
+      info.push(`${ImP} wurde Loden um ${P.fmt(r1.plus)} verbraucht, die Rechnung des Lieferanten ist aber noch nicht gebucht.`); r1.why = `verbrauchter, noch nicht verrechneter Loden ${P.fmt(r1.plus)} zurechnen.`;
+      const h = add({ kto: "5300", l: "Hilfsstoffverbrauch", auf: Ef(900, 2400, 1) }); h.minus = Math.round(h.auf * rndStep(rng, [2, 6, 1]) / 1000) * 100;
+      info.push(`Im Konto 5300 sind Knöpfe und Garne um ${P.fmt(h.minus)} enthalten, die ${endeP} noch auf Lager liegen.`); h.why = `noch auf Lager, nicht verbraucht: ${P.fmt(h.minus)} abziehen.`;
+      const sj = E(9000, 20000, 60); avg("5630", "Stromverbrauch", sj, rng() < 0.5 ? Ef(400, 800, 1) : Ef(1800, 3200, 1), `Der durchschnittliche jährliche Stromverbrauch kostet ${P.fmt(sj)}.`);
       const NK = [["6000", "Fertigungslöhne", [12000, 24000], [94, 96.5, 97.3, 98]], ["6010", "Hilfslöhne", [2000, 5000], [93, 95, 96]], ["6200", "Gehälter", [5000, 11000], [56.3, 57.8, 58.5]]].map(([kto, l, rg, ps]) => {
-        const r = add({ kto, l, auf: E(rg[0], rg[1], 1) }), p = pickR(rng, ps); r.plus = krPct(r.auf, p); r.why = `${krP(p)} Lohnnebenkosten von ${P.fmt(r.auf)} = ${P.fmt(r.plus)} zurechnen.`; return [l, p];
+        const r = add({ kto, l, auf: Ef(rg[0], rg[1], 1) }), p = pickR(rng, ps); r.plus = krPct(r.auf, p); r.why = `${krP(p)} Lohnnebenkosten von ${P.fmt(r.auf)} = ${P.fmt(r.plus)} zurechnen.`; return [l, p];
       });
       info.push(`Die Lohn- und Gehaltsnebenkosten (Sonderzahlungen und gesetzliche Abgaben) werden mit Durchschnittssätzen verrechnet: ${NK.map(([l, p]) => `${l} ${krP(p)}`).join(", ")}. Die tatsächlich gebuchten Sonderzahlungen und Abgaben werden nicht übernommen.`);
       [["6020", "Sonderzahlungen Arbeiter", [0, 4000]], ["6500", "Gesetzlicher Sozialaufwand Arbeiter", [3000, 7000]], ["6560", "Gesetzlicher Sozialaufwand Angestellte", [1200, 3000]]].forEach(([kto, l, rg]) => {
-        const a = E(rg[0], rg[1], 1); if (!a) return; add({ kto, l, auf: a, minus: a, why: "in den Lohnnebenkosten-Prozentsätzen enthalten: zur Gänze abziehen." });
+        const a = Ef(rg[0], rg[1], 1); if (!a) return; add({ kto, l, auf: a, minus: a, why: "in den Lohnnebenkosten-Prozentsätzen enthalten: zur Gänze abziehen." });
       });
       miete("7400");
-      const ij = E(6000, 12000, 120); avg("7200", "Instandhaltung durch Dritte", ij, rng() < 0.5 ? 0 : E(1500, 3500, 1), `Die jährlichen Instandhaltungskosten der Nähmaschinen betragen etwa ${P.fmt(ij)}.`);
-      const vj = E(6000, 12000, 12); avg("7700", "Versicherungsaufwand", vj, rng() < 0.5 ? vj : 0, `Der jährliche Versicherungsaufwand beträgt ${P.fmt(vj)}.`);
-      const s = add({ kto: "7819", l: "Sonstige Schadensfälle", auf: E(300, 1500, 1) }), wj = E(3000, 9000, 120); s.minus = s.auf; s.plus = d12(wj); s.tol = 1;
-      info.push(`Die Schadensfälle werden durch kalkulatorische Wagnisse ersetzt. Diese betragen jährlich etwa ${P.fmt(wj)}.`); s.rep = "Kalkulatorische Wagnisse"; s.why = `${P.fmt(wj)} ÷ 12 = ${P.fmt(s.plus)} dazuschreiben.`;
+      const ij = E(6000, 12000, 120); avg("7200", "Instandhaltung durch Dritte", ij, rng() < 0.5 ? 0 : Ef(1500, 3500, 1), `Die jährlichen Instandhaltungskosten der Nähmaschinen betragen etwa ${P.fmt(ij)}.`);
+      const vj = E(6000, 12000, 12); avg("7700", "Versicherungsaufwand", vj, hasJan ? vj : 0, hasJan ? `Der jährliche Versicherungsaufwand beträgt ${P.fmt(vj)}. Die Prämie wurde ${imP} für das ganze Jahr gebucht.` : `Der jährliche Versicherungsaufwand beträgt ${P.fmt(vj)}. Die Prämie wurde im Jänner für das ganze Jahr gebucht.`);
+      const s = add({ kto: "7819", l: "Sonstige Schadensfälle", auf: Ef(300, 1500, 1) }), wj = E(3000, 9000, 120); s.minus = s.auf; s.plus = d12(wj); s.tol = 1;
+      info.push(`Die Schadensfälle werden durch kalkulatorische Wagnisse ersetzt. Diese betragen jährlich etwa ${P.fmt(wj)}.`); s.rep = "Kalkulatorische Wagnisse"; s.why = `${P.fmt(wj)} ÷ ${n} = ${P.fmt(s.plus)} dazuschreiben.`;
       zinsen("8280");
       const aj = E(24000, 60000, 120); kalk("Kalkulatorische Abschreibung", aj, `Die jährliche kalkulatorische Abschreibung beträgt ${P.fmt(aj)}.`);
       info.push("Die Geschäftsführerin ist bei der GmbH angestellt, ihr Gehalt ist in den Gehältern enthalten.");
       sols.push("GmbH: Die Geschäftsführerin bekommt ein Gehalt, daher wird kein kalkulatorischer Unternehmerlohn angesetzt.");
-      krNeutral(rng, rows, 2, 4);
+      krNeutral(rng, rows, 2, mo ? 4 : 2);
     }
     rows.filter(r => r.note).forEach(r => info.push(`Das Konto ${r.kto} enthält: ${r.note}.`));
-    return krBueFinish(rows, info, sols, { type: "bum", title: `Erstelle den BÜB für ${mon}`, firm, head: `${firm} · Kostenrechnung ${mon} 2026`, sub: `Saldenliste ${mon} 2026, Werte in EUR`, intro: `Erstelle die Kostenüberleitung für den Monat ${mon}. Was nur einmal im Jahr oder im Quartal gebucht wird, verteilst du gleichmäßig auf die Monate (÷ 12 bzw. ÷ 3).` });
+    const lang = mo ? mon : `${mon} (${KR_MON[qi * 3]} bis ${KR_MON[qi * 3 + 2]})`;
+    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", firm, head: `${firm} · Kostenrechnung ${lang} 2026`, sub: `Saldenliste ${lang} 2026, Werte in EUR`, intro: `Erstelle die Kostenüberleitung ${fuerP} 2026. Die Saldenliste enthält nur die Buchungen dieses Zeitraums.` });
   }
   function krRenderBue() {
     const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
@@ -4782,7 +4790,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return krTask("pp", eng ? "Plane das Produktionsprogramm mit Engpass" : "Plane das Produktionsprogramm", KR_PROD_FIRM, "Beträge auf Cent, DB je Minute auf Cent gerundet. Mengen in ganzen Stück. Leere Felder zählen als 0.", [{ h: eng ? "Programmplanung mit Engpass" : "Programmplanung ohne Engpass", text, html }], fields, choices, sols);
   }
 
-  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBum, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
+  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
   const KR_RENDER = { bue: krRenderBue, bum: krRenderBue, bab: krRenderBab };
 
   // ================= Wirtschaftliches Rechnen =================
@@ -5235,8 +5243,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     bk: ["Progressiv (von oben nach unten): Einkaufspreis − Lieferantenrabatt = rabattierter Preis + Fakturenspesen = Zielpreis − Lieferantenskonto = Kassapreis + Beschaffungsnebenkosten = Einstandspreis.", "Der Rabatt wird vom Hundert (v. H.) des Einkaufspreises gerechnet, der Skonto vom Hundert des Zielpreises.", "Fakturenspesen stellt der Lieferant auf der Rechnung in Rechnung (z. B. Verpackung), deshalb gibt es auf sie auch Skonto. Beschaffungsnebenkosten (Fracht durch einen Spediteur, Versicherung, Zoll) kommen erst nach dem Skonto dazu.", "Bei mehreren Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd rechnest du von unten nach oben: Einstandspreis − Beschaffungsnebenkosten = Kassapreis. Skonto und Rabatt im Hundert (i. H.): Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz), Einkaufspreis = rabattierter Preis × 100 ÷ (100 − Rabattsatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Einkaufspreis."],
     ak: ["Progressiv: Selbstkosten + Gewinn (v. H. der Selbstkosten) = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme.", "Verkaufsprovision, Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil sie später vom höheren Preis gerechnet werden: Kassapreis = Zwischensumme × 100 ÷ (100 − Provisionssatz), Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis + 20 % USt (v. H.) = Bruttoverkaufspreis.", "Retrograd rechnest du von unten nach oben: Die USt steckt auf Hundert (a. H.) im Bruttoverkaufspreis: Listenverkaufspreis = brutto × 100 ÷ 120.", "Kundenrabatt, Kundenskonto und Verkaufsprovision ziehst du vom Hundert (v. H.) des jeweiligen Preises ab. Der Gewinn steckt auf Hundert im Nettoverkaufspreis: Selbstkosten = Nettoverkaufspreis × 100 ÷ (100 + Gewinnsatz).", "Differenzkalkulation: retrograd vom Bruttoverkaufspreis bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten, in Prozent der Selbstkosten."],
     kk: ["Kalkulatorische Abschreibung: Wiederbeschaffungswert − Restwert = Abschreibungsbasis, ÷ tatsächliche (reale) Nutzungsdauer.", "Mit Index: Wiederbeschaffungswert = Anschaffungswert × Index heute ÷ Index bei der Anschaffung.", "Kalkulatorische Wagnisse = Prozentsatz × Bezugsgröße (Beständewagnis vom durchschnittlichen Lagerbestand, Gewährleistungswagnis und sonstige Wagnisse vom Umsatz, Ausfallwagnis vom Forderungsbestand).", "Kalkulatorischer Unternehmerlohn = Jahresgehalt (14 Monatsbezüge) + Unternehmerzuschlag. Nur bei Einzelunternehmen und Personengesellschaften, nicht bei der GmbH.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital lt. Bilanz × Zinssatz."],
-    bue: ["Übernimm die Salden der Aufwandskonten in die Spalte „Aufwand“.", "Grundkosten (z. B. Handelswareneinsatz, Gehälter, Miete) übernimmst du unverändert als Kosten.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) und private Anteile kommen zur Gänze in „Abgrenzung −“.", "Ersetzte Aufwände oben zur Gänze ausscheiden (−): 7010 Abschreibung, 7819 Schadensfälle, 7740 GSVG-Beiträge, 8280 Zinsenaufwand. Unten in eigenen Zeilen dazuschreiben (+): kalkulatorische Wagnisse, Abschreibung, Zinsen und Unternehmerlohn.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital × Zinssatz. Kalkulatorischer Unternehmerlohn = Jahresgehalt + Unternehmerzuschlag.", "Preissteigerungen, mit denen schon gerechnet wird, kommen in „+“.", "Kosten = Aufwand − Abgrenzung + Abgrenzung."],
-    bum: ["Im Monats-BÜB sollen die Kosten dem Monatsdurchschnitt entsprechen.", "Jahresbeträge (Energie, Werbung, Versicherung, Instandhaltung, kalkulatorische Kosten) ÷ 12. Ist mehr gebucht als der Durchschnitt, kommt die Differenz in „−“, ist weniger gebucht, in „+“.", "Miete für ein ganzes Quartal: nur ein Drittel gehört in den Monat, zwei Drittel abziehen.", "Eingekauftes Material, das noch auf Lager liegt, abziehen. Verbrauchtes Material ohne gebuchte Rechnung zurechnen.", "Anteilige Sonderzahlungen zu den Löhnen und Gehältern zurechnen (2 Sonderzahlungen ÷ 12 = ein Sechstel). Werden Lohnnebenkosten in Prozent verrechnet, rechnest du sie dazu und ziehst die gebuchten Sonderzahlungen und Abgaben ab.", "Die kalkulatorischen Kosten (÷ 12) stehen unten in eigenen Zeilen mit „–“ beim Aufwand. 7740, 7819 und 8280 werden oben zur Gänze ausgeschieden.", "GmbH: kein kalkulatorischer Unternehmerlohn."],
+    bue: ["Übernimm die Salden der Aufwandskonten in die Spalte „Aufwand“.", "Grundkosten (z. B. Handelswareneinsatz, Gehälter, Miete) übernimmst du unverändert als Kosten.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) und private Anteile kommen zur Gänze in „Abgrenzung −“.", "Ersetzte Aufwände oben zur Gänze ausscheiden (−): 7010 Abschreibung, 7819 Schadensfälle, 7740 GSVG-Beiträge, 8280 Zinsenaufwand. Unten in eigenen Zeilen dazuschreiben (+): kalkulatorische Wagnisse, Abschreibung, Zinsen und Unternehmerlohn.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital × Zinssatz. Kalkulatorischer Unternehmerlohn = Jahresgehalt + Unternehmerzuschlag.", "Preissteigerungen, mit denen schon gerechnet wird, kommen in „+“.", "Kosten = Aufwand − Abgrenzung + Abgrenzung.",
+      "Achte auf den Zeitraum: Gilt der BÜB für einen Monat oder ein Quartal, zählt der Durchschnitt dieses Zeitraums.", "Jahresbeträge (Energie, Werbung, Versicherung, Instandhaltung, kalkulatorische Kosten) ÷ 12 für einen Monat, ÷ 4 für ein Quartal. Ist mehr gebucht als der Durchschnitt, kommt die Differenz in „−“, ist weniger gebucht, in „+“.", "Ist Miete für einen längeren Zeitraum gebucht (Quartal, Halbjahr), gehört nur der Anteil des Zeitraums dazu, der Rest wird abgezogen.", "Eingekauftes Material, das noch auf Lager liegt, abziehen. Verbrauchtes Material ohne gebuchte Rechnung zurechnen.", "Anteilige Sonderzahlungen zu den Löhnen und Gehältern zurechnen (2 Sonderzahlungen ÷ 12 = ein Sechstel). Werden Lohnnebenkosten in Prozent verrechnet, rechnest du sie dazu und ziehst die gebuchten Sonderzahlungen und Abgaben ab.", "GmbH: kein kalkulatorischer Unternehmerlohn."],
     bab: ["Gemeinkosten, die direkt einer Kostenstelle zugeordnet werden können (z. B. lt. Gehaltsliste), sind schon eingetragen.", "Alle anderen verteilst du nach dem Schlüssel: Betrag ÷ Summe der Schlüsselteile = Betrag je Teil, dann × Teile der Kostenstelle.", "Kontrolle: Die Summe der vier Kostenstellen muss den Gesamtbetrag ergeben.", "Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten.", "Zuschlagssätze: Materialgemeinkosten ÷ Fertigungsmaterial × 100, Fertigungsgemeinkosten ÷ Fertigungslöhne × 100, Verwaltungs- bzw. Vertriebsgemeinkosten ÷ Herstellkosten × 100."],
     zk: ["Fertigungsmaterial = Stoffverbrauch × Meterpreis + Zutaten. Fertigungslöhne = Fertigungsstunden × Stundenlohn.", "Fertigungsmaterial + Materialgemeinkosten (in % des Fertigungsmaterials) = Materialkosten.", "Materialkosten + Fertigungslöhne + Fertigungsgemeinkosten (in % der Fertigungslöhne) + Sondereinzelkosten der Fertigung = Herstellkosten.", "Herstellkosten + Verwaltungs- und Vertriebsgemeinkosten (in % der Herstellkosten) + Sondereinzelkosten des Vertriebs = Selbstkosten.", "Die Zuschlagssätze kommen aus dem BAB."],
     db: ["Variable Kosten ändern sich mit der Menge (Material, Fertigungslohn), fixe Kosten bleiben gleich (Miete, Gehälter, Abschreibung).", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz. Fixkosten = Gesamtkosten − Menge × variable Kosten je Stück.", "Deckungsbeitrag je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100. Sie zeigt, wie viel Prozent vom Preis zur Deckung der Fixkosten bleiben.", "DB gesamt = DB je Stück × Menge. Betriebsergebnis = Summe der Deckungsbeiträge − Fixkosten."],
@@ -5623,8 +5631,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         go: [["kr", "kk"]] },
       { id: "kr-bue", g: 8, title: "Kostenartenrechnung und BÜB",
         text: "Die Kostenartenrechnung beantwortet die Frage: <b>Welche Kosten</b> sind entstanden? Im <b>Betriebsüberleitungsbogen (BÜB)</b> werden die Aufwände der Saldenliste in Kosten übergeleitet: Konto | Bezeichnung | Aufwand | Abgrenzung − | Abgrenzung + | Kosten.",
-        rules: ["Grundkosten unverändert übernehmen, neutrale Aufwände zur Gänze abziehen.", "Ersetzte Aufwände oben zur Gänze ausscheiden (7010, 7819, 7740, 8280) und die kalkulatorischen Kosten unten in eigenen Zeilen dazuschreiben: Wagnisse, Abschreibung, Zinsen, Unternehmerlohn.", "Kosten = Aufwand − Abgrenzung + Abgrenzung.", "Im <b>Monats-BÜB</b> zählt der Monatsdurchschnitt: Jahresbeträge ÷ 12, Quartalsmiete ÷ 3, anteilige Sonderzahlungen dazu, Material auf Lager abziehen.", "Lohnnebenkosten können mit Prozentsätzen auf die Löhne und Gehälter verrechnet werden. Dann werden die gebuchten Sonderzahlungen und gesetzlichen Abgaben abgezogen."],
-        go: [["kr", "bue"], ["kr", "bum"]] },
+        rules: ["Grundkosten unverändert übernehmen, neutrale Aufwände zur Gänze abziehen.", "Ersetzte Aufwände oben zur Gänze ausscheiden (7010, 7819, 7740, 8280) und die kalkulatorischen Kosten unten in eigenen Zeilen dazuschreiben: Wagnisse, Abschreibung, Zinsen, Unternehmerlohn.", "Kosten = Aufwand − Abgrenzung + Abgrenzung.", "Achte auf den <b>Zeitraum</b> des BÜB: Für einen Monat zählt der Monatsdurchschnitt (Jahresbeträge ÷ 12), für ein Quartal der Quartalsdurchschnitt (÷ 4). Miete für längere Zeiträume anteilig, anteilige Sonderzahlungen dazu, Material auf Lager abziehen.", "Lohnnebenkosten können mit Prozentsätzen auf die Löhne und Gehälter verrechnet werden. Dann werden die gebuchten Sonderzahlungen und gesetzlichen Abgaben abgezogen."],
+        go: [["kr", "bue"]] },
       { id: "kr-bab", g: 8, title: "Kostenstellenrechnung und BAB",
         text: "Die Kostenstellenrechnung beantwortet die Frage: <b>Wo</b> sind die Kosten entstanden? Im <b>Betriebsabrechnungsbogen (BAB)</b> werden die Gemeinkosten auf die Kostenstellen Material, Fertigung, Verwaltung und Vertrieb verteilt.",
         rules: ["Direkt zurechenbare Gemeinkosten (lt. Liste) direkt eintragen, die anderen nach einem Schlüssel verteilen (m², kWh, Anlagenwerte).", "Betrag je Schlüsselteil = Betrag ÷ Summe der Teile.", "Zuschlagsbasis: Material → Fertigungsmaterial, Fertigung → Fertigungslöhne, Verwaltung und Vertrieb → Herstellkosten. Verwaltung und Vertrieb können eine gemeinsame Kostenstelle sein.", "Zuschlagssatz = Gemeinkosten der Kostenstelle ÷ Zuschlagsbasis × 100. Die Sätze braucht man für die Kalkulation."],
