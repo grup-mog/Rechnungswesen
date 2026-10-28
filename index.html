@@ -889,6 +889,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     <aside>
       <div class="panel">
         <h2>Einstellungen</h2>
+        <span class="field-label">Kontenarten</span>
+        <div class="seg" id="tk-seg-kind"></div>
+        <span class="field-label">Umsatzsteuer</span>
+        <div class="seg" id="tk-seg-tax"></div>
         <span class="field-label">Anzahl Geschäftsfälle</span>
         <div class="seg" id="tk-seg-n"></div>
         <span class="field-label">Buchungssätze anzeigen</span>
@@ -2770,19 +2774,31 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // Konten mit Anfangsbestand (alle anderen beginnen bei 0)
   const TK_AB = { kassa: [1500, 6000], bank: [8000, 40000], ford: [2000, 15000], sonstford: [500, 3000], verb: [3000, 18000], darlehen: [20000, 80000], zahllast: [1000, 5000],
     bga: [8000, 30000], edv: [2000, 9000], lkw: [15000, 35000], pkw: [12000, 30000], masch: [3000, 12000], grund: [50000, 120000], gwgedv: [0, 0], gwgbga: [0, 0] };
+  // Filter für den Einstieg: nur Bestandskonten bzw. ohne Umsatzsteuer
+  let tkKind = store.get("tkKind", "alle"), tkTax = store.get("tkTax", true);
+  const TK_TAX = ["vst", "ust", "zahllast"];
+  const tkFits = t => {
+    const ks = t.soll.concat(t.haben).map(e => e[0]), ty = ks.map(tkAccType);
+    if (!tkTax && ks.some(k => TK_TAX.includes(k))) return false;
+    if (tkKind === "best") return ty.every(x => x === "aktiv" || x === "passiv");
+    if (tkKind === "erfolg") return !ty.includes("privat");
+    return true;
+  };
   let tkN = store.get("tkN", 5), tkShowBs = store.get("tkBs", false), tkAbGiven = store.get("tkAb", true);
   let tk = null, tkNo = 0;
   const tkAccType = k => P.acc[k][2];
   const tkSaldoLabel = k => ["aktiv", "passiv"].includes(tkAccType(k)) ? "SB" : tkAccType(k) === "privat" ? "Kapital" : "GuV";
 
   function tkBuild() {
-    const pool = CASES.filter(c => TK_KINDS.includes(c.k));
+    // Vorlagen vorab mit ein paar Probeaufgaben einordnen, damit der Filter genug Auswahl hat
+    const pool = CASES.filter(c => TK_KINDS.includes(c.k) && [0, 1, 2, 3].some(() => tkFits(makeTask(c, Math.random, false, "text"))));
     const picked = [];
     let guard = 0;
     while (picked.length < tkN && guard++ < 500) {
       const c = pickR(Math.random, pool);
       if (picked.some(p => p.caseDef === c)) continue;
       const t = makeTask(c, Math.random, false, "text");
+      if (!tkFits(t)) continue;
       // höchstens 7 verschiedene Konten, damit die Aufgabe übersichtlich bleibt
       const accs = new Set(picked.flatMap(p => p.soll.concat(p.haben).map(e => e[0])));
       t.soll.concat(t.haben).forEach(e => accs.add(e[0]));
@@ -5181,6 +5197,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("tk-new").addEventListener("click", tkBuild);
   $("tk-check").addEventListener("click", tkCheck);
   $("tk-solution").addEventListener("click", tkReveal);
+  renderSeg("tk-seg-kind", [["best", "nur Bestands\u00ADkonten"], ["erfolg", "+ Erfolgs\u00ADkonten"], ["alle", "+ Privat\u00ADkonto"]], tkKind, v => { tkKind = v; store.set("tkKind", v); tkBuild(); });
+  renderSeg("tk-seg-tax", [[false, "ohne"], [true, "mit"]], tkTax, v => { tkTax = v; store.set("tkTax", v); tkBuild(); });
   renderSeg("tk-seg-n", [[4, "4"], [5, "5"], [6, "6"], [8, "8"]], tkN, v => { tkN = v; store.set("tkN", v); tkBuild(); });
   renderSeg("tk-seg-bs", [[false, "nein"], [true, "ja"]], tkShowBs, v => { tkShowBs = v; store.set("tkBs", v); if (tk) tkRender(); });
   renderSeg("tk-seg-ab", [[true, "vorgegeben"], [false, "selbst eintragen"]], tkAbGiven, v => { tkAbGiven = v; store.set("tkAb", v); if (tk) tkRender(); });
