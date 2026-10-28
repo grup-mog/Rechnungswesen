@@ -5762,7 +5762,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
   ];
   const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)", "Kostenrechnung", "Wirtschaftliches Rechnen", "Personalverrechnung"];
-  const LEX_ORDER = [0, 10, 8, 1, 2, 3, 4, 5, 6, 7, 9, 11];
+  const LEX_ORDER = [10, 8, 0, 1, 2, 3, 4, 5, 6, 7, 9, 11];
   const LEX_TYPES = { aktiv: "aktives Bestandskonto", passiv: "passives Bestandskonto", aufwand: "Aufwandskonto", ertrag: "Ertragskonto", erlmind: "Erlösminderung", aufwmind: "Aufwandsminderung", privat: "Privatkonto", korr: "Wertberichtigung (Korrekturposten)" };
   const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben", kr: "Kostenrechnung üben", wr: "Wirtschaftliches Rechnen üben", pv: "Personalverrechnung üben" };
   // Kostenrechnung im Lexikon: Lehrbeispiele mit fertig gerechnetem Schema
@@ -6025,9 +6025,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const chipList = ts => ts.map(([v, l]) => [v, l.replace(/\u00AD/g, "")]);
   const HOME = [
     ["Grundlagen", [["wr", "Wirtschaftliches Rechnen", "Zahlen schreiben, runden, Prozent- und Schlussrechnung, Rabatt, Skonto und Umsatzsteuer.", chipList(BW_TYPES_W)]]],
+    ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
     ["Doppelte Buchhaltung", [["bs", "Doppelte Buchhaltung", `Geschäftsfälle verbuchen (mit Text oder Belegen, ${TOPICS.length} Themengebiete) und auf T-Konten buchen und abschließen.`, [["bs", "Buchungssätze", "bs"], ["tk", "T-Konten", "tk"]]]]],
     ["Jahresabschluss", [["bw", "Bewertung", "Anlagen, Vorräte, Forderungen, Abgrenzungen und Rückstellungen bewerten und buchen.", chipList([...BW_TYPES_A, ...BW_TYPES_U])]]],
-    ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
     ["Kostenrechnung", [["kr", "Kostenrechnung", "Kalkulation im Handel, Voll- und Teilkostenrechnung.", chipList([...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3])]]],
     ["Personalverrechnung", [["pv", "Personalverrechnung", `Laufende Lohn- und Gehaltsabrechnung mit den Werten ${PV_JAHR}: SV, Lohnsteuer und Auszahlungsbetrag.`, chipList(BW_TYPES_P)]]],
     ["Wiederholen und testen", [["test", "Test / Schularbeit", "Stell dir selbst einen Test aus Buchungssätzen zusammen."], ["lex", "Lexikon", "Alle Themen kurz erklärt, mit Merksätzen und Lehrbeispielen."]]],
