@@ -4890,7 +4890,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       ppKlein: [[2000, 0], [4000, 5800], [6000, 11300], [Infinity, 16800]], ppGross: [[199, 0], [2000, 3100], [4000, 12300], [6000, 21400], [Infinity, 30600]],
       peKm: 600, service: 2685, serviceJahr: 2027,
       ueStd: 15, ueMax: 17000, // steuerfreie Zuschläge für die ersten 15 Überstunden (50 %), höchstens € 170,00 im Monat
-      sfnMax: 40000, sfnNacht: 60000 // Sonn-, Feiertags-, Nachtzuschläge und damit verbundene Überstundenzuschläge (100 %): € 400,00, bei überwiegender Nachtarbeit + 50 %
+      sfnMax: 40000, sfnNacht: 60000, gewMax: 4230 // Gewerkschaftsbeitrag 1 %, höchstens € 42,30; Sonn-, Feiertags-, Nachtzuschläge und damit verbundene Überstundenzuschläge (100 %): € 400,00, bei überwiegender Nachtarbeit + 50 %
     }
   };
   const PV_JAHR = (() => { const ys = Object.keys(PV_WERTE).map(Number).sort((a, b) => a - b), now = new Date().getFullYear(); return ys.filter(y => y <= now).pop() || ys[0]; })();
@@ -4923,20 +4923,23 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     // Bruttobezug: oft in der Nähe der AV-Stufen, damit der richtige SV-Satz gewählt werden muss
     const band = pickR(rng, [0, 1, 2, 3, 3, 3]), lo = band === 0 ? 170000 : PV.sv[band - 1][0] + 1, hi = band === 3 ? 520000 : PV.sv[band][0];
     let grund = rndStep(rng, [Math.ceil(lo / 100), Math.floor(hi / 100), 1]) * 100 + (rng() < 0.4 ? rndStep(rng, [1, 99, 1]) : 0);
-    // Überstunden: Stundensatz = Gehalt ÷ 167 (Kollektivvertrag), beim Lohn ist der Stundenlohn vorgegeben; Zuschlag 50 %
-    let std = 0, h100 = 0, satz = 0, teiler = 0, ueG = 0, ueZ = 0, ueZ100 = 0, ueFrei = 0, frei100 = 0, nacht = false;
+    // Überstunden (Aufbau laut Buch): ÜG = Stundensatz × Stunden, ÜZ je Stunde = Stundensatz ÷ 2 (gerundet),
+    // ÜZ steuerfrei für höchstens 15 Stunden bzw. € 170,00, der Rest ist steuerpflichtig; 100 % analog bis € 400,00 (Nacht € 600,00)
+    let std = 0, h100 = 0, satz = 0, teiler = 0, zph = 0, ueG = 0, z50 = 0, frei50 = 0, z100 = 0, frei100 = 0, nacht = false;
     if (ot) {
       grund = Math.round(grund * 0.85);
-      std = kompakt ? rndStep(rng, [3, 12, 1]) : gross ? pickR(rng, [6, 10, 12, 16, 18, 20]) : rndStep(rng, [4, 16, 1]);
-      if (!kompakt && rng() < (gross ? 0.8 : 0.5)) h100 = gross ? rndStep(rng, [6, 26, 1]) : rndStep(rng, [2, 8, 1]);
+      std = kompakt ? rndStep(rng, [3, 12, 1]) : gross ? pickR(rng, [6, 10, 12, 16, 18, 20, 24]) : rndStep(rng, [4, 20, 1]);
+      if (!kompakt && rng() < (gross ? 0.7 : 0.35)) h100 = gross ? rndStep(rng, [6, 26, 1]) : rndStep(rng, [2, 8, 1]);
       nacht = gross && h100 > 0 && rng() < 0.35;
       teiler = pickR(rng, [143, 150, 158, 167]);
       if (art === "l") { satz = rndStep(rng, [1300, 2200, 1]); grund = Math.round(satz * 167 / 100) * 100; } else satz = Math.round(grund / teiler);
-      ueG = (std + h100) * satz; ueZ = Math.round(std * satz / 2); ueZ100 = h100 * satz;
-      ueFrei = Math.min(Math.round(Math.min(std, PV.ueStd) * satz / 2), PV.ueMax);
-      frei100 = Math.min(ueZ100, nacht ? PV.sfnNacht : PV.sfnMax);
+      zph = Math.round(satz / 2);
+      ueG = (std + h100) * satz; z50 = std * zph; z100 = h100 * satz;
+      frei50 = Math.min(Math.min(std, PV.ueStd) * zph, PV.ueMax);
+      frei100 = Math.min(z100, nacht ? PV.sfnNacht : PV.sfnMax);
     }
-    const brutto = grund + ueG + ueZ + ueZ100;
+    const ueFrei = frei50 + frei100;
+    const brutto = grund + ueG + z50 + z100;
     const mon = rng() < (gross ? 0.6 : 0.35) ? 10 : rndStep(rng, [0, 11, 1]), nov = mon === 10;
     // Kinder, Familienbonus Plus, AVAB/AEAB
     let kids = [], aeab = false, fb = 0, km = 0, ppGross = false, ticket = 0, akonto = 0;
@@ -4951,50 +4954,61 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     }
     if (gross && km && !ppGross && rng() < 0.6) ticket = rndStep(rng, [30000, 130000, 10]);
     if (gross && rng() < 0.6) akonto = rndStep(rng, [1, 6, 1]) * 5000;
+    const gew = !kompakt && rng() < 0.4 ? Math.min(Math.round(brutto / 100), PV.gewMax) : 0;
     const svp = pvSv(brutto), sv = Math.round(Math.min(brutto, PV.hbgl) * svp / 10000);
     const ppFull = km ? pvPP(km, ppGross) : 0, ppT = Math.round(ticket / 12), pp = Math.max(0, ppFull - ppT), pe = km * PV.peKm / 12;
     const se = nov ? PV.service : 0;
-    const bmg = brutto - sv - ueFrei - frei100 - fb - pp - se;
+    const bmg = brutto - ueFrei - sv - fb - pp - se - gew;
     const [, rate, abz0] = pvTarif(bmg), abz = rate ? abz0 + (aeab ? pvAeab(kids.length) : 0) : 0;
     const fabo = kids.reduce((a, k) => a + (k.u18 ? PV.fabo.u18 : PV.fabo.ue18) / (k.half ? 2 : 1), 0);
     const roh = Math.round(bmg * rate / 10000), lst = Math.max(0, roh - abz - fabo - pe);
-    const aus = brutto - sv - lst - se - akonto;
+    const aus = brutto - sv - lst - gew - se - akonto;
     // Angabe
     const kTxt = kids.length ? `${kids.length} ${kids.length === 1 ? "Kind" : "Kinder"} (${kids.map(k => `${k.u18 ? "unter" : "über"} 18 Jahre, Familienbonus Plus ${k.half ? "halb" : "ganz"}`).join("; ")})` : "keine Kinder";
     const info = [[ot ? `${lohn} (Grundbezug)` : lohn + " brutto", P.fmt(grund)], ["Abrechnungsmonat", `${PV_MON[mon]} ${PV_JAHR}`], ["Kinder", kTxt]];
-    if (ot) info.splice(1, 0, ["Überstunden", `${std} Überstunden mit 50 % Zuschlag${h100 ? `, ${h100} Überstunden mit 100 % Zuschlag (Sonn- und Feiertagsarbeit bzw. in der Nacht)` : ""}. ${art === "l" ? `Stundenlohn ${P.fmt(satz)}` : `Stundensatz laut Kollektivvertrag: Gehalt ÷ ${teiler}, auf Cent gerundet`}.${nacht ? " Die Normalarbeitszeit liegt überwiegend in der Nacht." : ""}`]);
+    if (ot) info.splice(1, 0, ["Überstunden", `${std} Überstunden mit 50 % ÜZ${h100 ? `, ${h100} Überstunden mit 100 % ÜZ (Sonn- und Feiertagsarbeit bzw. in der Nacht)` : ""}. ${art === "l" ? `Stundenlohn ${P.fmt(satz)}` : `Überstundenteiler 1/${teiler}`}.${nacht ? " Die Normalarbeitszeit liegt überwiegend in der Nacht." : ""}`]);
     if (kids.length) info.push(["AVAB/AEAB", aeab ? "ja" : "nein"]);
     if (!kompakt) info.push(["Freibetrag laut Bescheid", fb ? P.fmt(fb) + " monatlich" : "keiner"]);
     if (!kompakt) info.push(["Arbeitsweg", km ? `${km} km einfache Strecke, ${ppGross ? "öffentliches Verkehrsmittel nicht zumutbar (großes Pendlerpauschale)" : "öffentliches Verkehrsmittel zumutbar (kleines Pendlerpauschale)"}` : "unter 2 km bzw. kein Anspruch auf Pendlerpauschale"]);
     if (ticket) info.push(["Jahresticket", `Der Arbeitgeber bezahlt das Öffi-Jahresticket um ${P.fmt(ticket)}.`]);
     if (nov) info.push(["Service-Entgelt", `${P.fmt(PV.service)} (e-card, wird im November abgezogen)`]);
+    if (gew) info.push(["Gewerkschaftsbeitrag", P.fmt(gew)]);
     if (gross) info.push(["Akontozahlung", akonto ? P.fmt(akonto) : "keine"]);
     parts.push({ h: `${name}, ${job}`, html: `<dl class="pv-info">${info.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` + pvDatenblatt() });
     // Schema: SV, LSt-Bemessungsgrundlage, Lohnsteuer, Auszahlung
-    const r0 = ot ? [["", art === "l" ? "Stundenlohn" : `Stundensatz (Gehalt ÷ ${teiler})`, "", satz, art === "l" ? { given: true } : {}], ["", `Grundvergütung (${std + h100} Std. × Stundensatz)`, "", ueG], ["+", `Zuschlag 50 % (${std} Std.)`, "50 %", ueZ], ...(h100 ? [["+", `Zuschlag 100 % (${h100} Std.)`, "100 %", ueZ100]] : []), ["=", "Überstundenentgelt", "", ueG + ueZ + ueZ100]] : null;
-    const r1 = [["", ot ? `${lohn} (Grundbezug)` : lohn + " brutto", "", grund, { given: true }]];
-    if (ot) r1.push(["+", "Überstundenentgelt", "", ueG + ueZ + ueZ100], ["=", "Bruttobezug", "", brutto]);
+    // Bruttobezug (bei Überstunden wie im Buch: ÜG, ÜZ steuerfrei, ÜZ steuerpflichtig)
+    const r0 = [["", ot ? lohn : lohn + " brutto", "", grund, { given: true }]];
+    if (ot) {
+      r0.push(["+", art === "l" ? `ÜG: ${pvE(satz)} × ${std + h100} Std.` : `ÜG: Gehalt ÷ ${teiler} = Stundensatz × ${std + h100} Std.`, "", ueG]);
+      r0.push(["+", `ÜZ 50 % steuerfrei (${Math.min(std, PV.ueStd)} Std., höchstens ${pvE(PV.ueMax)})`, "", frei50]);
+      r0.push(["+", `ÜZ 50 % steuerpflichtig`, "", z50 - frei50]);
+      if (h100) r0.push(["+", `ÜZ 100 % steuerfrei (höchstens ${pvE(nacht ? PV.sfnNacht : PV.sfnMax)})`, "", frei100], ["+", "ÜZ 100 % steuerpflichtig", "", z100 - frei100]);
+      r0.push(["=", "Gesamtbruttobezug", "", brutto]);
+    }
+    const r1 = [["", "Bruttobezug", "", brutto, ot ? {} : { given: true }]];
+    if (ot) r1.push(["−", "ÜZ steuerfrei", "", ueFrei]);
     r1.push(["−", "SV-DNA laufend", "", sv, { pid: svp }]);
-    if (ot) r1.push(["−", "steuerfreie Zuschläge 50 %", "", ueFrei]);
-    if (h100) r1.push(["−", "steuerfreie Zuschläge 100 %", "", frei100]);
     if (fb) r1.push(["−", "Freibetrag laut Bescheid", "", fb, { given: true }]);
     if (km) r1.push(["−", ticket ? "Pendlerpauschale (abzüglich 1/12 Jahresticket)" : "Pendlerpauschale", "", pp]);
     if (se) r1.push(["−", "Service-Entgelt", "", se, { given: true }]);
+    if (gew) r1.push(["−", "Gewerkschaftsbeitrag", "", gew, { given: true }]);
     r1.push(["=", "Bemessungsgrundlage Lohnsteuer", "", bmg]);
     const r2 = [["", "Bemessungsgrundlage × Steuersatz", "", roh, { pid: rate }], ["−", `Abzug laut Effektiv-Tarif${aeab && kids.length ? " (mit AVAB/AEAB)" : ""}`, "", abz]];
     if (fabo) r2.push(["−", "Familienbonus Plus", "", fabo]);
     if (pe) r2.push(["−", "Pendlereuro", "", pe]);
     r2.push(["=", "Lohnsteuer", "", lst]);
     const r3 = [["", "Bruttobezug", "", brutto, ot ? {} : { given: true }], ["−", "SV-DNA laufend", "", sv], ["−", "Lohnsteuer", "", lst]];
+    if (gew) r3.push(["−", "Gewerkschaftsbeitrag", "", gew, { given: true }]);
     if (se) r3.push(["−", "Service-Entgelt", "", se, { given: true }]);
     if (akonto) r3.push(["−", "Akontozahlung", "", akonto, { given: true }]);
     r3.push(["=", "Auszahlung (Überweisung)", "", aus]);
-    parts.push({ h: "Abrechnung " + PV_MON[mon], schemes: [...(ot ? [{ head: "Überstunden", rows: krRows(fields, "pv-u", r0) }] : []), { head: "Bemessungsgrundlage", rows: krRows(fields, "pv-a", r1) }, { head: "Lohnsteuer", rows: krRows(fields, "pv-b", r2) }, { head: "Auszahlung", rows: krRows(fields, "pv-c", r3) }] });
+    parts.push({ h: "Abrechnung " + PV_MON[mon], schemes: [...(ot ? [{ head: "Bruttobezug", sub: "ÜG = Überstundengrundlohn, ÜZ = Überstundenzuschlag", rows: krRows(fields, "pv-u", r0) }] : []), { head: "Bemessungsgrundlage", rows: krRows(fields, "pv-a", r1) }, { head: "Lohnsteuer", rows: krRows(fields, "pv-b", r2) }, { head: "Auszahlung", rows: krRows(fields, "pv-c", r3) }] });
     // Lösungsweg
     if (ot) {
-      const f50 = Math.round(Math.min(std, PV.ueStd) * satz / 2);
-      sols.push(`Überstunden: ${art === "l" ? "Stundenlohn" : `Stundensatz ${P.fmt(grund)} ÷ ${teiler} =`} ${P.fmt(satz)}; Grundvergütung ${std + h100} × ${P.fmt(satz)} = ${P.fmt(ueG)}, Zuschlag 50 % für ${std} Std. = ${P.fmt(ueZ)}${h100 ? `, Zuschlag 100 % für ${h100} Std. = ${P.fmt(ueZ100)}` : ""}. Bruttobezug ${P.fmt(brutto)}.`);
-      sols.push(`Steuerfrei 50 %: Zuschläge für ${Math.min(std, PV.ueStd)} Stunden = ${P.fmt(f50)}${f50 > PV.ueMax ? `, aber höchstens ${P.fmt(PV.ueMax)}` : ""}.${h100 ? ` Steuerfrei 100 %: ${P.fmt(ueZ100)}${ueZ100 > frei100 ? `, aber höchstens ${P.fmt(frei100)}${nacht ? " (überwiegend Nachtarbeit: € 400,00 + 50 %)" : ""}` : ` (unter der Grenze von ${P.fmt(nacht ? PV.sfnNacht : PV.sfnMax)})`}.` : ""}`);
+      sols.push(`ÜG: ${art === "l" ? "Stundenlohn" : `${P.fmt(grund)} ÷ ${teiler} =`} ${P.fmt(satz)} × ${std + h100} Std. = ${P.fmt(ueG)}. ÜZ 50 % je Stunde: ${P.fmt(satz)} ÷ 2 = ${P.fmt(zph)}.`);
+      sols.push(`ÜZ 50 % steuerfrei: ${P.fmt(zph)} × ${Math.min(std, PV.ueStd)} = ${P.fmt(Math.min(std, PV.ueStd) * zph)}${Math.min(std, PV.ueStd) * zph > PV.ueMax ? `, steuerfrei jedoch höchstens ${P.fmt(PV.ueMax)}` : ""}. Steuerpflichtig: ${P.fmt(zph)} × ${std} = ${P.fmt(z50)} − ${P.fmt(frei50)} = ${P.fmt(z50 - frei50)}.`);
+      if (h100) sols.push(`ÜZ 100 %: ${P.fmt(satz)} × ${h100} = ${P.fmt(z100)}, steuerfrei ${P.fmt(frei100)}${z100 > frei100 ? ` (Grenze ${P.fmt(nacht ? PV.sfnNacht : PV.sfnMax)}${nacht ? ", überwiegend Nachtarbeit" : ""})` : ""}, steuerpflichtig ${P.fmt(z100 - frei100)}.`);
+      sols.push(`Gesamtbruttobezug: ${P.fmt(brutto)}.`);
     }
     sols.push(`SV-DNA: Bruttobezug ${P.fmt(brutto)} liegt in der Stufe mit ${krN((svp / 100).toFixed(2))} %. ${P.fmt(brutto)} × ${krN((svp / 100).toFixed(2))} % = ${P.fmt(sv)}.`);
     if (km) sols.push(`Pendlerpauschale ${ppGross ? "groß" : "klein"} bei ${km} km: ${P.fmt(ppFull)}${ticket ? ` − ${P.fmt(ticket)} ÷ 12 (${P.fmt(ppT)}) = ${P.fmt(pp)}` : ""}. Pendlereuro: ${km} km × ${pvE(PV.peKm)} ÷ 12 = ${P.fmt(pe)}.`);
@@ -5006,8 +5020,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   Object.assign(KR_MAKE, { la: rng => pvMakeLa(rng, false), lu: rng => pvMakeLa(rng, true) });
   Object.assign(BW_STEPS, {
-    lu: ["Stundensatz = Gehalt ÷ Teiler laut Kollektivvertrag (z. B. 1/158), beim Lohn ist der Stundenlohn gegeben.", "Überstundenentgelt = alle Stunden × Stundensatz + Zuschlag 50 % bzw. 100 %.", "Bruttobezug = Grundbezug + Überstundenentgelt. Der SV-Satz richtet sich nach dem gesamten Bruttobezug.", "Steuerfrei sind die 50-%-Zuschläge für die ersten 15 Überstunden, höchstens € 170,00 im Monat, und die 100-%-Zuschläge (Sonn-, Feiertags-, Nachtarbeit) bis € 400,00, bei überwiegender Nachtarbeit bis € 600,00. Beide werden von der Bemessungsgrundlage abgezogen.", "Danach weiter wie bei der normalen Abrechnung: Lohnsteuer laut Effektiv-Tarif, Auszahlung."],
-    la: ["SV-DNA laufend: Bruttobezug × SV-Satz. Der Satz hängt vom Bruttobezug ab (niedrigerer AV-Beitrag bei geringem Einkommen).", "Bemessungsgrundlage Lohnsteuer = Brutto − SV-DNA − Freibetrag − Pendlerpauschale − Service-Entgelt (nur im November).", "Lohnsteuer = Bemessungsgrundlage × Steuersatz − Abzug laut Effektiv-Tarif (mit AVAB/AEAB, wenn zutreffend) − Familienbonus Plus − Pendlereuro. Negativ = € 0,00.", "Auszahlung = Brutto − SV-DNA − Lohnsteuer − Service-Entgelt − Akontozahlung."]
+    lu: ["ÜG (Überstundengrundlohn) = Stundensatz × alle Überstunden. Stundensatz = Gehalt ÷ Überstundenteiler, auf Cent gerundet; beim Lohn ist der Stundenlohn gegeben.", "ÜZ 50 % je Stunde = Stundensatz ÷ 2 (gerundet). Steuerfrei für höchstens 15 Stunden, höchstens € 170,00; der Rest ist steuerpflichtig.", "ÜZ 100 % (Sonn-, Feiertags-, Nachtarbeit) steuerfrei bis € 400,00, bei überwiegender Nachtarbeit bis € 600,00.", "Gesamtbruttobezug = Gehalt + ÜG + ÜZ. Der SV-Satz richtet sich nach dem Gesamtbruttobezug.", "Bemessungsgrundlage = Brutto − ÜZ steuerfrei − SV-DNA − Freibetrag − Pendlerpauschale − Service-Entgelt − Gewerkschaftsbeitrag; dann Lohnsteuer und Auszahlung wie gewohnt."],
+    la: ["SV-DNA laufend: Bruttobezug × SV-Satz. Der Satz hängt vom Bruttobezug ab (niedrigerer AV-Beitrag bei geringem Einkommen).", "Bemessungsgrundlage Lohnsteuer = Brutto − SV-DNA − Freibetrag − Pendlerpauschale − Service-Entgelt (nur im November) − Gewerkschaftsbeitrag.", "Lohnsteuer = Bemessungsgrundlage × Steuersatz − Abzug laut Effektiv-Tarif (mit AVAB/AEAB, wenn zutreffend) − Familienbonus Plus − Pendlereuro. Negativ = € 0,00.", "Auszahlung = Brutto − SV-DNA − Lohnsteuer − Gewerkschaftsbeitrag − Service-Entgelt − Akontozahlung."]
   });
   Object.assign(BW_STEPS, {
     zs: ["Eurobeträge in Ziffern: Tausenderpunkt, Komma vor den Cent, immer zwei Kommastellen, z. B. 12.345,60.", "Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen zwischen Zahl und Einheit, z. B. 12 500 m oder 3,5 kg.", "In Worten: Zahlen unter einer Million schreibt man zusammen, z. B. „dreitausendvierhundertzwölf Euro und fünfzig Cent“.", "Zuerst die Einer, dann die Zehner: 54 = vierundfünfzig."],
