@@ -989,6 +989,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         </div>
           <div class="bw-pick-opts">
             <div class="bw-tgroup"><span class="field-label">Umfang</span><div class="seg" id="bw-seg-size"></div></div>
+            <div class="bw-tgroup" id="bw-opt-av"><span class="field-label">Anlagenverzeichnis</span><div class="seg" id="bw-seg-av"></div></div>
             <div class="bw-tgroup" id="bw-opt-wrap"><span class="field-label">Buchwert am 01.01.</span><div class="seg" id="bw-seg-bw"></div></div>
           </div>
         </div>
@@ -3107,8 +3108,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Bewertung (Jahresabschluss) =================
   let hu = null;
-  let bwType = store.get("bwType", "av"), bwSize = store.get("bwSize", "normal"), bwCalcBw = store.get("bwCalcBw", false), bw = null, bwNo = 0;
-  const BW_TYPES_A = [["av", "Anlagen\u00ADverzeichnis"], ["an", "Verzeichnis ergänzen"], ["ag", "Verkauf & Schadensfall"], ["um", "Erhaltung & Umbau"]];
+  let bwType = store.get("bwType", "an"), bwSize = store.get("bwSize", "normal"), bwCalcBw = store.get("bwCalcBw", false), bw = null, bwNo = 0;
+  const BW_TYPES_A = [["av", "Anlagen\u00ADverzeichnis"], ["ag", "Verkauf & Schadensfall"], ["um", "Erhaltung & Umbau"]];
+  // Ein Menüpunkt „Anlagenverzeichnis“ mit zwei Varianten: ergänzen (Schularbeitsformat, Typ an) oder ganz erstellen (Buchformat je Konto, Typ av)
+  const BW_AV_MODES = [["an", "ergänzen"], ["av", "ganz erstellen"]];
+  const BW_TYPES_A_HU = [["an", "Anlagenverzeichnis ergänzen"], ["av", "Anlagenverzeichnis erstellen"], ...BW_TYPES_A.slice(1)];
+  let bwAvMode = store.get("bwAvMode", "an");
+  const bwAvMap = t => t === "av" ? bwAvMode : t;
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
   const BW_TYPES_K2 = [["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
@@ -4597,7 +4603,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function bwRender() {
     $("bw-count").textContent = `${BW_AREAS[bwArea].name} · Aufgabe ${bwNo}`;
     // Zusammenfassung in der eingeklappten Aufgabenauswahl
-    const tn = [...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].find(x => x[0] === bw.type);
+    const tn = [...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].find(x => x[0] === bw.type);
     $("bw-pick-type").textContent = tn ? tn[1].replace(/\u00AD/g, "") : "";
     $("bw-pick-size").textContent = "· " + { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" }[bwSize];
     $("bw-title").textContent = bw.title;
@@ -4609,6 +4615,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("bewertung").classList.toggle("bw-wide", ["vt", "web", "bue", "bab", "db", "pp"].includes(bw.type));
     $("bw-steps").innerHTML = BW_STEPS[bw.type].map(s => `<li>${esc(s)}</li>`).join("");
     $("bw-opt-wrap").hidden = bw.type !== "av";
+    $("bw-opt-av").hidden = bw.type !== "av" && bw.type !== "an";
+    $("bw-seg-av").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bw.type)));
     (bw.books || []).forEach(b => bwFillBook(b, false));
     $("bw-body").querySelectorAll("[data-bwadd]").forEach(btn => btn.addEventListener("click", () => bwAddRow(btn.dataset.bwadd)));
     $("bw-body").querySelectorAll("input").forEach(i => i.addEventListener("input", () => { i.classList.remove("ok", "err"); if (i.type === "checkbox") i.parentElement.classList.remove("ok", "err"); }));
@@ -4677,7 +4685,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const books = bw.books || [];
     books.forEach(b => { if (bwCheckBook(b).correct) bOk++; });
     const all = ok === total && bOk === books.length;
-    progRecord(bw.type, bw, total + books.length ? (ok + bOk) / (total + books.length) * 100 : 0);
+    progRecord(bw.type === "an" ? "av" : bw.type, bw, total + books.length ? (ok + bOk) / (total + books.length) * 100 : 0);
     const parts = [];
     if (total) parts.push(`${ok} von ${total} Feldern`);
     if (books.length) parts.push(`${bOk} von ${books.length} Buchungssätzen`);
@@ -4701,13 +4709,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("bw-new").addEventListener("click", bwBuild);
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
-  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bwType))));
-  const bwPickType = v => { bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); $("bw-pick").open = false; bwBuild(); };
+  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType)))));
+  const bwPickType = v => { v = bwAvMap(v); bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); $("bw-pick").open = false; bwBuild(); };
   // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
   function bwSetArea(a, type) {
     if (a !== bwArea || type) {
       bwArea = a; bwType = type || store.get(BW_AREAS[a].key, BW_AREAS[a].def);
-      if (type) store.set(BW_AREAS[a].key, type);
+      if (a === "bw" && bwType === "av" && type && !hu) bwType = bwAvMode;
+      if (type) store.set(BW_AREAS[a].key, bwType);
       bw = null;
     }
     Object.entries(BW_AREAS).forEach(([k, o]) => o.groups.forEach(g => { $("bw-tg-" + g).hidden = k !== a; }));
@@ -4720,6 +4729,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   renderSeg("bw-seg-type-k2", BW_TYPES_K2, bwType, bwPickType);
   renderSeg("bw-seg-type-k3", BW_TYPES_K3, bwType, bwPickType);
   renderSeg("bw-seg-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], bwSize, v => { bwSize = v; store.set("bwSize", v); bwBuild(); });
+  renderSeg("bw-seg-av", BW_AV_MODES, bwAvMode, v => { bwAvMode = v; store.set("bwAvMode", v); bwType = v; store.set("bwType", v); bwBuild(); });
   renderSeg("bw-seg-bw", [[false, "vorgegeben"], [true, "selbst berechnen"]], bwCalcBw, v => { bwCalcBw = v; store.set("bwCalcBw", v); bwBuild(); });
 
   // Kurzer Status in der mitlaufenden Prüfen-Leiste, Klick springt zum Feedback
@@ -4756,7 +4766,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { id: "abschluss", g: -1, title: "T-Konten und Abschluss",
       text: "Im <b>T-Konto</b> stehen links die Soll-, rechts die Haben-Buchungen. Am Jahresende werden alle Konten abgeschlossen: Der Saldo kommt auf die kleinere Seite, damit beide Seiten gleich groß sind.",
       rules: ["Bestandskonten werden über das <b>Schlussbilanzkonto (9850)</b> abgeschlossen, Erfolgskonten über die <b>Gewinn- und Verlustrechnung (9890 GuV)</b>.", "Gewinn = Erträge − Aufwände. Ein Gewinn steht in der GuV im Soll, ein Verlust im Haben.", "Das Privatkonto wird über das Kapitalkonto abgeschlossen: Endkapital = Anfangskapital + Gewinn − Privatentnahmen + Privateinlagen.", "Kontrolle: In der Schlussbilanz muss die Summe der Aktiva gleich der Summe der Passiva sein."],
-      accs: ["ek", "privat"], go: [["tk"], ["ab"]] },
+      accs: ["ek", "privat"], go: [["tk"]] },
 
     { id: "ear", g: 7, title: "Einnahmen-Ausgaben-Rechnung",
       text: "Kleine Unternehmen, die keine doppelte Buchhaltung führen müssen (Umsatz bis € 700.000,00 im Jahr), ermitteln ihren Gewinn mit der <b>Einnahmen-Ausgaben-Rechnung</b>: Betriebseinnahmen − Betriebsausgaben = Gewinn (Überschuss). Aufgezeichnet wird im Kassa- und Bankbuch mit Verteilungstabelle.",
@@ -4842,7 +4852,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
     { id: "ja_afa", g: 6, tp: "ja_afa", title: "Abschreibung von Anlagen (AfA)",
       text: "Anlagen verlieren durch Nutzung an Wert. Diese Wertminderung wird jährlich als <b>Abschreibung für Abnutzung (AfA)</b> gebucht, gleichmäßig über die Nutzungsdauer (linear).",
-      rules: ["Jahres-AfA = Anschaffungskosten ÷ Nutzungsdauer, AfA-Satz = 100 % ÷ Nutzungsdauer.", "<b>Halbjahresregel</b> (entscheidend ist die Inbetriebnahme): erstes Halbjahr = ganze AfA, zweites Halbjahr = halbe AfA.", "Im letzten Jahr wird nur noch der Restbuchwert abgeschrieben.", "Buchung am 31.12.: 7010 Abschreibung von Sachanlagen / Anlagekonto. GWG: 7030 / 0680 bzw. 0681.", "Buchwert 31.12. = Buchwert 01.01. − AfA."], go: [["bw", "av"], ["bw", "an"]] },
+      rules: ["Jahres-AfA = Anschaffungskosten ÷ Nutzungsdauer, AfA-Satz = 100 % ÷ Nutzungsdauer.", "<b>Halbjahresregel</b> (entscheidend ist die Inbetriebnahme): erstes Halbjahr = ganze AfA, zweites Halbjahr = halbe AfA.", "Im letzten Jahr wird nur noch der Restbuchwert abgeschrieben.", "Buchung am 31.12.: 7010 Abschreibung von Sachanlagen / Anlagekonto. GWG: 7030 / 0680 bzw. 0681.", "Buchwert 31.12. = Buchwert 01.01. − AfA."], go: [["bw", "av"]] },
     { id: "ja_umbau", g: 6, tp: "ja_umbau", title: "Anlagen erhalten, umbauen, erweitern",
       text: "Bei Ausgaben für eine bestehende Anlage musst du entscheiden: <b>Erhaltung</b> (die Anlage bleibt, wie sie war) oder <b>Umbau bzw. Erweiterung</b> (die Anlage wird wesentlich verändert, vergrößert oder verbessert).",
       rules: ["Erhaltung (Reparatur, Wartung, Ausmalen, gleichwertiger Ersatz): sofort Aufwand, z. B. 7200, 7201 Instandhaltung Gebäude, 7202 BGA, 7203 EDV, 7204 Elektro.", "Umbau oder Erweiterung (Verwendungszweck geändert, Substanz vermehrt): aktivieren auf das Anlagekonto, z. B. 0300.", "Neue AfA = bisherige AfA + Umbaukosten ÷ Restnutzungsdauer (halbe AfA bei Inbetriebnahme im zweiten Halbjahr)."], go: [["bw", "um"]] },
@@ -4989,7 +4999,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   window.addEventListener("hashchange", () => {
     const h = location.hash.toLowerCase();
     if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c && !(hu && hu.code === c.code)) huStart(c); return; }
-    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "ab", "#buchungssaetze": "bs", "#test": "test" }[h];
+    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "home", "#buchungssaetze": "bs", "#test": "test" }[h];
     if (simple) { showModule(simple); return; }
     if (!h.startsWith("#lex-") || !LEX.some(e => e.id === h.slice(5))) return;
     lexOpen = h.slice(5); lexQuery = ""; $("lex-search").value = ""; showModule("lex"); lexRender();
@@ -4999,7 +5009,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Hausübung: Aufgabe per Code (fester Startwert), Abgabe mit Ergebniscode =================
   // Code: HU-<Art>-<Umfang K/N/U><Buchwert selbst 0/1>-<Startwert>, z. B. HU-VT-N0-3KD9
-  const HU_TYPES = [...BW_TYPES_E, ...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
+  const HU_TYPES = [...BW_TYPES_E, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
   const HU_SIZE = { kompakt: "K", normal: "N", gross: "U" }, HU_SIZE_R = { K: "kompakt", N: "normal", U: "gross" };
   const HU_SIZE_TXT = { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" };
   const HU_URL = "https://grup-mog.github.io/Rechnungswesen/";
@@ -5078,7 +5088,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   });
   $("hu-input").addEventListener("keydown", e => { if (e.key === "Enter") $("hu-load").click(); });
   // Lehrkraft: Code erstellen
-  $("hu-type").innerHTML = [["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3]]
+  $("hu-type").innerHTML = [["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3]]
     .map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map(([v, l]) => `<option value="${v}">${esc(l.replace(/­/g, ""))}</option>`).join("")}</optgroup>`).join("");
   let huSize = "normal";
   renderSeg("hu-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], huSize, v => { huSize = v; });
@@ -5093,7 +5103,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ================= Startseite und Bereich für Lehrkräfte =================
   const chipList = ts => ts.map(([v, l]) => [v, l.replace(/\u00AD/g, "")]);
   const HOME = [
-    ["Doppelte Buchhaltung", [["bs", "Buchungssätze", `Geschäftsfälle verbuchen, mit Text oder Belegen, ${TOPICS.length} Themengebiete.`], ["tk", "T-Konten", "Geschäftsfälle auf T-Konten buchen und die Konten abschließen."], ["ab", "Abschluss", "Aus der Saldenliste GuV, Kapitalkonto und Schlussbilanz erstellen."]]],
+    ["Doppelte Buchhaltung", [["bs", "Buchungssätze", `Geschäftsfälle verbuchen, mit Text oder Belegen, ${TOPICS.length} Themengebiete.`], ["tk", "T-Konten", "Geschäftsfälle auf T-Konten buchen und die Konten abschließen."]]],
     ["Jahresabschluss", [["bw", "Bewertung", "Anlagen, Vorräte, Forderungen, Abgrenzungen und Rückstellungen bewerten und buchen.", chipList([...BW_TYPES_A, ...BW_TYPES_U])]]],
     ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
     ["Kostenrechnung", [["kr", "Kostenrechnung", "Kalkulation im Handel, Voll- und Teilkostenrechnung.", chipList([...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3])]]],
@@ -5177,7 +5187,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   {
     const h = location.hash.toLowerCase(), saved = store.get("module", "home");
     if (h === "#tkonten") showModule("tk");
-    else if (h === "#abschluss") showModule("ab");
+    else if (h === "#abschluss") showModule("home");
     else if (h === "#bewertung") showModule("bw");
     else if (h === "#test") showModule("test");
     else if (h === "#lexikon") showModule("lex");
@@ -5189,7 +5199,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
     else if (h === "#kr" || h === "#kostenrechnung") showModule("kr");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["bs", "tk", "ab", "bw", "ea", "kr", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["bs", "tk", "bw", "ea", "kr", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
     else if (!h.startsWith("#test-")) showModule("home");
   }
   connectDb();
