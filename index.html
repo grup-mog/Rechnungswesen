@@ -3162,7 +3162,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const bwAvMap = t => t === "av" ? bwAvMode : t;
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
-  const BW_TYPES_K2 = [["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
+  const BW_TYPES_K2 = [["kk", "Kalkulatorische Kosten"], ["bue", "BÜB für ein Jahr"], ["bum", "BÜB für einen Monat"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
   const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
   const BW_TYPES_P = [["la", "Lohn und Gehalt abrechnen"], ["lu", "Abrechnung mit Überstunden"]];
   const BW_TYPES_W = [["zs", "Zahlen schreiben"], ["ru", "Kaufmännisch runden"], ["pr", "Prozent\u00ADrechnung"], ["sr", "Schluss\u00ADrechnung"], ["rsk", "Rabatt und Skonto"], ["us", "Umsatz\u00ADsteuer"]];
@@ -4341,62 +4341,255 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return krTask("ak", "Berechne den Verkaufspreis", `${US.name} · Absatzkalkulation`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch. v. H. = vom Hundert, i. H. = im Hundert, a. H. = auf Hundert. Abweichungen von wenigen Cent durch Rundung werden akzeptiert.", parts, fields, [], sols);
   }
 
-  // ---------- Kostenartenrechnung: Betriebsüberleitungsbogen ----------
-  function krMakeBue(rng) {
-    const E = (a, b, st) => rndStep(rng, [a, b, st]) * 100, info = [], sols = [], fields = [];
-    const rows = [
-      { l: "Handelswareneinsatz", auf: E(180000, 420000, 1000) },
-      { l: "Gehälter", auf: E(90000, 160000, 500) },
+  // ---------- Kalkulatorische Kosten (Nebenrechnungen zum BÜB, Schemata laut Buch) ----------
+  // Anlagen: ahk (Anschaffungswert), nd (reale Nutzungsdauer), rw (Restwert), idx: Wiederbeschaffungswert über Indexverhältnis
+  const KR_ANL = [
+    { l: "Gebäude", ahk: [380000, 900000, 5000], nd: [25, 30, 33, 40], rw: null, idx: true },
+    { l: "Lieferwagen", ahk: [28000, 52000, 500], nd: [4, 5, 6], rw: [2000, 8000, 500] },
+    { l: "Nähmaschinen der Änderungsschneiderei", ahk: [12000, 36000, 500], nd: [6, 8, 8.5, 10], rw: [500, 3000, 100] },
+    { l: "Geschäftsausstattung", ahk: [40000, 120000, 1000], nd: [5, 8, 10, 12.5], rw: null, idx: true },
+  ];
+  // Kalkulatorische Abschreibung einer Anlage: Wiederbeschaffungswert (Index oder gegeben) − Restwert = Abschreibungsbasis ÷ reale Nutzungsdauer
+  function krAnlage(rng, a, useIdx, withRw) {
+    const ahk = rndStep(rng, a.ahk) * 100, nd = pickR(rng, a.nd), rw = withRw && a.rw ? rndStep(rng, a.rw) * 100 : 0;
+    const o = { l: a.l, ahk, nd, rw, idx: useIdx };
+    if (useIdx) { o.alt = rndStep(rng, [1000, 1150, 1]); o.neu = o.alt + rndStep(rng, [40, 300, 1]); o.wbw = Math.round(ahk * o.neu / o.alt); }
+    else o.wbw = Math.round(ahk * (1 + rndStep(rng, [5, 30, 1]) / 100) / 10000) * 10000;
+    o.basis = o.wbw - rw; o.afa = Math.round(o.basis / nd);
+    o.txt = `${a.l}: Anschaffungswert ${P.fmt(ahk)}, ${useIdx ? `Index bei der Anschaffung ${krN(o.alt / 10)}, Index heute ${krN(o.neu / 10)}` : `Wiederbeschaffungswert heute ${P.fmt(o.wbw)}`}, ${rw ? `Restwert ${P.fmt(rw)}, ` : ""}reale Nutzungsdauer ${krN(nd)} Jahre.`;
+    o.sol = `${a.l}: ${useIdx ? `${P.fmt(ahk)} × ${krN(o.neu / 10)} ÷ ${krN(o.alt / 10)} = ${P.fmt(o.wbw)}` : `Wiederbeschaffungswert ${P.fmt(o.wbw)}`}${rw ? ` − Restwert ${P.fmt(rw)} = ${P.fmt(o.basis)}` : ""}, ÷ ${krN(nd)} Jahre = ${P.fmt(o.afa)}.`;
+    return o;
+  }
+  function krAnlageRows(fields, pre, o) {
+    const rows = [];
+    if (o.idx) rows.push(["", "Anschaffungswert", "", o.ahk, { given: true }], ["", "Wiederbeschaffungswert", "lt. Index", o.wbw, { tol: 1 }]);
+    else rows.push(["", "Wiederbeschaffungswert", "", o.wbw, { given: true }]);
+    if (o.rw) rows.push(["−", "Restwert", "", o.rw, { given: true }], ["=", "Abschreibungsbasis", "", o.basis, { tol: 1 }]);
+    rows.push(["", "Kalkulatorische Abschreibung", `÷ ${krN(o.nd)} Jahre`, o.afa, { tol: 2 }]);
+    return krRows(fields, pre, rows);
+  }
+  const KR_WAG = [
+    { l: "Beständewagnis", b: "durchschnittlichen Lagerbestand", key: "lager", p: [1, 1.5, 2, 2.5] },
+    { l: "Gewährleistungswagnis", b: "Umsatz", key: "ums", p: [0.5, 0.8, 1, 1.3] },
+    { l: "Ausfallwagnis", b: "durchschnittlichen Forderungsbestand", key: "ford", p: [2, 2.5, 3, 4] },
+    { l: "Sonstige Wagnisse", b: "Umsatz", key: "ums", p: [0.2, 0.3, 0.5] },
+  ];
+  function krWagnisse(rng, n) {
+    const base = { lager: rndStep(rng, [60000, 180000, 500]) * 100, ums: rndStep(rng, [400, 950, 5]) * 100000, ford: rndStep(rng, [15000, 60000, 500]) * 100 };
+    const list = (n >= 4 ? KR_WAG : n === 3 ? KR_WAG.slice(0, 3) : [KR_WAG[0], KR_WAG[2]]).map(w => { const p = pickR(rng, w.p); return Object.assign({}, w, { pv: p, bv: base[w.key], a: krPct(base[w.key], p) }); });
+    return { list, sum: list.reduce((s, w) => s + w.a, 0), base };
+  }
+  const krWagTxt = W => W.list.map(w => `${w.l}: ${krP(w.pv)} vom ${w.b} (${P.fmt(w.bv)})`).join("; ") + ".";
+  const krWagSol = W => `Kalkulatorische Wagnisse = Prozentsatz × Bezugsgröße: ${W.list.map(w => `${krP(w.pv)} von ${P.fmt(w.bv)} = ${P.fmt(w.a)}`).join(", ")}; zusammen ${P.fmt(W.sum)}.`;
+
+  function krMakeKk(rng) {
+    const fields = [], choices = [], parts = [], sols = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
+    // Kalkulatorische Abschreibung
+    let anl;
+    if (!big) anl = [krAnlage(rng, pickR(rng, [KR_ANL[0], KR_ANL[3]]), true, false)];
+    else if (!gross) { const i = rng() < 0.5 ? 1 : 2; anl = [krAnlage(rng, KR_ANL[3], true, false), krAnlage(rng, KR_ANL[i], false, true)]; }
+    else anl = KR_ANL.map((a, i) => krAnlage(rng, a, i === 0 || i === 3 || rng() < 0.3, !!a.rw));
+    const afaSum = anl.reduce((s, o) => s + o.afa, 0);
+    const pA = { h: "Kalkulatorische Abschreibung", text: `Die kalkulatorische Abschreibung wird vom Wiederbeschaffungswert und der tatsächlichen (realen) Nutzungsdauer berechnet. ${anl.some(o => o.idx) ? "Ist ein Index angegeben, gilt: Wiederbeschaffungswert = Anschaffungswert × Index heute ÷ Index bei der Anschaffung. " : ""}Ein Restwert wird vorher abgezogen.<br>${anl.map(o => esc(o.txt)).join("<br>")}`,
+      schemes: anl.map((o, i) => ({ head: o.l, sub: "Werte in EUR", rows: krAnlageRows(fields, `kr-a${i}`, o) })) };
+    if (anl.length > 1) { pA.form = [["kr-as", "Kalkulatorische Abschreibung gesamt"]]; fields.push({ id: "kr-as", amt: afaSum, tol: anl.length * 2 }); }
+    parts.push(pA);
+    sols.push(...anl.map(o => o.sol), ...(anl.length > 1 ? [`Kalkulatorische Abschreibung gesamt: ${P.fmt(afaSum)}.`] : []));
+    // Kalkulatorische Wagnisse
+    const W = krWagnisse(rng, gross ? 4 : big ? 3 : 2);
+    const wRows = W.list.map(w => ["", w.l, krP(w.pv), w.a]).concat([["=", "Kalkulatorische Wagnisse", "", W.sum]]);
+    const pW = { h: "Kalkulatorische Wagnisse", text: `Statt der zufälligen Schadensfälle des Jahres rechnet die Kostenrechnung mit durchschnittlichen Wagnissen. Grundlage sind Erfahrungswerte: ${esc(krWagTxt(W))}`, schemes: [{ head: "Kalkulatorische Wagnisse", sub: "Werte in EUR", rows: krRows(fields, "kr-w", wRows) }] };
+    parts.push(pW);
+    sols.push(krWagSol(W));
+    // Kalkulatorischer Unternehmerlohn: Jahresgehalt (14 Monatsbezüge) + Unternehmerzuschlag
+    const m = rndStep(rng, [3000, 5200, 50]) * 100, z = pickR(rng, [10, 12, 14, 15, 18, 20]), jg = m * 14, zu = krPct(jg, z), ul = jg + zu;
+    const pU = { h: "Kalkulatorischer Unternehmerlohn", text: `${US.owner} arbeitet selbst im Modehaus mit und bezieht kein Gehalt. Als angestellte Filialleiterin würde sie ${P.fmt(m)} brutto im Monat verdienen (14-mal im Jahr, inkl. Sonderzahlungen). Für das Unternehmerrisiko wird ein Unternehmerzuschlag von ${krP(z)} angesetzt.`,
+      schemes: [{ head: "Kalkulatorischer Unternehmerlohn", sub: "Werte in EUR", rows: krRows(fields, "kr-u", [["", "Jahresgehalt", "14 × Monat", jg], ["+", "Unternehmerzuschlag", krP(z) + " v. H.", zu], ["=", "Kalkulatorischer Unternehmerlohn", "", ul]]) }] };
+    parts.push(pU);
+    sols.push(`Jahresgehalt ${P.fmt(m)} × 14 = ${P.fmt(jg)}, + ${krP(z)} Unternehmerzuschlag ${P.fmt(zu)} = kalkulatorischer Unternehmerlohn ${P.fmt(ul)}.`);
+    // Kalkulatorische Zinsen: Fremdkapitalzinsen lt. GuV + Eigenkapitalzinsen
+    const fk = rndStep(rng, [1500, 14000, 1]) * 100 + rndStep(rng, [0, 99, 1]), ek = rndStep(rng, [600, 4000, 1]) * 10000, zs = pickR(rng, [3, 3.5, 4, 4.5, 5]), ekz = krPct(ek, zs), kz = fk + ekz;
+    parts.push({ h: "Kalkulatorische Zinsen", text: `Die Fremdkapitalzinsen laut GuV (Konto 8280) betragen ${P.fmt(fk)}. Das Eigenkapital laut Bilanz beträgt ${P.fmt(ek)}. Es soll mit ${krP(zs)} verzinst werden.`,
+      schemes: [{ head: "Kalkulatorische Zinsen", sub: "Werte in EUR", rows: krRows(fields, "kr-z", [["", "Fremdkapitalzinsen lt. GuV", "", fk, { given: true }], ["+", "Eigenkapitalzinsen", krP(zs), ekz], ["=", "Kalkulatorische Zinsen", "", kz]]) }] });
+    sols.push(`Eigenkapitalzinsen ${P.fmt(ek)} × ${krP(zs)} = ${P.fmt(ekz)}, + Fremdkapitalzinsen ${P.fmt(fk)} = kalkulatorische Zinsen ${P.fmt(kz)}.`);
+    // Verständnisfragen
+    const Q = [
+      { id: "kr-q1", q: "Bei welcher Rechtsform wird kein kalkulatorischer Unternehmerlohn angesetzt?", opts: [["eu", "Einzelunternehmen"], ["kg", "KG"], ["gmbh", "GmbH"]], v: "gmbh", part: pU, sol: "Bei der GmbH bekommt die Geschäftsführerin ein Gehalt, das schon als Aufwand gebucht ist. Ein kalkulatorischer Unternehmerlohn wird nur bei Einzelunternehmen und Personengesellschaften angesetzt." },
+      { id: "kr-q2", q: "Welches Aufwandskonto ersetzt der kalkulatorische Unternehmerlohn im BÜB?", opts: [["7740", "7740 Beiträge GSVG"], ["6200", "6200 Gehälter"], ["7010", "7010 AfA"]], v: "7740", part: pU, sol: "Die Beiträge der Inhaberin an die GSVG (Konto 7740) werden nicht übernommen, sie sind im kalkulatorischen Unternehmerlohn abgegolten." },
+      { id: "kr-q3", q: "Welches Aufwandskonto ersetzen die kalkulatorischen Wagnisse im BÜB?", opts: [["7819", "7819 Schadensfälle"], ["7700", "7700 Versicherung"], ["7650", "7650 Werbung"]], v: "7819", part: pW, sol: "Die tatsächlichen Schadensfälle (Konto 7819 Sonstige Schadensfälle) werden abgezogen und durch die durchschnittlichen kalkulatorischen Wagnisse ersetzt. Versicherte Risiken sind über den Versicherungsaufwand schon Kosten." },
     ];
-    rows.push({ l: "Gesetzlicher Sozialaufwand", auf: Math.round(rows[1].auf * 0.29 / 10000) * 10000 });
-    rows.push({ l: "Mietaufwand", auf: E(24000, 48000, 600) });
-    if (bwSize !== "kompakt") rows.push({ l: "Werbeaufwand", auf: E(6000, 18000, 100) });
-    if (bwSize === "gross") rows.push({ l: "Energieaufwand", auf: E(4000, 9000, 50) });
-    const afaB = E(12000, 30000, 100), afaK = E(14000, 36000, 100);
-    if (bwSize === "kompakt") info.push(`Die kalkulatorische Abschreibung beträgt ${P.fmt(afaK)}.`);
-    else { const nd = pickR(rng, [5, 8, 10]); info.push(`Kalkulatorische Abschreibung: Die Geschäftsausstattung hätte heute einen Wiederbeschaffungswert von ${P.fmt(afaK * nd)}, die Nutzungsdauer beträgt ${nd} Jahre (linear).`); }
-    rows.push({ l: "Abschreibungen", auf: afaB, neu: afaB, kalk: afaK });
-    const zb = E(2000, 9000, 50), zi = pickR(rng, [3, 4, 5, 6]);
-    let bnk = E(150000, 400000, 5000);
-    if (bwSize === "gross") {
-      const av = E(180000, 320000, 5000), nb = E(20000, 60000, 5000), uv = E(90000, 200000, 5000), ab = E(30000, 90000, 5000);
-      bnk = av + uv - nb - ab;
-      info.push(`Kalkulatorische Zinsen: ${zi} % vom betriebsnotwendigen Kapital. Anlagevermögen ${P.fmt(av)}, davon nicht betriebsnotwendig (vermietete Garage) ${P.fmt(nb)}, Umlaufvermögen ${P.fmt(uv)}. Abzugskapital (Lieferverbindlichkeiten und Kundenanzahlungen, zinsenfrei): ${P.fmt(ab)}.`);
-      sols.push(`Betriebsnotwendiges Kapital = ${P.fmt(av)} − ${P.fmt(nb)} + ${P.fmt(uv)} − ${P.fmt(ab)} = ${P.fmt(bnk)}.`);
-    } else info.push(`Kalkulatorische Zinsen: ${zi} % vom betriebsnotwendigen Kapital in Höhe von ${P.fmt(bnk)}.`);
-    const kz = Math.round(bnk * zi / 100);
-    rows.push({ l: "Zinsaufwand", auf: zb, neu: zb, kalk: kz });
-    if (bwSize === "gross") {
-      const fa = E(1500, 6000, 100), zu = E(200000, 500000, 10000), w = pickR(rng, [0.5, 0.8, 1, 1.2, 1.5]), kw = Math.round(zu * w / 100);
-      info.push(`Kalkulatorisches Wagnis: Im Durchschnitt fallen ${krP(w)} des Zielumsatzes aus. Der Zielumsatz beträgt ${P.fmt(zu)}.`);
-      rows.push({ l: "Forderungsabschreibung", auf: fa, neu: fa, kalk: kw });
+    if (big) {
+      const pick = gross ? [Q[rng() < 0.5 ? 0 : 1], Q[2]] : [pickR(rng, Q)];
+      pick.forEach(q => { q.part.choice = { id: q.id, q: q.q, opts: q.opts }; choices.push({ id: q.id, v: q.v }); sols.push(q.sol); });
     }
-    const NEU = [["Spenden an das Kinderhilfswerk", [500, 3000, 100], "betriebsfremd"], ["Buchwert abgegangener Anlagen", [800, 6000, 100], "außerordentlich"], ["Steuernachzahlung für das Vorjahr", [400, 3000, 50], "periodenfremd"], ["Schaden durch Wasserrohrbruch (nicht versichert)", [1000, 8000, 100], "außerordentlich"], ["Aufwand für die privat vermietete Wohnung", [1200, 5000, 100], "betriebsfremd"]].sort(() => rng() - 0.5);
-    NEU.slice(0, { kompakt: 1, normal: 2, gross: 3 }[bwSize]).forEach(([l, rg, why]) => { const a = E(...rg); rows.push({ l, auf: a, neu: a, kalk: 0 }); sols.push(`${l}: neutraler Aufwand (${why}), keine Kosten.`); });
-    let ul, ulTxt;
-    if (bwSize === "kompakt") { ul = E(48000, 72000, 1000); ulTxt = `Der kalkulatorische Unternehmerlohn für die Inhaberin beträgt ${P.fmt(ul)} im Jahr.`; }
-    else { const m = E(3200, 4800, 50); ul = m * 14; ulTxt = `Kalkulatorischer Unternehmerlohn: Eine Filialleiterin würde ${P.fmt(m)} im Monat verdienen (14-mal im Jahr).`; }
-    info.push(ulTxt);
-    rows.push({ l: "Kalkulatorischer Unternehmerlohn", auf: 0, neu: 0, kalk: ul, nogv: true });
+    return krTask("kk", "Berechne die kalkulatorischen Kosten", `${US.name} · Kalkulatorische Kosten`, "Rechne auf Cent genau und runde kaufmännisch. Bei Divisionen werden Abweichungen von 1–2 Cent akzeptiert.", parts, fields, choices, sols);
+  }
+
+  // ---------- Kostenartenrechnung: Betriebsüberleitungsbogen (Aufbau laut Buch: Konto | Bezeichnung | Aufwand | Abgrenzung − | + | Kosten) ----------
+  // Zeile: kto, l, auf (Aufwand lt. Saldenliste, null = kein Aufwand), minus, plus, why (Lösungstext)
+  function krBueFinish(rows, info, sols, o) {
+    const fields = [];
+    rows.sort((a, b) => (a.kto ? 0 : 1) - (b.kto ? 0 : 1) || (a.kto || "").localeCompare(b.kto || ""));
     rows.forEach((r, i) => {
-      r.neu = r.neu || 0; r.kalk = r.kalk || 0; r.k = r.auf - r.neu + r.kalk; r.id = `kr-u${i}`;
-      fields.push({ id: r.id + "-n", amt: r.neu, zeroOk: true, blank: !r.neu }, { id: r.id + "-z", amt: r.kalk, zeroOk: true, blank: !r.kalk }, { id: r.id + "-k", amt: r.k });
+      r.minus = r.minus || 0; r.plus = r.plus || 0; r.k = (r.auf || 0) - r.minus + r.plus; r.id = `kr-u${i}`;
+      fields.push({ id: r.id + "-n", amt: r.minus, zeroOk: true, blank: !r.minus, tol: r.tol || 0 }, { id: r.id + "-z", amt: r.plus, zeroOk: true, blank: !r.plus, tol: r.tol || 0 }, { id: r.id + "-k", amt: r.k, zeroOk: true, tol: r.tol || 0 });
+      if (r.why) sols.push(`${r.kto ? r.kto + " " : ""}${r.l}: ${r.why}`);
     });
-    const sum = k => rows.reduce((a, r) => a + r[k], 0);
-    fields.push({ id: "kr-us-n", amt: sum("neu") }, { id: "kr-us-z", amt: sum("kalk") }, { id: "kr-us-k", amt: sum("k") });
-    sols.unshift(`Bilanzielle Abschreibung (${P.fmt(afaB)}) und Zinsaufwand (${P.fmt(zb)}) werden abgezogen und durch die kalkulatorischen Werte ersetzt: kalkulatorische AfA ${P.fmt(afaK)}, kalkulatorische Zinsen ${P.fmt(kz)}.`, `Der kalkulatorische Unternehmerlohn (${P.fmt(ul)}) ist kein Aufwand, wird aber als Kosten dazugerechnet (Zusatzkosten).`);
-    sols.push(`Summe Kosten: ${P.fmt(sum("k"))} (Aufwand ${P.fmt(sum("auf"))} − Abzüge ${P.fmt(sum("neu"))} + Zurechnungen ${P.fmt(sum("kalk"))}).`);
-    return { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", rows, info, sumAuf: sum("auf"), fields, choices: [], books: [], sols };
+    const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0), tolS = rows.reduce((a, r) => a + (r.tol || 0), 0);
+    fields.push({ id: "kr-us-n", amt: sum("minus"), tol: tolS }, { id: "kr-us-z", amt: sum("plus"), tol: tolS }, { id: "kr-us-k", amt: sum("k"), tol: tolS });
+    sols.push(`Summe Kosten: ${P.fmt(sum("k"))} (Aufwand ${P.fmt(sum("auf"))} − ${P.fmt(sum("minus"))} + ${P.fmt(sum("plus"))}).`);
+    return Object.assign({ rows, info, sumAuf: sum("auf"), fields, choices: [], books: [], sols }, o);
+  }
+  const KR_NEUTRAL = [
+    ["7690", "Spenden und Trinkgelder", [500, 3000, 10], "Spende an das Kinderhilfswerk", "betriebsfremd"],
+    ["7820", "Buchwert abgegangener Anlagen", [800, 6000, 10], "Buchwert einer verkauften Schaufensterpuppe und Vitrine", "außerordentlich"],
+    ["7840", "Aufwand für Vorperioden", [400, 3000, 10], "Nachverrechnung für das Vorjahr", "periodenfremd"],
+    ["8450", "Außerordentliche Aufwendungen", [1000, 8000, 10], "nicht versicherter Schaden durch einen Wasserrohrbruch", "außerordentlich"],
+  ];
+  function krNeutral(rng, rows, n, div = 1) {
+    KR_NEUTRAL.slice().sort(() => rng() - 0.5).slice(0, n).forEach(([kto, l, rg, what, why]) => {
+      const a = Math.round(rndStep(rng, rg) * 100 / div); rows.push({ kto, l, auf: a, minus: a, note: what, why: `${what}: neutraler Aufwand (${why}), keine Kosten, zur Gänze abziehen.` });
+    });
+  }
+  function krMakeBue(rng) {
+    const E = (a, b, st) => rndStep(rng, [a, b, st]) * 100, info = [], sols = [], rows = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
+    const add = r => (rows.push(r), r);
+    add({ kto: "5010", l: "Handelswareneinsatz", auf: E(180000, 420000, 10), why: "Grundkosten, unverändert übernehmen." });
+    const geh = add({ kto: "6200", l: "Gehälter", auf: E(90000, 160000, 5), why: "Grundkosten." });
+    add({ kto: "6560", l: "Gesetzlicher Sozialaufwand Angestellte", auf: Math.round(geh.auf * 0.29 / 100) * 100, why: "Grundkosten." });
+    add({ kto: "7400", l: "Mietaufwand", auf: E(24000, 48000, 60), why: "Grundkosten." });
+    if (big) add({ kto: "7650", l: "Werbeaufwand", auf: E(6000, 18000, 10), why: "Grundkosten." });
+    if (big) {
+      const s = add({ kto: "7230", l: "Stromaufwand", auf: E(3000, 9000, 1) }), p = pickR(rng, [3, 4, 5, 6]);
+      s.plus = krPct(s.auf, p); info.push(`Für die Kostenrechnung wird beim Strom bereits mit einer Preissteigerung von ${krP(p)} gerechnet.`); s.why = `Preissteigerung ${krP(p)} von ${P.fmt(s.auf)} = ${P.fmt(s.plus)} zurechnen.`;
+    }
+    if (gross) {
+      const t = add({ kto: "7380", l: "Telefongebühren", auf: E(1500, 4000, 1) }); t.minus = E(150, 600, 1);
+      info.push(`Im Konto 7380 Telefongebühren sind private Gespräche der Inhaberin von ${P.fmt(t.minus)} enthalten.`); t.why = `Privatanteil ${P.fmt(t.minus)} ist nicht betrieblich: abziehen.`;
+    }
+    // Abschreibung
+    const afa = add({ kto: "7010", l: "Abschreibung von Sachanlagen", auf: E(12000, 30000, 1) });
+    if (!big) { afa.plus = E(14000, 36000, 10); info.push(`Die kalkulatorische Abschreibung beträgt ${P.fmt(afa.plus)} im Jahr.`); }
+    else {
+      const anl = gross ? [krAnlage(rng, KR_ANL[3], true, false), krAnlage(rng, KR_ANL[1], false, true)] : [krAnlage(rng, KR_ANL[3], rng() < 0.5, false)];
+      afa.plus = anl.reduce((s, o) => s + o.afa, 0); afa.tol = anl.length; info.push("Kalkulatorische Abschreibung (Wiederbeschaffungswert − Restwert, ÷ reale Nutzungsdauer): " + anl.map(o => o.txt).join(" "));
+      sols.push(...anl.map(o => o.sol));
+    }
+    afa.minus = afa.auf; afa.why = `bilanzielle Abschreibung zur Gänze abziehen, kalkulatorische Abschreibung ${P.fmt(afa.plus)} zurechnen.`;
+    // Wagnisse ersetzen die tatsächlichen Schadensfälle
+    if (big) {
+      const s = add({ kto: "7819", l: "Sonstige Schadensfälle", auf: E(1500, 7000, 1) }), W = krWagnisse(rng, 2);
+      if (!gross) W.list = [W.list[1]], W.sum = W.list[0].a;
+      s.minus = s.auf; s.plus = W.sum; info.push(`Die Schadensfälle werden durch kalkulatorische Wagnisse ersetzt. ${krWagTxt(W)}`);
+      s.why = `tatsächliche Schadensfälle abziehen, kalkulatorische Wagnisse ${P.fmt(W.sum)} zurechnen.`; sols.push(krWagSol(W));
+    }
+    // Unternehmerlohn ersetzt die GSVG-Beiträge
+    const gs = add({ kto: "7740", l: "Versicherungsbeiträge an die GSVG", auf: E(3000, 9000, 1) }), z = pickR(rng, [10, 12, 14, 15, 18, 20]);
+    let jg, ulTxt;
+    if (!big) { jg = E(42000, 66000, 500); ulTxt = `${P.fmt(jg)} Jahresgehalt`; }
+    else { const m = E(3000, 5000, 5); jg = m * 14; ulTxt = `Monatsgehalt einer Filialleiterin ${P.fmt(m)} (14-mal im Jahr)`; }
+    gs.minus = gs.auf; gs.plus = jg + krPct(jg, z);
+    info.push(`Die GSVG-Beiträge der Inhaberin werden durch den kalkulatorischen Unternehmerlohn ersetzt: ${ulTxt} und ${krP(z)} Unternehmerzuschlag.`);
+    gs.why = `GSVG-Beiträge zur Gänze abziehen, kalkulatorischen Unternehmerlohn zurechnen: ${P.fmt(jg)} + ${krP(z)} = ${P.fmt(gs.plus)}.`;
+    // Zinsen: Fremdkapitalzinsen lt. GuV + Eigenkapitalzinsen
+    const zi = add({ kto: "8280", l: "Zinsenaufwand für Bankkredite", auf: E(2000, 9000, 1) }), ek = E(60000, 300000, 50), zs = pickR(rng, [3, 3.5, 4, 4.5, 5]);
+    zi.minus = zi.auf; zi.plus = zi.auf + krPct(ek, zs);
+    info.push(`Kalkulatorische Zinsen: Fremdkapitalzinsen laut GuV und ${krP(zs)} Zinsen für das Eigenkapital laut Bilanz (${P.fmt(ek)}).`);
+    zi.why = `Zinsenaufwand abziehen, kalkulatorische Zinsen zurechnen: ${P.fmt(zi.auf)} + ${P.fmt(ek)} × ${krP(zs)} = ${P.fmt(zi.plus)}.`;
+    krNeutral(rng, rows, { kompakt: 1, normal: 2, gross: 3 }[bwSize]);
+    rows.filter(r => r.note).forEach(r => info.push(`Das Konto ${r.kto} enthält: ${r.note}.`));
+    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", head: `${US.name} · Kostenartenrechnung`, sub: "Saldenliste 31.12.2026, Werte in EUR", intro: "Übernimm die Salden der Aufwandskonten in den Betriebsüberleitungsbogen (BÜB)." });
+  }
+
+  // ---------- BÜB für einen Monat (Monatsabgrenzungen laut Buch) ----------
+  const KR_MON = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  function krMakeBum(rng) {
+    const E = (a, b, st) => rndStep(rng, [a, b, st]) * 100, info = [], sols = [], rows = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
+    const mi = Math.floor(rng() * 12), mon = KR_MON[mi], add = r => (rows.push(r), r), d12 = v => Math.round(v / 12);
+    // Monatsdurchschnitt statt gebuchtem Betrag (Abgrenzung − oder +)
+    const avg = (kto, l, jahr, auf, txt) => {
+      const r = add({ kto, l, auf, tol: 1 }), k = d12(jahr), d = k - auf;
+      if (d < 0) r.minus = -d; else r.plus = d;
+      info.push(txt); r.why = `Kosten = ${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)}, daher ${P.fmt(Math.abs(d))} ${d < 0 ? "abziehen" : "zurechnen"}.`;
+      return r;
+    };
+    const miete = (kto) => {
+      const m = E(1800, 4500, 10);
+      if (mi % 3 === 0) { const r = add({ kto, l: "Mietaufwand", auf: 3 * m, minus: 2 * m }); info.push(`Auf dem Konto ${kto} wurde die Miete für das ganze ${mi / 3 + 1}. Quartal gebucht.`); r.why = `nur ein Drittel (${P.fmt(m)}) gehört in den ${mon}, ${P.fmt(2 * m)} abziehen.`; }
+      else add({ kto, l: "Mietaufwand", auf: m, why: "Monatsmiete, Grundkosten." });
+    };
+    const ul = (jahr) => {
+      const k = d12(jahr), gsvg = (mi % 3) === 1;
+      if (gsvg) { const a = E(1200, 2600, 1), r = add({ kto: "7740", l: "Versicherungsbeiträge an die GSVG", auf: a, minus: a, plus: k, tol: 1 }); r.why = `GSVG-Beiträge abziehen, kalkulatorischen Unternehmerlohn ${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)} zurechnen.`; info.push(`Die GSVG-Beiträge der Inhaberin werden durch einen kalkulatorischen Unternehmerlohn von ${P.fmt(jahr)} im Jahr ersetzt.`); }
+      else { const r = add({ l: "Kalkulatorischer Unternehmerlohn", auf: null, plus: k, tol: 1 }); r.why = `${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)} zurechnen.`; info.push(`Die Inhaberin arbeitet selbst mit. Der kalkulatorische Unternehmerlohn beträgt ${P.fmt(jahr)} im Jahr.`); }
+    };
+    const kalk = (l, jahr, txt) => { const k = d12(jahr), r = add({ l, auf: null, plus: k, tol: 1 }); info.push(txt); r.why = `${P.fmt(jahr)} ÷ 12 = ${P.fmt(k)} zurechnen (steht nicht in der Saldenliste).`; };
+    const zinsen = (kto) => {
+      const a = E(150, 900, 1) + rndStep(rng, [0, 99, 1]), ek = E(60000, 400000, 1000), zs = pickR(rng, [3, 3.5, 4, 5]), ekz = Math.round(ek * zs / 1200);
+      const r = add({ kto, l: "Zinsenaufwand für Bankkredite", auf: a, minus: a, plus: a + ekz, tol: 1 });
+      info.push(`Das Eigenkapital laut Bilanz beträgt ${P.fmt(ek)}. Dafür sollen ${krP(zs)} Zinsen pro Jahr angesetzt werden. Der Zinsenaufwand für Bankkredite wird in die kalkulatorischen Zinsen eingerechnet.`);
+      r.why = `Zinsenaufwand abziehen, kalkulatorische Zinsen zurechnen: ${P.fmt(a)} + ${P.fmt(ek)} × ${krP(zs)} ÷ 12 = ${P.fmt(r.plus)}.`;
+    };
+    let firm;
+    if (!gross) {
+      firm = US.name;
+      add({ kto: "5010", l: "Handelswareneinsatz", auf: E(18000, 42000, 1), why: "Grundkosten." });
+      const vp = add({ kto: "5340", l: "Verpackungsmaterialverbrauch", auf: E(600, 1800, 1) }); vp.minus = Math.round(vp.auf * rndStep(rng, [2, 5, 1]) / 1000) * 100;
+      info.push(`Im Konto 5340 sind Einkaufstaschen und Seidenpapier um ${P.fmt(vp.minus)} enthalten, die im ${mon} eingekauft und als Aufwand gebucht wurden, aber noch auf Lager liegen.`); vp.why = `Was noch auf Lager liegt, wurde nicht verbraucht: ${P.fmt(vp.minus)} abziehen.`;
+      const g = add({ kto: "6200", l: "Gehälter", auf: E(9000, 16000, 1) });
+      if (!big) { g.plus = E(1500, 2700, 1); info.push(`Auf dem Konto 6200 wurden die laufenden Monatsgehälter für ${mon} gebucht. Die anteiligen Sonderzahlungen betragen ${P.fmt(g.plus)}.`); }
+      else { g.plus = Math.round(g.auf / 6); g.tol = 1; info.push(`Auf dem Konto 6200 wurden die laufenden Monatsgehälter für ${mon} gebucht. Urlaubs- und Weihnachtsgeld (je ein Monatsgehalt) werden anteilig verrechnet, also ein Sechstel der Monatsgehälter.`); }
+      g.why = `anteilige Sonderzahlungen ${P.fmt(g.plus)} zurechnen${big ? " (2 ÷ 12 = ein Sechstel)" : ""}.`;
+      const sj = E(4000, 9000, 60); avg("7230", "Stromaufwand", sj, rng() < 0.5 ? E(150, 300, 1) : E(900, 1600, 1), `Der durchschnittliche jährliche Stromverbrauch kostet ${P.fmt(sj)}.`);
+      miete("7400");
+      const wj = E(6000, 18000, 120), plakat = rng() < 0.5; avg("7650", "Werbeaufwand", wj, plakat ? E(1500, 4000, 1) : E(100, 300, 1), `Die Werbekosten betragen durchschnittlich ${P.fmt(wj)} im Jahr. Im ${mon} lief ${plakat ? "eine Plakatkampagne für die neue Kollektion" : "nur Werbung in den sozialen Medien"}.`);
+      if (big) {
+        const vj = E(1200, 3600, 12), booked = rng() < 0.5;
+        avg("7700", "Versicherungsaufwand", vj, booked ? vj : 0, booked ? `Auf dem Konto 7700 wurde im ${mon} die Jahresprämie der Geschäftsversicherung (${P.fmt(vj)}) gebucht.` : `Die Jahresprämie der Geschäftsversicherung (${P.fmt(vj)}) wurde im Jänner gebucht. Im ${mon} gibt es keine Buchung.`);
+        const rm = E(80, 250, 1); avg("7750", "Rechtsberatungsaufwand", rm * 12, E(600, 2400, 1), `Die durchschnittlichen Rechtsberatungskosten betragen ${P.fmt(rm)} im Monat.`);
+      }
+      zinsen("8280");
+      const aj = E(12000, 36000, 120); kalk("Kalkulatorische Abschreibung", aj, `Die jährliche kalkulatorische Abschreibung beträgt ${P.fmt(aj)}.`);
+      if (big) { const wj2 = E(1800, 6000, 120); kalk("Kalkulatorische Wagnisse", wj2, `Die kalkulatorischen Wagnisse betragen jährlich etwa ${P.fmt(wj2)}.`); }
+      ul(E(42000, 66000, 120));
+      krNeutral(rng, rows, big ? 2 : 1, 4);
+    } else {
+      firm = "Trachtenmanufaktur Lindner GmbH";
+      const r1 = add({ kto: "5100", l: "Rohstoffverbrauch", auf: E(14000, 30000, 1) }); r1.plus = E(600, 2000, 1);
+      info.push(`Im ${mon} wurde Loden um ${P.fmt(r1.plus)} verbraucht, die Rechnung des Lieferanten ist aber noch nicht gebucht.`); r1.why = `verbrauchter, noch nicht verrechneter Loden ${P.fmt(r1.plus)} zurechnen.`;
+      const h = add({ kto: "5300", l: "Hilfsstoffverbrauch", auf: E(900, 2400, 1) }); h.minus = Math.round(h.auf * rndStep(rng, [2, 6, 1]) / 1000) * 100;
+      info.push(`Im Konto 5300 sind Knöpfe und Garne um ${P.fmt(h.minus)} enthalten, die Ende ${mon} noch auf Lager liegen.`); h.why = `noch auf Lager, nicht verbraucht: ${P.fmt(h.minus)} abziehen.`;
+      const sj = E(9000, 20000, 60); avg("5630", "Stromverbrauch", sj, rng() < 0.5 ? E(400, 800, 1) : E(1800, 3200, 1), `Der durchschnittliche jährliche Stromverbrauch kostet ${P.fmt(sj)}.`);
+      const NK = [["6000", "Fertigungslöhne", [12000, 24000], [94, 96.5, 97.3, 98]], ["6010", "Hilfslöhne", [2000, 5000], [93, 95, 96]], ["6200", "Gehälter", [5000, 11000], [56.3, 57.8, 58.5]]].map(([kto, l, rg, ps]) => {
+        const r = add({ kto, l, auf: E(rg[0], rg[1], 1) }), p = pickR(rng, ps); r.plus = krPct(r.auf, p); r.why = `${krP(p)} Lohnnebenkosten von ${P.fmt(r.auf)} = ${P.fmt(r.plus)} zurechnen.`; return [l, p];
+      });
+      info.push(`Die Lohn- und Gehaltsnebenkosten (Sonderzahlungen und gesetzliche Abgaben) werden mit Durchschnittssätzen verrechnet: ${NK.map(([l, p]) => `${l} ${krP(p)}`).join(", ")}. Die tatsächlich gebuchten Sonderzahlungen und Abgaben werden nicht übernommen.`);
+      [["6020", "Sonderzahlungen Arbeiter", [0, 4000]], ["6500", "Gesetzlicher Sozialaufwand Arbeiter", [3000, 7000]], ["6560", "Gesetzlicher Sozialaufwand Angestellte", [1200, 3000]]].forEach(([kto, l, rg]) => {
+        const a = E(rg[0], rg[1], 1); if (!a) return; add({ kto, l, auf: a, minus: a, why: "in den Lohnnebenkosten-Prozentsätzen enthalten: zur Gänze abziehen." });
+      });
+      miete("7400");
+      const ij = E(6000, 12000, 120); avg("7200", "Instandhaltung durch Dritte", ij, rng() < 0.5 ? 0 : E(1500, 3500, 1), `Die jährlichen Instandhaltungskosten der Nähmaschinen betragen etwa ${P.fmt(ij)}.`);
+      const vj = E(6000, 12000, 12); avg("7700", "Versicherungsaufwand", vj, rng() < 0.5 ? vj : 0, `Der jährliche Versicherungsaufwand beträgt ${P.fmt(vj)}.`);
+      const s = add({ kto: "7819", l: "Sonstige Schadensfälle", auf: E(300, 1500, 1) }), wj = E(3000, 9000, 120); s.minus = s.auf; s.plus = d12(wj); s.tol = 1;
+      info.push(`Die Schadensfälle werden durch kalkulatorische Wagnisse ersetzt. Diese betragen jährlich etwa ${P.fmt(wj)}.`); s.why = `Schadensfälle abziehen, ${P.fmt(wj)} ÷ 12 = ${P.fmt(s.plus)} kalkulatorische Wagnisse zurechnen.`;
+      zinsen("8280");
+      const aj = E(24000, 60000, 120); kalk("Kalkulatorische Abschreibung", aj, `Die jährliche kalkulatorische Abschreibung beträgt ${P.fmt(aj)}.`);
+      info.push("Die Geschäftsführerin ist bei der GmbH angestellt, ihr Gehalt ist in den Gehältern enthalten.");
+      sols.push("GmbH: Die Geschäftsführerin bekommt ein Gehalt, daher wird kein kalkulatorischer Unternehmerlohn angesetzt.");
+      krNeutral(rng, rows, 2, 4);
+    }
+    rows.filter(r => r.note).forEach(r => info.push(`Das Konto ${r.kto} enthält: ${r.note}.`));
+    return krBueFinish(rows, info, sols, { type: "bum", title: `Erstelle den BÜB für ${mon}`, firm, head: `${firm} · Kostenrechnung ${mon} 2026`, sub: `Saldenliste ${mon} 2026, Werte in EUR`, intro: `Erstelle die Kostenüberleitung für den Monat ${mon}. Was nur einmal im Jahr oder im Quartal gebucht wird, verteilst du gleichmäßig auf die Monate (÷ 12 bzw. ÷ 3).` });
   }
   function krRenderBue() {
     const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
-    const rows = bw.rows.map(r => `<tr><td>${esc(r.l)}</td><td class="num mono">${r.nogv ? "–" : fmtNum(r.auf)}</td><td>${inp(r.id + "-n", r.l + " Abzug")}</td><td>${inp(r.id + "-z", r.l + " Zurechnung")}</td><td>${inp(r.id + "-k", r.l + " Kosten")}</td></tr>`).join("");
-    return `<div class="ab-sec"><h2>${esc(US.name)} · Kostenartenrechnung 2026</h2><p class="note">Übernimm die Aufwände aus der GuV in den Betriebsüberleitungsbogen (BÜB). <b>Abzüge</b>: neutrale Aufwände sowie die bilanzielle Abschreibung, der Zinsaufwand und die Forderungsabschreibung, die durch kalkulatorische Werte ersetzt werden. <b>Zurechnungen</b>: alle kalkulatorischen Kosten. Kosten = Aufwand − Abzüge + Zurechnungen. Leere Felder zählen als 0.</p></div>
-      <div class="ab-sec"><h2>Angaben zu den kalkulatorischen Kosten</h2><ul class="kr-info">${bw.info.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
-      <div class="ab-sec"><div class="av-title"><b>Betriebsüberleitungsbogen</b><span>2026, Beträge in EUR</span></div><div class="ab-scroll"><table class="av-table kr-table">
-        <thead><tr><th>Aufwandsart</th><th class="num">Aufwand lt. GuV</th><th class="num">− Abzüge</th><th class="num">+ Zurechnungen</th><th class="num">Kosten</th></tr></thead>
+    const rows = bw.rows.map(r => `<tr><td class="mono">${r.kto || ""}</td><td>${esc(r.l)}</td><td class="num mono">${r.auf === null ? "–" : fmtNum(r.auf)}</td><td>${inp(r.id + "-n", r.l + " Abgrenzung minus")}</td><td>${inp(r.id + "-z", r.l + " Abgrenzung plus")}</td><td>${inp(r.id + "-k", r.l + " Kosten")}</td></tr>`).join("");
+    return `<div class="ab-sec"><h2>${esc(bw.head)}</h2><p class="note">${esc(bw.intro)} <b>Abgrenzung −</b>: neutrale Aufwände, nicht betriebliche Anteile und Aufwände, die durch kalkulatorische Kosten ersetzt werden. <b>Abgrenzung +</b>: kalkulatorische Kosten und fehlende Kosten. Kosten = Aufwand − Abgrenzung + Abgrenzung. Leere Felder zählen als 0. Bei Divisionen werden Abweichungen von 1 Cent akzeptiert.</p></div>
+      <div class="ab-sec"><h2>Angaben</h2><ul class="kr-info">${bw.info.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
+      <div class="ab-sec"><div class="av-title"><b>Betriebsüberleitungsbogen</b><span>${esc(bw.sub)}</span></div><div class="ab-scroll"><table class="av-table kr-table">
+        <thead><tr><th></th><th></th><th></th><th class="num" colspan="2" style="text-align:center">Abgrenzung</th><th></th></tr><tr><th>Konto</th><th>Bezeichnung</th><th class="num">Aufwand</th><th class="num">−</th><th class="num">+</th><th class="num">Kosten</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td>Summe</td><td class="num mono">${fmtNum(bw.sumAuf)}</td><td>${inp("kr-us-n", "Summe Abzüge")}</td><td>${inp("kr-us-z", "Summe Zurechnungen")}</td><td>${inp("kr-us-k", "Summe Kosten")}</td></tr></tfoot>
+        <tfoot><tr><td></td><td>Summe</td><td class="num mono">${fmtNum(bw.sumAuf)}</td><td>${inp("kr-us-n", "Summe Abgrenzung minus")}</td><td>${inp("kr-us-z", "Summe Abgrenzung plus")}</td><td>${inp("kr-us-k", "Summe Kosten")}</td></tr></tfoot>
       </table></div></div>`;
   }
 
@@ -4583,8 +4776,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return krTask("pp", eng ? "Plane das Produktionsprogramm mit Engpass" : "Plane das Produktionsprogramm", KR_PROD_FIRM, "Beträge auf Cent, DB je Minute auf Cent gerundet. Mengen in ganzen Stück. Leere Felder zählen als 0.", [{ h: eng ? "Programmplanung mit Engpass" : "Programmplanung ohne Engpass", text, html }], fields, choices, sols);
   }
 
-  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, bue: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
-  const KR_RENDER = { bue: krRenderBue, bab: krRenderBab };
+  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBum, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
+  const KR_RENDER = { bue: krRenderBue, bum: krRenderBue, bab: krRenderBab };
 
   // ================= Wirtschaftliches Rechnen =================
   // Beträge in Cent; rundet a ÷ b kaufmännisch (nur positive ganze Zahlen)
@@ -5035,7 +5228,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   Object.assign(BW_STEPS, {
     bk: ["Progressiv (von oben nach unten): Einkaufspreis − Lieferantenrabatt = rabattierter Preis + Fakturenspesen = Zielpreis − Lieferantenskonto = Kassapreis + Beschaffungsnebenkosten = Einstandspreis.", "Der Rabatt wird vom Hundert (v. H.) des Einkaufspreises gerechnet, der Skonto vom Hundert des Zielpreises.", "Fakturenspesen stellt der Lieferant auf der Rechnung in Rechnung (z. B. Verpackung), deshalb gibt es auf sie auch Skonto. Beschaffungsnebenkosten (Fracht durch einen Spediteur, Versicherung, Zoll) kommen erst nach dem Skonto dazu.", "Bei mehreren Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd rechnest du von unten nach oben: Einstandspreis − Beschaffungsnebenkosten = Kassapreis. Skonto und Rabatt im Hundert (i. H.): Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz), Einkaufspreis = rabattierter Preis × 100 ÷ (100 − Rabattsatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Einkaufspreis."],
     ak: ["Progressiv: Selbstkosten + Gewinn (v. H. der Selbstkosten) = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme.", "Verkaufsprovision, Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil sie später vom höheren Preis gerechnet werden: Kassapreis = Zwischensumme × 100 ÷ (100 − Provisionssatz), Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis + 20 % USt (v. H.) = Bruttoverkaufspreis.", "Retrograd rechnest du von unten nach oben: Die USt steckt auf Hundert (a. H.) im Bruttoverkaufspreis: Listenverkaufspreis = brutto × 100 ÷ 120.", "Kundenrabatt, Kundenskonto und Verkaufsprovision ziehst du vom Hundert (v. H.) des jeweiligen Preises ab. Der Gewinn steckt auf Hundert im Nettoverkaufspreis: Selbstkosten = Nettoverkaufspreis × 100 ÷ (100 + Gewinnsatz).", "Differenzkalkulation: retrograd vom Bruttoverkaufspreis bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten, in Prozent der Selbstkosten."],
-    bue: ["Übernimm alle Aufwände aus der GuV in die Spalte „Aufwand lt. GuV“.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) sind keine Kosten: zur Gänze in die Spalte „Abzüge“.", "Bilanzielle Abschreibung, Zinsaufwand und Forderungsabschreibung werden ebenfalls abgezogen und durch die kalkulatorischen Werte ersetzt (Spalte „Zurechnungen“).", "Kalkulatorische Abschreibung = Wiederbeschaffungswert ÷ Nutzungsdauer. Kalkulatorische Zinsen = betriebsnotwendiges Kapital × Zinssatz.", "Betriebsnotwendiges Kapital = betriebsnotwendiges Anlage- und Umlaufvermögen − Abzugskapital (zinsenfreies Fremdkapital wie Lieferverbindlichkeiten oder Kundenanzahlungen).", "Kalkulatorischer Unternehmerlohn: Was die Inhaberin anderswo verdienen würde. Er steht nicht in der GuV und kommt nur als Zurechnung dazu.", "Kosten = Aufwand − Abzüge + Zurechnungen."],
+    kk: ["Kalkulatorische Abschreibung: Wiederbeschaffungswert − Restwert = Abschreibungsbasis, ÷ tatsächliche (reale) Nutzungsdauer.", "Mit Index: Wiederbeschaffungswert = Anschaffungswert × Index heute ÷ Index bei der Anschaffung.", "Kalkulatorische Wagnisse = Prozentsatz × Bezugsgröße (Beständewagnis vom durchschnittlichen Lagerbestand, Gewährleistungswagnis und sonstige Wagnisse vom Umsatz, Ausfallwagnis vom Forderungsbestand).", "Kalkulatorischer Unternehmerlohn = Jahresgehalt (14 Monatsbezüge) + Unternehmerzuschlag. Nur bei Einzelunternehmen und Personengesellschaften, nicht bei der GmbH.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital lt. Bilanz × Zinssatz."],
+    bue: ["Übernimm die Salden der Aufwandskonten in die Spalte „Aufwand“.", "Grundkosten (z. B. Handelswareneinsatz, Gehälter, Miete) übernimmst du unverändert als Kosten.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) und private Anteile kommen zur Gänze in „Abgrenzung −“.", "Ersetzte Aufwände: 7010 Abschreibung → kalkulatorische Abschreibung, 7819 Schadensfälle → kalkulatorische Wagnisse, 7740 GSVG-Beiträge → kalkulatorischer Unternehmerlohn, 8280 Zinsenaufwand → kalkulatorische Zinsen. Aufwand in „−“, kalkulatorischer Wert in „+“.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital × Zinssatz. Kalkulatorischer Unternehmerlohn = Jahresgehalt + Unternehmerzuschlag.", "Preissteigerungen, mit denen schon gerechnet wird, kommen in „+“.", "Kosten = Aufwand − Abgrenzung + Abgrenzung."],
+    bum: ["Im Monats-BÜB sollen die Kosten dem Monatsdurchschnitt entsprechen.", "Jahresbeträge (Energie, Werbung, Versicherung, Instandhaltung, kalkulatorische Kosten) ÷ 12. Ist mehr gebucht als der Durchschnitt, kommt die Differenz in „−“, ist weniger gebucht, in „+“.", "Miete für ein ganzes Quartal: nur ein Drittel gehört in den Monat, zwei Drittel abziehen.", "Eingekauftes Material, das noch auf Lager liegt, abziehen. Verbrauchtes Material ohne gebuchte Rechnung zurechnen.", "Anteilige Sonderzahlungen zu den Löhnen und Gehältern zurechnen (2 Sonderzahlungen ÷ 12 = ein Sechstel). Werden Lohnnebenkosten in Prozent verrechnet, rechnest du sie dazu und ziehst die gebuchten Sonderzahlungen und Abgaben ab.", "Kalkulatorische Kosten, die nicht in der Saldenliste stehen, bekommen eine eigene Zeile mit „–“ beim Aufwand.", "GmbH: kein kalkulatorischer Unternehmerlohn."],
     bab: ["Gemeinkosten, die direkt einer Kostenstelle zugeordnet werden können (z. B. lt. Gehaltsliste), sind schon eingetragen.", "Alle anderen verteilst du nach dem Schlüssel: Betrag ÷ Summe der Schlüsselteile = Betrag je Teil, dann × Teile der Kostenstelle.", "Kontrolle: Die Summe der vier Kostenstellen muss den Gesamtbetrag ergeben.", "Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten.", "Zuschlagssätze: Materialgemeinkosten ÷ Fertigungsmaterial × 100, Fertigungsgemeinkosten ÷ Fertigungslöhne × 100, Verwaltungs- bzw. Vertriebsgemeinkosten ÷ Herstellkosten × 100."],
     zk: ["Fertigungsmaterial = Stoffverbrauch × Meterpreis + Zutaten. Fertigungslöhne = Fertigungsstunden × Stundenlohn.", "Fertigungsmaterial + Materialgemeinkosten (in % des Fertigungsmaterials) = Materialkosten.", "Materialkosten + Fertigungslöhne + Fertigungsgemeinkosten (in % der Fertigungslöhne) + Sondereinzelkosten der Fertigung = Herstellkosten.", "Herstellkosten + Verwaltungs- und Vertriebsgemeinkosten (in % der Herstellkosten) + Sondereinzelkosten des Vertriebs = Selbstkosten.", "Die Zuschlagssätze kommen aus dem BAB."],
     db: ["Variable Kosten ändern sich mit der Menge (Material, Fertigungslohn), fixe Kosten bleiben gleich (Miete, Gehälter, Abschreibung).", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz. Fixkosten = Gesamtkosten − Menge × variable Kosten je Stück.", "Deckungsbeitrag je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100. Sie zeigt, wie viel Prozent vom Preis zur Deckung der Fixkosten bleiben.", "DB gesamt = DB je Stück × Menge. Betriebsergebnis = Summe der Deckungsbeiträge − Fixkosten."],
@@ -5105,7 +5300,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       : bw.type === "um" ? bwRenderCases("Entscheide bei jeder Rechnung: Erhaltung (sofort Aufwand) oder Umbau/Erweiterung (aktivieren)? Bei einem Umbau rechnest du am 31.12.2026 die Abschreibung mit der Restnutzungsdauer und verbuchst sie.")
       : bw.type === "ra" ? bwRenderCases("Geschäftsjahr = Kalenderjahr. Buche jeden Fall zum Zahlungszeitpunkt, am 31.12.2026 (Abgrenzung) und am 01.01.2027 (Auflösung). Abgegrenzt wird immer der Nettobetrag.")
       : bwRenderCases("Buche alle Schritte der Rückstellungen. Rückstellungen werden immer netto gebildet, die Vorsteuer wird erst bei Rechnungseingang gebucht.");
-    $("bewertung").classList.toggle("bw-wide", ["vt", "web", "bue", "bab", "db", "pp"].includes(bw.type));
+    $("bewertung").classList.toggle("bw-wide", ["vt", "web", "bue", "bum", "bab", "db", "pp"].includes(bw.type));
     $("bw-steps").innerHTML = BW_STEPS[bw.type].map(s => `<li>${esc(s)}</li>`).join("");
     $("bw-opt-wrap").hidden = bw.type !== "av";
     $("bw-opt-av").hidden = bw.type !== "av" && bw.type !== "an";
@@ -5402,7 +5597,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     LEX.push(
       { id: "kr-grund", g: 8, title: "Aufwand und Kosten",
         text: "Die Buchhaltung erfasst <b>Aufwände</b> (alles, was den Gewinn mindert). Die Kostenrechnung fragt: Was kostet uns der Betrieb wirklich? <b>Kosten</b> sind nur der betriebliche, normale und periodenrichtige Werteverzehr.",
-        rules: ["<b>Grundkosten</b>: Aufwand = Kosten, z. B. Handelswareneinsatz, Gehälter, Miete.", "<b>Neutrale Aufwände</b> sind keine Kosten: betriebsfremd (Spende), außerordentlich (Schaden, Buchwert abgegangener Anlagen) oder periodenfremd (Steuernachzahlung für das Vorjahr).", "<b>Kalkulatorische Kosten</b> ersetzen oder ergänzen Aufwände: kalkulatorische Abschreibung (vom Wiederbeschaffungswert), kalkulatorische Zinsen (vom betriebsnotwendigen Kapital), kalkulatorische Wagnisse und der kalkulatorische Unternehmerlohn.", "<b>Einzelkosten</b> kann man einem Produkt direkt zurechnen (Stoff, Fertigungslohn), <b>Gemeinkosten</b> nur über einen Schlüssel (Miete, Energie).", "<b>Variable Kosten</b> ändern sich mit der Menge, <b>fixe Kosten</b> bleiben gleich."],
+        rules: ["<b>Grundkosten</b>: Aufwand = Kosten, z. B. Handelswareneinsatz, Gehälter, Miete.", "<b>Neutrale Aufwände</b> sind keine Kosten: betriebsfremd (Spende), außerordentlich (Schaden, Buchwert abgegangener Anlagen) oder periodenfremd (Steuernachzahlung für das Vorjahr).", "<b>Kalkulatorische Kosten</b> ersetzen oder ergänzen Aufwände: kalkulatorische Abschreibung (vom Wiederbeschaffungswert), kalkulatorische Zinsen (Fremdkapitalzinsen + Eigenkapitalzinsen), kalkulatorische Wagnisse und der kalkulatorische Unternehmerlohn.", "<b>Einzelkosten</b> kann man einem Produkt direkt zurechnen (Stoff, Fertigungslohn), <b>Gemeinkosten</b> nur über einen Schlüssel (Miete, Energie).", "<b>Variable Kosten</b> ändern sich mit der Menge, <b>fixe Kosten</b> bleiben gleich."],
         ex: [{ t: "Laut GuV beträgt die Abschreibung € 18.000,00. Die kalkulatorische Abschreibung vom Wiederbeschaffungswert beträgt € 24.000,00.", s: [], h: [], n: "Im BÜB werden die € 18.000,00 abgezogen und € 24.000,00 als kalkulatorische Kosten zugerechnet. In die Kostenrechnung gehen € 24.000,00 ein." }],
         go: [["kr", "bue"]] },
       { id: "kr-bezug", g: 8, title: "Bezugskalkulation",
@@ -5415,10 +5610,15 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         rules: ["Selbstkosten + Gewinn = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme + Verkaufsprovision = Kassapreis + Kundenskonto = Zielpreis + Kundenrabatt = Listenverkaufspreis + USt = Bruttoverkaufspreis.", "Progressiv: Gewinn und USt vom Hundert (v. H.), Verkaufsprovision, Kundenskonto und Kundenrabatt im Hundert (i. H.).", "Retrograd: USt und Gewinn auf Hundert (a. H.), Kundenrabatt, Kundenskonto und Verkaufsprovision vom Hundert (v. H.).", "Differenzkalkulation: Ist der Verkaufspreis vorgegeben, rechnest du retrograd bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten."],
         ex: [{ t: "Selbstkosten € 100,00, 10 % Gewinn, nominelle Sonderkosten € 2,00, 5 % Verkaufsprovision, 2 % Kundenskonto, 10 % Kundenrabatt.", s: [], h: [], html: sch("Absatzkalkulation", ak.rows), n: `Der Bruttoverkaufspreis beträgt ${P.fmt(ak.b)}.` }],
         go: [["kr", "ak"]] },
+      { id: "kr-kalk", g: 8, title: "Kalkulatorische Kosten",
+        text: "Kalkulatorische Kosten zeigen den <b>tatsächlichen Werteverzehr</b>. Sie ersetzen Aufwände, die in der Buchhaltung anders bewertet sind (Anderskosten), oder kommen zusätzlich dazu (Zusatzkosten).",
+        rules: ["<b>Kalkulatorische Abschreibung</b> = (Wiederbeschaffungswert − Restwert) ÷ tatsächliche Nutzungsdauer. Wiederbeschaffungswert mit Index = Anschaffungswert × Index heute ÷ Index bei der Anschaffung.", "<b>Kalkulatorische Wagnisse</b> = Prozentsatz × Bezugsgröße, z. B. Beständewagnis 2 % vom durchschnittlichen Lagerbestand, Gewährleistungswagnis 1 % vom Umsatz. Sie ersetzen die zufälligen Schadensfälle.", "<b>Kalkulatorischer Unternehmerlohn</b> = Jahresgehalt inkl. Sonderzahlungen + Unternehmerzuschlag (10–20 %). Nur bei Einzelunternehmen und Personengesellschaften. Er ersetzt die GSVG-Beiträge (7740).", "<b>Kalkulatorische Zinsen</b> = Fremdkapitalzinsen lt. GuV + Eigenkapital lt. Bilanz × Zinssatz."],
+        ex: [{ t: "Anschaffungswert € 5.000,00, Index bei der Anschaffung 110, Index heute 120, reale Nutzungsdauer 5 Jahre.", s: [], h: [], n: "Wiederbeschaffungswert = 5.000 × 120 ÷ 110 = € 5.454,55. Kalkulatorische Abschreibung = 5.454,55 ÷ 5 = € 1.090,91." }],
+        go: [["kr", "kk"]] },
       { id: "kr-bue", g: 8, title: "Kostenartenrechnung und BÜB",
-        text: "Die Kostenartenrechnung beantwortet die Frage: <b>Welche Kosten</b> sind entstanden? Im <b>Betriebsüberleitungsbogen (BÜB)</b> werden die Aufwände der GuV in Kosten übergeleitet.",
-        rules: ["Aufwand lt. GuV − Abzüge (neutrale und ersetzte Aufwände) + Zurechnungen (kalkulatorische Kosten) = Kosten.", "Kalkulatorische Abschreibung = Wiederbeschaffungswert ÷ Nutzungsdauer.", "Kalkulatorische Zinsen = betriebsnotwendiges Kapital × Zinssatz. Betriebsnotwendiges Kapital = betriebsnotwendiges Vermögen − Abzugskapital.", "Kalkulatorischer Unternehmerlohn: Gehalt, das die Inhaberin als Angestellte bekommen würde (14-mal im Jahr). Nur bei Einzelunternehmen und Personengesellschaften.", "Kalkulatorisches Wagnis: durchschnittliche Ausfälle statt der zufälligen Ausfälle des Jahres."],
-        go: [["kr", "bue"]] },
+        text: "Die Kostenartenrechnung beantwortet die Frage: <b>Welche Kosten</b> sind entstanden? Im <b>Betriebsüberleitungsbogen (BÜB)</b> werden die Aufwände der Saldenliste in Kosten übergeleitet: Konto | Bezeichnung | Aufwand | Abgrenzung − | Abgrenzung + | Kosten.",
+        rules: ["Grundkosten unverändert übernehmen, neutrale Aufwände zur Gänze abziehen.", "Ersetzte Aufwände abziehen und den kalkulatorischen Wert zurechnen: 7010 → kalk. Abschreibung, 7819 → kalk. Wagnisse, 7740 → kalk. Unternehmerlohn, 8280 → kalk. Zinsen.", "Kosten = Aufwand − Abgrenzung + Abgrenzung.", "Im <b>Monats-BÜB</b> zählt der Monatsdurchschnitt: Jahresbeträge ÷ 12, Quartalsmiete ÷ 3, anteilige Sonderzahlungen dazu, Material auf Lager abziehen.", "Lohnnebenkosten können mit Prozentsätzen auf die Löhne und Gehälter verrechnet werden. Dann werden die gebuchten Sonderzahlungen und gesetzlichen Abgaben abgezogen."],
+        go: [["kr", "bue"], ["kr", "bum"]] },
       { id: "kr-bab", g: 8, title: "Kostenstellenrechnung und BAB",
         text: "Die Kostenstellenrechnung beantwortet die Frage: <b>Wo</b> sind die Kosten entstanden? Im <b>Betriebsabrechnungsbogen (BAB)</b> werden die Gemeinkosten auf die Kostenstellen Material, Fertigung, Verwaltung und Vertrieb verteilt.",
         rules: ["Direkt zurechenbare Gemeinkosten (lt. Liste) direkt eintragen, die anderen nach einem Schlüssel verteilen (m², kWh, Anlagenwerte).", "Betrag je Schlüsselteil = Betrag ÷ Summe der Teile.", "Zuschlagsbasis: Material → Fertigungsmaterial, Fertigung → Fertigungslöhne, Verwaltung und Vertrieb → Herstellkosten. Verwaltung und Vertrieb können eine gemeinsame Kostenstelle sein.", "Zuschlagssatz = Gemeinkosten der Kostenstelle ÷ Zuschlagsbasis × 100. Die Sätze braucht man für die Kalkulation."],
