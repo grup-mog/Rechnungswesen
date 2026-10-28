@@ -1,4 +1,4 @@
-<title>Buchungssätze üben</title>
+<title>Rechnungswesen üben</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
@@ -6092,6 +6092,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("lehrkraefte").hidden = m !== "teach";
     if (m === "teach") $("teach-own").hidden = !(canEdit && db);
     syncNav();
+    const tName = BW_AREAS[m] ? BW_AREAS[m].name : { bs: "Buchungssätze", tk: "T-Konten", ab: "Abschluss", test: "Test / Schularbeit", lex: "Lexikon", hu: "Hausübung & Test", teach: "Für Lehrkräfte" }[m];
+    document.title = tName ? `${tName} · Rechnungswesen üben` : "Rechnungswesen üben";
     store.set("module", m);
     if (m === "tk" && !tk) tkBuild();
     if (m === "ab" && !ab) abBuild();
