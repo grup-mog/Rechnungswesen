@@ -1022,6 +1022,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         </div>
           <div class="bw-pick-opts">
             <div class="bw-tgroup"><span class="field-label">Umfang</span><div class="seg" id="bw-seg-size"></div></div>
+            <div class="bw-tgroup" id="bw-opt-priv" hidden><span class="field-label">Privat</span><div class="seg" id="bw-seg-priv"></div></div>
             <div class="bw-tgroup" id="bw-opt-av"><span class="field-label">Anlagenverzeichnis</span><div class="seg" id="bw-seg-av"></div></div>
             <div class="bw-tgroup" id="bw-opt-wrap"><span class="field-label">Buchwert am 01.01.</span><div class="seg" id="bw-seg-bw"></div></div>
           </div>
@@ -3159,8 +3160,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const BW_AV_MODES = [["an", "ergänzen"], ["av", "ganz erstellen"]];
   const BW_TYPES_A_HU = [["an", "Anlagenverzeichnis ergänzen"], ["av", "Anlagenverzeichnis erstellen"], ...BW_TYPES_A.slice(1)];
   let bwAvMode = store.get("bwAvMode", "an");
-  const bwAvMap = t => t === "av" ? bwAvMode : t;
+  const bwAvMap = t => t === "av" ? bwAvMode : t === "vt" ? vtPriv : t;
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
+  // Kassa-/Bankbuch: ohne Privat, mit Privatentnahmen und -einlagen, zusätzlich mit Privatanteil (eigene Typen, damit Hausübungscodes eindeutig sind)
+  const VT_MODES = [["vt", "ohne"], ["vtp", "Entnahmen und Einlagen"], ["vta", "+ Privatanteil"]];
+  const BW_TYPES_E_HU = [["vt", "Kassa-/Bankbuch"], ["vtp", "Kassa-/Bankbuch mit Privatentnahmen und -einlagen"], ["vta", "Kassa-/Bankbuch mit Privatanteil"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
+  let vtPriv = store.get("vtPriv", "vt");
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"], ["dk", "Differenz\u00ADkalkulation"]];
   const BW_TYPES_K2 = [["kk", "Kalkulatorische Kosten"], ["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
   const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"], ["mob", "Make-or-Buy"]];
@@ -3168,7 +3173,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const BW_TYPES_W = [["zs", "Zahlen schreiben"], ["ru", "Kaufmännisch runden"], ["pr", "Prozent\u00ADrechnung"], ["sr", "Schluss\u00ADrechnung"], ["rsk", "Rabatt und Skonto"], ["us", "Umsatz\u00ADsteuer"]];
   // Bereiche, die sich die Bewertungs-Ansicht teilen: Typgruppen, Speicher-Schlüssel, Standard-Aufgabe
   const BW_AREAS = { bw: { groups: ["a", "u"], key: "bwType", def: "av", name: "Bewertung" }, ea: { groups: ["e"], key: "eaType", def: "vt", name: "E/A-Rechnung" }, kr: { groups: ["k1", "k2", "k3"], key: "krType", def: "bk", name: "Kostenrechnung" }, wr: { groups: ["w"], key: "wrType", def: "zs", name: "Wirtschaftliches Rechnen" }, pv: { groups: ["p"], key: "pvType", def: "la", name: "Personalverrechnung" } };
-  const bwAreaOf = t => BW_TYPES_P.some(x => x[0] === t) ? "pv" : BW_TYPES_W.some(x => x[0] === t) ? "wr" : [...BW_TYPES_E].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
+  const bwAreaOf = t => BW_TYPES_P.some(x => x[0] === t) ? "pv" : BW_TYPES_W.some(x => x[0] === t) ? "wr" : [...BW_TYPES_E_HU].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
   let bwArea = "bw";
   const BW_TYPES_U = [["lk", "Lagerkartei"], ["fo", "Forderungen"], ["ra", "Abgrenzungen"], ["rs", "Rückstellungen"]];
   const BW_STEPS = {
@@ -3176,7 +3181,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     an: ["Anschaffungskosten = Kaufpreis − Rabatt + Anschaffungsnebenkosten (z. B. Lieferung, Montage), netto. Beim Pkw gibt es keinen Vorsteuerabzug: Anschaffungskosten = brutto.", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im ersten Halbjahr = ganze AfA, im zweiten Halbjahr = halbe AfA (entscheidend ist die Inbetriebnahme, nicht der Kauf).", "Bestehende Anlage: Buchwert 01.01. = Anschaffungswert − bisherige AfA. Neuanschaffung: Buchwert 01.01. = 0.", "Kum. AfA 31.12. = bisherige AfA + AfA 2026, Buchwert 31.12. = Anschaffungswert − kum. AfA.", "Buchungen: Kauf (Anlagenkonto + Vorsteuer / 3300) und am 31.12. die gesamte AfA: 7010 / Anlagenkonto."],
     ag: ["Verkauf: Zahlungsmittel bzw. Kunde / 4600 Erlöse aus dem Abgang von Anlagen 20 % und 3500 Umsatzsteuer. Gebrauchter Pkw ohne Vorsteuerabzug beim Kauf: 4601 (0 %, ohne USt).", "Schadensfall: Versicherungsentschädigung auf 4610, ohne Umsatzsteuer. Bei schriftlicher Zusage zuerst 2300 Sonstige Forderungen, bei der Zahlung Bank / 2300.", "31.12.: Abschreibung bis zum Ausscheiden. Erstes Halbjahr = halbe AfA, zweites Halbjahr = ganze AfA, höchstens der Buchwert.", "Restbuchwert = Buchwert 01.01. − AfA im Jahr des Ausscheidens.", "Restbuchwert ausbuchen: 7820 Buchwert abgegangener Anlagen / Anlagenkonto. Bei einem Schadensfall: 7819 Sonstige Schadensfälle / Anlagenkonto."],
     um: ["Erhaltung (Reparatur, Wartung, Ausmalen, gleichwertiger Ersatz): sofort Aufwand in Klasse 7, z. B. 7201 Instandhaltung Gebäude.", "Umbau oder Erweiterung (Verwendungszweck geändert oder Substanz vermehrt): auf das bestehende Anlagenkonto aktivieren, z. B. 0300.", "Bisherige Nutzungsdauer nach der Halbjahresregel zählen: erstes Jahr ½ oder 1, im Jahr des Umbaus ½ bei Inbetriebnahme im zweiten Halbjahr.", "Restnutzungsdauer = gesamte Nutzungsdauer − bisherige Nutzungsdauer.", "AfA gesamt = AfA der bestehenden Anlage + Umbaukosten ÷ Restnutzungsdauer (halbe AfA bei Inbetriebnahme im zweiten Halbjahr)."],
-    vt: ["Einnahmen und Ausgaben werden erst gezählt, wenn Geld fließt (Zufluss-Abfluss-Prinzip). Eine offene Rechnung kommt erst bei der Zahlung ins Buch.", "Belegnummern fortlaufend nach Datum: Kassa K1, K2, …, Bank B1, B2, …. Nicht eingetragen werden Fälle ohne Geldfluss (Rechnung auf Ziel, Bestellung, Angebot) und private Ausgaben der Inhaberin aus privatem Geld: Beleg „–“.", "Kassa bzw. Bank: Betrag brutto bei Einzahlung oder Auszahlung eintragen.", "Aufgliedern: Umsatzsteuer bzw. Vorsteuer in die Steuerspalte, den Nettobetrag in die passende Einnahmen- oder Ausgabenspalte.", "Pkw: kein Vorsteuerabzug, daher kommt der Bruttobetrag in die Spalte PKW. Versicherungen haben keine Umsatzsteuer.", "GWG bis € 1.000,00 netto sind sofort zur Gänze Ausgabe. Geldtransfers zwischen Kassa und Bank werden nicht aufgegliedert.", "Überschuss = Betriebseinnahmen netto − Betriebsausgaben netto."],
+    vt: ["Einnahmen und Ausgaben werden erst gezählt, wenn Geld fließt (Zufluss-Abfluss-Prinzip). Eine offene Rechnung kommt erst bei der Zahlung ins Buch.", "Belegnummern fortlaufend nach Datum: Kassa K1, K2, …, Bank B1, B2, …. Nicht eingetragen werden Fälle ohne Geldfluss (Rechnung auf Ziel, Bestellung, Angebot) und private Ausgaben der Inhaberin aus privatem Geld: Beleg „–“.", "Kassa bzw. Bank: Betrag brutto bei Einzahlung oder Auszahlung eintragen.", "Aufgliedern: Umsatzsteuer bzw. Vorsteuer in die Steuerspalte, den Nettobetrag in die passende Einnahmen- oder Ausgabenspalte.", "Pkw: kein Vorsteuerabzug, daher kommt der Bruttobetrag in die Spalte PKW. Versicherungen haben keine Umsatzsteuer.", "GWG bis € 1.000,00 netto sind sofort zur Gänze Ausgabe. Geldtransfers zwischen Kassa und Bank werden nicht aufgegliedert.", "Privatentnahmen und Privateinlagen: Kassa bzw. Bank ausfüllen und den Betrag in die Spalte Privat-Entnahmen bzw. Privat-Einlagen schreiben. Nicht aufgliedern, sie sind weder Einnahmen noch Ausgaben.", "Privatanteil Pkw = Summe der Spalte PKW × Prozentsatz der privaten Nutzung. Er wird von der Summe der Ausgaben abgezogen.", "Überschuss = Betriebseinnahmen netto − Betriebsausgaben netto."],
     web: ["Jede Eingangsrechnung für Handelswaren wird eingetragen, auch wenn sie noch nicht bezahlt ist.", "Lieferdatum, Lieferant und Ware stehen auf der Rechnung. Der Rabatt ist im Rechnungsbetrag schon abgezogen.", "Bruttobetrag = Rechnungsbetrag, Vorsteuer 20 %, Nettobetrag = brutto − Vorsteuer.", "Abzüge (Skonto, nachträgliche Rabatte) und Zusatzkosten (z. B. Transportkosten) werden brutto eingetragen.", "Skonto = zu zahlender Bruttobetrag × Skontosatz. Gab es vorher eine Gutschrift, wird der Skonto vom verminderten Betrag gerechnet.", "„Bezahlt am“ erst eintragen, wenn bezahlt wurde."],
     eav: ["Anlagen über € 1.000,00 netto kommen ins Anlagenverzeichnis, ihre Anschaffung ist keine sofortige Ausgabe.", "Anschaffungskosten = Kaufpreis − Rabatt + Lieferung/Montage, netto (Pkw brutto).", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im zweiten Halbjahr = halbe AfA.", "Buchwert 31.12. = Anschaffungswert − kumulierte AfA. Die AfA ist die Betriebsausgabe des Jahres."],
     lk: ["Nach jedem Zukauf wird ein neuer Durchschnittspreis berechnet: Bestandswert ÷ Bestandsmenge.", "Entnahmen bzw. Verkäufe werden mit dem aktuellen Durchschnittspreis bewertet. Der Durchschnittspreis ändert sich dadurch nicht.", "Schwund = (Sollbestand − Istbestand) × Durchschnittspreis.", "Abwertung: Ist der Preis am Bilanzstichtag niedriger, wird der Istbestand mit diesem niedrigeren Preis bewertet: Istbestand × (Ø-Preis − Tagespreis).", "Bilanzansatz = Istbestand × niedrigerer Preis. UB 1: Bestandsveränderung = Bilanzansatz − Anfangsbestand (AB > EB = Lagerabbau). UB 2: Wertminderung (Schwund + Abwertung) auf 7800 Abschreibung von Vorräten."],
@@ -3189,7 +3194,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function bwBuild() {
     if (hu && hu.done) huEnd();
     const rng = hu ? mulberry32(hu.seed) : Math.random;
-    bw = (Object.assign({ av: bwMakeAv, an: bwMakeAn, vt: bwMakeVt, web: bwMakeWeb, eav: bwMakeEav, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }, KR_MAKE)[bwType] || bwMakeAv)(rng);
+    bw = (Object.assign({ av: bwMakeAv, an: bwMakeAn, vt: rng => bwMakeVt(rng, ""), vtp: rng => bwMakeVt(rng, "p"), vta: rng => bwMakeVt(rng, "a"), web: bwMakeWeb, eav: bwMakeEav, ag: bwMakeAg, um: bwMakeUm, lk: bwMakeLk, fo: bwMakeFo, ra: bwMakeRa, rs: bwMakeRs }, KR_MAKE)[bwType] || bwMakeAv)(rng);
     bwNo++;
     bwRender();
   }
@@ -3476,6 +3481,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // Spalten der Verteilungstabelle: Kassa, Bank und Steuern immer, Einnahmen- und Ausgabenspalten nur, wenn sie im Monat gebraucht werden
   const VT_BASE = [["kE", "Einzah\u00ADlungen"], ["kA", "Auszah\u00ADlungen"], ["bE", "Einzah\u00ADlungen"], ["bA", "Auszah\u00ADlungen"], ["ust", "USt"], ["vst", "VSt"]];
   const VT_IN = [["erl", "Erlöse"], ["ueb", "Übrige Einnah\u00ADmen"]];
+  const VT_PRIV = [["pent", "Entnah\u00ADmen"], ["pein", "Einlagen"]];
   const VT_AUS = [["hw", "HW/ Material"], ["bm", "Büro\u00ADmaterial"], ["miete", "Miete"], ["pkw", "PKW"], ["tel", "Telefon"], ["str", "Strom"], ["ver", "Versiche\u00ADrung"], ["werb", "Werbung"], ["rein", "Reinigung"], ["lit", "Fach\u00ADliteratur"], ["gwg", "GWG"]];
   const EA_WAREN = [...PARTNERS.waren, ["Modegroßhandel Lend GmbH", "Lendplatz 12", "8020 Graz", "ATU 64410273"], ["Strickwaren Puntigam KG", "Triester Straße 180", "8055 Graz", "ATU 69920451"]];
   const EA_GWG = [["Tablet für die Präsentation der Online-Kollektion", 38000, 62000, "edv"], ["Schaufensterpuppe", 29000, 54000, "deko"], ["Standspiegel mit Holzrahmen", 24000, 48000, "deko"], ["Kartenterminal", 19000, 34000, "edv"], ["Etikettendrucker", 21000, 46000, "edv"], ["Rollständer für Kleider", 16000, 32000, "deko"]];
@@ -3616,6 +3622,28 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         r.short = "Privatausgabe Inhaberin"; r.skip = true;
         r.sol = "Nicht eintragen: Das ist privat und wurde nicht mit betrieblichem Geld bezahlt."; break;
       }
+      case "pentk": {
+        const a = eaNet(rng, 50, 400, 10);
+        r.text = pickR(rng, [`Die Inhaberin entnimmt der Geschäftskassa € ${fmtNum(a)} für private Einkäufe.`, `Die Inhaberin nimmt € ${fmtNum(a)} aus der Kassa für ein Geburtstagsgeschenk für ihre Tochter.`, `Die Inhaberin entnimmt € ${fmtNum(a)} bar für ihren Wochenendausflug nach Wien.`]);
+        r.short = "Privatentnahme bar"; c.kA = a; c.pent = a;
+        r.sol = "Privatentnahme: Geld fließt aus der Kassa, es ist aber keine Betriebsausgabe. Nur in die Spalte Privat-Entnahmen, nicht aufgliedern."; break;
+      }
+      case "pentb": {
+        const a = eaNet(rng, 300, 1500, 10), est = rng() < 0.5;
+        r.text = est ? `Vom Geschäftskonto wird die Einkommensteuer-Vorauszahlung der Inhaberin abgebucht: € ${fmtNum(a)}.` : `Die Inhaberin überweist die Miete für ihre Privatwohnung (€ ${fmtNum(a)}) vom Geschäftskonto.`;
+        r.short = est ? "Einkommensteuer Inhaberin" : "Miete Privatwohnung"; c.bA = a; c.pent = a;
+        r.sol = est ? "Die Einkommensteuer ist eine private Steuer der Inhaberin, keine Betriebsausgabe: Privatentnahme." : "Private Ausgabe mit betrieblichem Geld: Privatentnahme, keine Betriebsausgabe."; break;
+      }
+      case "peink": {
+        const a = eaNet(rng, 100, 600, 50);
+        r.text = `Die Inhaberin legt € ${fmtNum(a)} aus ihrem privaten Geld in die Geschäftskassa, damit genug Wechselgeld da ist.`; r.short = "Privateinlage bar"; c.kE = a; c.pein = a;
+        r.sol = "Privateinlage: Geld kommt in die Kassa, es ist aber keine Betriebseinnahme. Nur in die Spalte Privat-Einlagen."; break;
+      }
+      case "peinb": {
+        const a = eaNet(rng, 500, 3000, 100);
+        r.text = `Die Inhaberin überweist € ${fmtNum(a)} von ihrem Privatkonto auf das Geschäftskonto.`; r.short = "Privateinlage Bank"; c.bE = a; c.pein = a;
+        r.sol = "Privateinlage: Geld kommt auf das Geschäftskonto, es ist aber keine Betriebseinnahme. Nur in die Spalte Privat-Einlagen."; break;
+      }
       case "einzahlung": {
         const a = eaNet(rng, 500, 1500, 50);
         r.text = `Wir zahlen € ${fmtNum(a)} aus der Kassa auf das Bankkonto ein.`; r.short = "Bareinzahlung Bank"; c.kA = a; c.bE = a;
@@ -3629,9 +3657,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     }
     return r;
   }
-  function bwMakeVt(rng) {
-    const [lo, hi] = { kompakt: [5, 7], normal: [8, 10], gross: [11, 14] }[bwSize], n = lo + Math.floor(rng() * (hi - lo + 1)), m = Math.floor(rng() * 11);
-    const must = ["losung", pickR(rng, ["hwbank", "hwbar"]), pickR(rng, ["einzahlung", "abhebung"])];
+  function bwMakeVt(rng, pm = "") {
+    const [lo, hi] = { kompakt: [5, 7], normal: [8, 10], gross: [11, 14] }[bwSize], n = lo + Math.floor(rng() * (hi - lo + 1)) + (pm ? 1 : 0), m = Math.floor(rng() * 11);
+    const priv = pm ? [pickR(rng, ["pentk", "pentb"]), pickR(rng, ["peink", "peinb"]), ...(bwSize === "kompakt" ? [] : [pickR(rng, ["pentk", "pentb"])])] : [];
+    const must = ["losung", ...priv, ...(pm === "a" ? ["tanken", "service"] : []), pickR(rng, ["hwbank", "hwbar"]), pickR(rng, ["einzahlung", "abhebung"])];
     const rest = ["kunde", "provision", "miete", "hwbar", "buero", "telefon", "versich", "strom", "gwg", "losung", "tanken", "service", "hwbank", "mieteaus", "werbung", "reinigung", "literatur", "kunde", "losung"].sort(() => rng() - 0.5);
     const nS = { kompakt: 1, normal: 1 + Math.floor(rng() * 2), gross: 2 }[bwSize];
     const skips = ["zielkauf", "zielverkauf", "bestellung", "angebot", "privat"].sort(() => rng() - 0.5).slice(0, nS);
@@ -3651,35 +3680,41 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     let kNo = 0, bNo = 0;
     rows.forEach((r, i) => { r.nr = i + 1; r.beleg = r.skip ? "–" : r.cols.kE || r.cols.kA ? (r.cols.bE || r.cols.bA ? `K${++kNo}/B${++bNo}` : `K${++kNo}`) : `B${++bNo}`; });
     const used = k => rows.some(r => r.cols[k]);
-    const cIn = VT_IN.filter(([k]) => used(k)), cAus = VT_AUS.filter(([k]) => used(k)), cols = [...VT_BASE, ...cIn, ...cAus];
+    const cIn = VT_IN.filter(([k]) => used(k)), cAus = VT_AUS.filter(([k]) => used(k)), cPriv = pm ? VT_PRIV : [], cols = [...VT_BASE, ...cIn, ...cAus, ...cPriv];
     const fields = [], sum = {};
-    [...VT_BASE, ...VT_IN, ...VT_AUS].forEach(([k]) => { sum[k] = rows.reduce((s, r) => s + (r.cols[k] || 0), 0); });
+    [...VT_BASE, ...VT_IN, ...VT_AUS, ...VT_PRIV].forEach(([k]) => { sum[k] = rows.reduce((s, r) => s + (r.cols[k] || 0), 0); });
     rows.forEach(r => {
       fields.push({ id: `vt-${r.nr}-bel`, code: r.beleg, alts: r.beleg.includes("/") ? [r.beleg.split("/").reverse().join("/")] : r.beleg === "–" ? ["-"] : [] });
       cols.forEach(([k]) => fields.push({ id: `vt-${r.nr}-${k}`, amt: r.cols[k] || 0, zeroOk: true, blank: !r.cols[k] }));
     });
     cols.forEach(([k]) => fields.push({ id: `vt-s-${k}`, amt: sum[k], zeroOk: true, blank: !sum[k] }));
     const kEnd = kAB + sum.kE - sum.kA, bEnd = bAB + sum.bE - sum.bA, ein = sum.erl + sum.ueb, aus = VT_AUS.reduce((s, [k]) => s + sum[k], 0);
-    fields.push({ id: "vt-kend", amt: kEnd }, { id: "vt-bend", amt: bEnd }, { id: "vt-ein", amt: ein }, { id: "vt-aus", amt: aus }, { id: "vt-erg", amt: ein - aus });
+    // Privatanteil Pkw: wird von den Betriebsausgaben abgezogen (Kürzung der Ausgaben, gilt als Privatentnahme)
+    const paPct = pm === "a" ? pickR(rng, [20, 25, 30, 35, 40]) : 0, pa = Math.round((sum.pkw || 0) * paPct / 100), ausN = aus - pa;
+    fields.push({ id: "vt-kend", amt: kEnd }, { id: "vt-bend", amt: bEnd }, { id: "vt-ein", amt: ein });
+    if (pm === "a") fields.push({ id: "vt-aus0", amt: aus }, { id: "vt-pa", amt: pa });
+    fields.push({ id: "vt-aus", amt: ausN }, { id: "vt-erg", amt: ein - ausN });
     const sols = rows.map(r => `${r.nr}. ${r.short} (Beleg ${r.beleg}): ${r.sol}`);
     sols.push(`Kassa: Anfangsbestand ${fmtNum(kAB)} + Einzahlungen ${fmtNum(sum.kE)} − Auszahlungen ${fmtNum(sum.kA)} = ${fmtNum(kEnd)}. Bank: ${fmtNum(bAB)} + ${fmtNum(sum.bE)} − ${fmtNum(sum.bA)} = ${fmtNum(bEnd)}.`);
-    sols.push(`Betriebseinnahmen netto ${fmtNum(ein)} − Betriebsausgaben netto ${fmtNum(aus)} = ${ein - aus >= 0 ? "Überschuss" : "Verlust"} ${fmtNum(Math.abs(ein - aus))}. USt und VSt sind durchlaufende Posten und zählen nicht zum Ergebnis.`);
-    return { type: "vt", title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, cols, nIn: cIn.length, nAus: cAus.length, fields, choices: [], books: [], sols };
+    if (pm) sols.push(`Privatentnahmen ${fmtNum(sum.pent)} und Privateinlagen ${fmtNum(sum.pein)} verändern Kassa bzw. Bank, sind aber weder Betriebseinnahmen noch Betriebsausgaben.`);
+    if (pm === "a") sols.push(`Privatanteil Pkw: ${paPct} % der Pkw-Ausgaben ${fmtNum(sum.pkw)} = ${fmtNum(pa)}. Dieser Teil ist privat veranlasst: Er wird von den Betriebsausgaben abgezogen (${fmtNum(aus)} − ${fmtNum(pa)} = ${fmtNum(ausN)}) und gilt als Privatentnahme.`);
+    sols.push(`Betriebseinnahmen netto ${fmtNum(ein)} − Betriebsausgaben netto ${fmtNum(ausN)} = ${ein - ausN >= 0 ? "Überschuss" : "Verlust"} ${fmtNum(Math.abs(ein - ausN))}. USt und VSt sind durchlaufende Posten und zählen nicht zum Ergebnis.`);
+    return { type: "vt", pm, paPct, title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, cols, nIn: cIn.length, nAus: cAus.length, nPriv: cPriv.length, fields, choices: [], books: [], sols };
   }
   function bwRenderVt() {
     const inp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`, plain = l => l.replace(/\u00AD/g, "");
     // Gruppengrenzen für die senkrechten Trennlinien: Kassa | Bank | Steuern | Einnahmen | Ausgaben
-    const starts = new Set(["kE", "bE", "ust", bw.cols[6][0], bw.cols[6 + bw.nIn][0]]), grp = k => starts.has(k) ? "g" : "";
+    const starts = new Set(["kE", "bE", "ust", bw.cols[6][0], bw.cols[6 + bw.nIn][0], "pent"]), grp = k => starts.has(k) ? "g" : "";
     const cases = bw.rows.map(r => `<div class="ea-case"><div class="ea-case-h"><b>${r.nr}.</b> <span class="mono">${eaD(r.dt)}</span></div><p>${esc(r.text)}</p>${r.doc ? `<div class="beleg-wrap">${r.doc}</div>` : ""}</div>`).join("");
     const cell = (k, html) => `<td class="${grp(k)}">${html}</td>`;
     const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)}</span>${esc(r.short)}</td><td class="vt-bel"><input id="vt-${r.nr}-bel" class="vt-belin" inputmode="text" aria-label="Zeile ${r.nr} Beleg" placeholder="K1, B1, –"></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
     const ab = bw.cols.map(([k]) => cell(k, k === "kE" ? `<span class="vt-given">${fmtNum(bw.kAB)}</span>` : k === "bE" ? `<span class="vt-given">${fmtNum(bw.bAB)}</span>` : "")).join("");
     return `<div class="ab-sec"><h2>${esc(US.name)} · Einnahmen-Ausgaben-Rechnung</h2>
-        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Vergib in der Spalte „Beleg“ die Belegnummer: Kassabelege K1, K2, …, Bankbelege B1, B2, … (fortlaufend nach Datum, Geldtransfer zwischen Kassa und Bank z. B. K3/B2). Gehört ein Fall nicht ins Kassa-/Bankbuch, schreib „–“ und lass die Zeile leer. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.</p></div>
+        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Vergib in der Spalte „Beleg“ die Belegnummer: Kassabelege K1, K2, …, Bankbelege B1, B2, … (fortlaufend nach Datum, Geldtransfer zwischen Kassa und Bank z. B. K3/B2). Gehört ein Fall nicht ins Kassa-/Bankbuch, schreib „–“ und lass die Zeile leer. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.${bw.pm ? " Privatentnahmen und Privateinlagen trägst du in Kassa bzw. Bank und in die Spalten „Privat“ ein. Sie sind weder Einnahmen noch Ausgaben." : ""}${bw.pm === "a" ? ` Der betriebliche Pkw wird zu ${bw.paPct} % privat genutzt. Berechne am Monatsende den Privatanteil der Pkw-Ausgaben und zieh ihn von den Betriebsausgaben ab.` : ""}</p></div>
       <div class="ab-sec"><h2>Geschäftsfälle</h2><div class="ea-cases">${cases}</div></div>
       <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} 2026</span></div>
         <div class="ab-scroll"><table class="vt-table">
-          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum<br>Text</th><th rowspan="2" class="vt-bel">Beleg</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
+          <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum<br>Text</th><th rowspan="2" class="vt-bel">Beleg</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th>${bw.nPriv ? `<th colspan="2" class="g">Privat</th>` : ""}</tr>
             <tr class="vt-h2">${bw.cols.map(([k, l]) => `<th class="${grp(k)}">${l}</th>`).join("")}</tr></thead>
           <tbody><tr class="vt-ab"><td class="vt-text"><span class="vt-meta">01.${pad(bw.m + 1)}.</span>Anfangsbestand</td><td></td>${ab}</tr>${rows}</tbody>
           <tfoot><tr><td class="vt-text">Summe</td><td></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-s-${k}`, `Summe ${plain(l)}`))).join("")}</tr></tfoot>
@@ -3688,7 +3723,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           <label for="vt-kend">Kassa-Endbestand</label>${inp("vt-kend", "Kassa-Endbestand")}
           <label for="vt-bend">Bank-Endbestand</label>${inp("vt-bend", "Bank-Endbestand")}
           <label for="vt-ein">Betriebseinnahmen netto</label>${inp("vt-ein", "Betriebseinnahmen")}
-          <label for="vt-aus">Betriebsausgaben netto</label>${inp("vt-aus", "Betriebsausgaben")}
+          ${bw.pm === "a" ? `<label for="vt-aus0">Summe Ausgaben netto</label>${inp("vt-aus0", "Summe Ausgaben")}<label for="vt-pa">− Privatanteil Pkw (${bw.paPct} %)</label>${inp("vt-pa", "Privatanteil Pkw")}` : ""}
+          <label for="vt-aus">${bw.pm === "a" ? "= Betriebsausgaben netto" : "Betriebsausgaben netto"}</label>${inp("vt-aus", "Betriebsausgaben")}
           <label for="vt-erg">Überschuss (Verlust mit Minus)</label>${inp("vt-erg", "Überschuss oder Verlust")}
         </div>
         <span class="ab-msg" id="bw-msg"></span></div>`;
@@ -5435,6 +5471,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("bw-steps").innerHTML = BW_STEPS[bw.type].map(s => `<li>${esc(s)}</li>`).join("");
     $("bw-opt-wrap").hidden = bw.type !== "av";
     $("bw-opt-av").hidden = bw.type !== "av" && bw.type !== "an";
+    $("bw-opt-priv").hidden = bw.type !== "vt";
+    $("bw-seg-priv").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === ({ "": "vt", p: "vtp", a: "vta" })[bw.pm])));
     $("bw-seg-av").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === bw.type)));
     (bw.books || []).forEach(b => bwFillBook(b, false));
     $("bw-body").querySelectorAll("[data-bwadd]").forEach(btn => btn.addEventListener("click", () => bwAddRow(btn.dataset.bwadd)));
@@ -5528,13 +5566,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("bw-new").addEventListener("click", bwBuild);
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
-  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3", "w", "p"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType)))));
+  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3", "w", "p"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType === "vtp" || bwType === "vta" ? "vt" : bwType)))));
   const bwPickType = v => { v = bwAvMap(v); bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); $("bw-pick").open = false; bwBuild(); };
   // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
   function bwSetArea(a, type) {
     if (a !== bwArea || type) {
       bwArea = a; bwType = type || store.get(BW_AREAS[a].key, BW_AREAS[a].def);
       if (a === "bw" && bwType === "av" && type && !hu) bwType = bwAvMode;
+      if (a === "ea" && bwType === "vt" && type && !hu) bwType = vtPriv;
       if (type) store.set(BW_AREAS[a].key, bwType);
       bw = null;
     }
@@ -5550,6 +5589,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   renderSeg("bw-seg-type-w", BW_TYPES_W, bwType, bwPickType);
   renderSeg("bw-seg-type-p", BW_TYPES_P, bwType, bwPickType);
   renderSeg("bw-seg-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], bwSize, v => { bwSize = v; store.set("bwSize", v); bwBuild(); });
+  renderSeg("bw-seg-priv", VT_MODES, vtPriv, v => { vtPriv = v; store.set("vtPriv", v); bwType = v; store.set("eaType", v); bwBuild(); });
   renderSeg("bw-seg-av", BW_AV_MODES, bwAvMode, v => { bwAvMode = v; store.set("bwAvMode", v); bwType = v; store.set("bwType", v); bwBuild(); });
   renderSeg("bw-seg-bw", [[false, "vorgegeben"], [true, "selbst berechnen"]], bwCalcBw, v => { bwCalcBw = v; store.set("bwCalcBw", v); bwBuild(); });
 
@@ -5591,7 +5631,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
     { id: "ear", g: 7, title: "Einnahmen-Ausgaben-Rechnung",
       text: "Kleine Unternehmen, die keine doppelte Buchhaltung führen müssen (Umsatz bis € 700.000,00 im Jahr), ermitteln ihren Gewinn mit der <b>Einnahmen-Ausgaben-Rechnung</b>: Betriebseinnahmen − Betriebsausgaben = Gewinn (Überschuss). Aufgezeichnet wird im Kassa- und Bankbuch mit Verteilungstabelle.",
-      rules: ["<b>Zufluss-Abfluss-Prinzip</b>: Eine Einnahme oder Ausgabe zählt erst, wenn das Geld tatsächlich fließt. Eine offene Rechnung wird noch nicht eingetragen.", "Kassa und Bank werden <b>brutto</b> eingetragen, die Aufgliederung erfolgt <b>netto</b>. Umsatzsteuer und Vorsteuer stehen in eigenen Spalten.", "Pkw: kein Vorsteuerabzug, der Bruttobetrag kommt in die Spalte PKW. Versicherungen sind ohne Umsatzsteuer.", "Geringwertige Wirtschaftsgüter (bis € 1.000,00 netto) sind sofort zur Gänze Ausgabe. Teurere Anlagen kommen ins Anlagenverzeichnis, Ausgabe ist dann nur die AfA.", "Geld von der Kassa auf die Bank (oder umgekehrt) ist weder Einnahme noch Ausgabe."],
+      rules: ["<b>Zufluss-Abfluss-Prinzip</b>: Eine Einnahme oder Ausgabe zählt erst, wenn das Geld tatsächlich fließt. Eine offene Rechnung wird noch nicht eingetragen.", "Kassa und Bank werden <b>brutto</b> eingetragen, die Aufgliederung erfolgt <b>netto</b>. Umsatzsteuer und Vorsteuer stehen in eigenen Spalten.", "Pkw: kein Vorsteuerabzug, der Bruttobetrag kommt in die Spalte PKW. Versicherungen sind ohne Umsatzsteuer.", "Geringwertige Wirtschaftsgüter (bis € 1.000,00 netto) sind sofort zur Gänze Ausgabe. Teurere Anlagen kommen ins Anlagenverzeichnis, Ausgabe ist dann nur die AfA.", "Geld von der Kassa auf die Bank (oder umgekehrt) ist weder Einnahme noch Ausgabe.", "<b>Privatentnahmen</b> (Geld für private Zwecke, z. B. die Einkommensteuer der Inhaberin) und <b>Privateinlagen</b> (privates Geld in den Betrieb) kommen in Kassa bzw. Bank und in die Spalten Privat. Sie sind weder Einnahmen noch Ausgaben.", "<b>Privatanteil</b>: Wird z. B. der betriebliche Pkw auch privat genutzt, wird dieser Anteil der Pkw-Ausgaben am Ende von den Betriebsausgaben abgezogen."],
       ex: [{ t: "Wir tanken den betrieblichen Pkw um € 72,00 inkl. 20 % USt und bezahlen bar.", s: [], h: [], n: "Kassa Auszahlungen 72,00 und PKW 72,00. Die Spalte VSt bleibt leer, weil es beim Pkw keinen Vorsteuerabzug gibt." }],
       go: [["ea", "vt"]] },
     { id: "web", g: 7, title: "Wareneingangsbuch",
@@ -5862,7 +5902,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Hausübung: Aufgabe per Code (fester Startwert), Abgabe mit Ergebniscode =================
   // Code: HU-<Art>-<Umfang K/N/U><Buchwert selbst 0/1>-<Startwert>, z. B. HU-VT-N0-3KD9
-  const HU_TYPES = [...BW_TYPES_W, ...BW_TYPES_P, ...BW_TYPES_E, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
+  const HU_TYPES = [...BW_TYPES_W, ...BW_TYPES_P, ...BW_TYPES_E_HU, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
   const HU_SIZE = { kompakt: "K", normal: "N", gross: "U" }, HU_SIZE_R = { K: "kompakt", N: "normal", U: "gross" };
   const HU_SIZE_TXT = { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" };
   const HU_URL = "https://grup-mog.github.io/Rechnungswesen/";
@@ -5941,7 +5981,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   });
   $("hu-input").addEventListener("keydown", e => { if (e.key === "Enter") $("hu-load").click(); });
   // Lehrkraft: Code erstellen
-  $("hu-type").innerHTML = [["Wirtschaftliches Rechnen", BW_TYPES_W], ["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3], ["Personalverrechnung", BW_TYPES_P]]
+  $("hu-type").innerHTML = [["Wirtschaftliches Rechnen", BW_TYPES_W], ["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E_HU], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3], ["Personalverrechnung", BW_TYPES_P]]
     .map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map(([v, l]) => `<option value="${v}">${esc(l.replace(/­/g, ""))}</option>`).join("")}</optgroup>`).join("");
   let huSize = "normal";
   renderSeg("hu-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], huSize, v => { huSize = v; });
