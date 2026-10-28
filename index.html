@@ -4586,8 +4586,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // „einhundert“ = „hundert“, „eintausend“ = „tausend“, „und“ vor den Cent ist freiwillig
   const wrWordNorm = s => String(s).toLowerCase().replace(/ß/g, "ss").replace(/€/g, "euro").replace(/[^a-zäöü]/g, "")
     .replace(/euround/g, "euro").replace(/eins(euro|cent)/g, "ein$1").replace(/^eintausend/, "tausend").replace(/(^|tausend)einhundert/g, "$1hundert");
-  // Ziffern: Tausenderpunkt oder Leerzeichen, wahlweise mit € bzw. EUR
-  const wrFigNorm = s => String(s).trim().toUpperCase().replace(/(\d)\s+(?=\d{3}\b)/g, "$1.").replace(/\s+/g, "").replace(/^(€|EUR)|(€|EUR)$/g, "").replace(/[–—]/g, "-").replace(/,-$/, ",00");
+  // Eurobeträge in Ziffern: Tausenderpunkt, wahlweise mit € bzw. EUR
+  const wrFigNorm = s => String(s).trim().toUpperCase().replace(/\s+/g, "").replace(/^(€|EUR)|(€|EUR)$/g, "").replace(/[–—]/g, "-").replace(/,-$/, ",00");
   const wrIn = (id, lbl, wide) => `<input id="${id}" class="wr-in${wide ? " wr-wide" : ""}"${wide ? ' autocomplete="off" spellcheck="false"' : ' inputmode="decimal"'} aria-label="${esc(lbl)}">`;
   // Liste von Fragen: [Frage-HTML, Feld-ID, Einheit, breit]
   const wrList = qs => `<ol class="wr-list">${qs.map(([q, id, unit, wide]) => `<li><span class="wr-q">${q}</span><span class="wr-a${wide ? " wr-wide" : ""}">${wrIn(id, q.replace(/<[^>]+>/g, ""), wide)}${wide ? "" : `<span class="wr-u">${unit || ""}</span>`}</span></li>`).join("")}</ol>`;
@@ -4611,10 +4611,25 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       wor.push([`<b class="mono">€ ${fmtNum(a)}</b>`, id, "", true]);
       sols.push(`€ ${fmtNum(a)} = ${w}`);
     }
+    // Maßeinheiten: Tausendergruppen mit Leerzeichen, Leerzeichen vor der Einheit
+    const U = [["Meter", "m", "Baumwollstoff im Lager", 60000], ["Kilogramm", "kg", "Schafwolle für die Strickkollektion", 25000], ["Kilometer", "km", "Fahrleistung des Lieferwagens im Jahr", 90000], ["Liter", "l", "Heizöl im Tank", 40000], ["Stück", "Stk.", "Hornknöpfe im Lager", 80000], ["Gramm", "g", "Glasperlen für Brautkleider", 30000]];
+    const mq = [], mn = wrCount(2, 3, 4);
+    wrShuffle(rng, U).slice(0, mn).forEach(([uw, us, what, mx], i) => {
+      let v; do v = rndStep(rng, [1200, mx, 1]); while (v % 10 === 1);
+      const dec = !["Stück", "Gramm"].includes(uw) && rng() < 0.35 ? rndStep(rng, [2, 9, 1]) : 0;
+      if (dec) { v = Math.floor(v / 10); if (v % 10 === 1) v++; }
+      const grp = String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " "), t = `${grp}${dec ? "," + dec : ""} ${us}`;
+      const alts = []; if (v < 10000) alts.push(t.replace(" ", "")); if (us === "Stk.") alts.push(t.replace("Stk.", "Stück"));
+      const id = `wr-zm${i}`, w = `${wrWords(v).replace(/eins$/, "ein")}${dec ? ` Komma ${WR_ONES[dec]}` : ""} ${uw}`;
+      fields.push({ id, code: t, alts, norm: x => String(x).trim().replace(/[\u00a0\u202f]/g, " ").replace(/\s+/g, " ") });
+      mq.push([`<b>${esc(w)}</b> ${esc(what)}`, id, "", false]);
+      sols.push(`${w} = ${t}`);
+    });
     const parts = [
-      { h: "In Ziffern schreiben", text: "Schreib den Betrag in Ziffern, mit Tausenderpunkt und zwei Kommastellen, z. B. 12.345,60.", html: wrList(fig) },
+      { h: "Eurobeträge in Ziffern", text: "Schreib den Betrag in Ziffern, mit Tausenderpunkt und zwei Kommastellen, z. B. 12.345,60.", html: wrList(fig) },
+      { h: "Maßeinheiten in Ziffern", text: "Bei Maßeinheiten werden die Tausender mit einem Leerzeichen getrennt, vor der Einheit steht ebenfalls ein Leerzeichen, z. B. 12 500 m oder 3,5 kg.", html: wrList(mq) },
       { h: "In Worten schreiben", text: "Schreib den Betrag in Worten. Zahlen in Worten werden zusammengeschrieben, z. B. „zweitausenddreihundertfünf Euro und vierzig Cent“.", html: wrList(wor) }];
-    sols.push("Tausenderpunkt (oder Leerzeichen) in Dreiergruppen, Komma vor den Cent. Zahlwörter unter einer Million schreibt man in einem Wort.");
+    sols.push("Eurobeträge: Tausenderpunkt, Komma vor den Cent. Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen vor der Einheit. Zahlwörter unter einer Million schreibt man in einem Wort.");
     return krTask("zs", "Schreib die Beträge richtig", US.name, "Beträge, wie sie auf Rechnungen, Überweisungen und Quittungen stehen.", parts, fields, [], sols);
   }
 
@@ -4802,21 +4817,51 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     parts.push({ h: "Netto, Umsatzsteuer, Brutto", text: "Ein Betrag ist jeweils gegeben, rechne die beiden anderen aus.",
       html: `<div class="kr-box wr-us-box"><table class="kr-scheme wr-us"><thead><tr><th>Leistung</th><th class="pc">USt-Satz</th><th class="num">netto</th><th class="num">USt</th><th class="num">brutto</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.what)}</td><td class="pc">${r.p} %</td>${td(r.c.n, r.what + " netto")}${td(r.c.u, r.what + " USt")}${td(r.c.b, r.what + " brutto")}</tr>`).join("")}</tbody></table></div>` });
     if (bwSize !== "kompakt") {
-      // Rechnung mit zwei Steuersätzen
-      const a = rndStep(rng, [300, 1500, 1]) * 100 + rndStep(rng, [0, 9, 1]) * 10, b = rndStep(rng, [20, 120, 1]) * 100, p2 = pickR(rng, [10, 13]);
-      const ua = Math.round(a * 20 / 100), ub = Math.round(b * p2 / 100);
-      const it2 = p2 === 10 ? "Modezeitschriften für die Kundenlounge" : "Schnittblumen für das Schaufenster";
-      const sr = [["", "Kleidung, netto", "20 %", a, { given: true }], ["", it2 + ", netto", krP(p2), b, { given: true }], ["=", "Summe netto", "", a + b], ["+", "Umsatzsteuer 20 %", "", ua], ["+", `Umsatzsteuer ${p2} %`, "", ub], ["=", "Rechnungsbetrag brutto", "", a + b + ua + ub]];
-      parts.push({ h: "Rechnung mit zwei Steuersätzen", text: `Auf einer Rechnung stehen Kleidung um ${P.fmt(a)} netto (20 %) und ${esc(it2)} um ${P.fmt(b)} netto (${p2} %). Die Umsatzsteuer wird für jeden Steuersatz getrennt ausgewiesen.`, schemes: [{ head: "Rechnung", rows: krRows(fields, "wr-u2", sr) }] });
-      sols.push(`Umsatzsteuer 20 % von ${P.fmt(a)} = ${P.fmt(ua)}, ${p2} % von ${P.fmt(b)} = ${P.fmt(ub)}, Rechnungsbetrag ${P.fmt(a + b + ua + ub)}.`);
+      // Rechnungen: ein oder zwei Steuersätze, vorwärts oder (teilweise) rückwärts
+      const modes = bwSize === "gross" ? [pickR(rng, ["r1", "r2"]), pickR(rng, ["v1", "v2"])] : [pickR(rng, ["v1", "r1", "v2", "r2"])];
+      modes.forEach((m, i) => wrInvoice(rng, fields, sols, parts, `wr-ui${i}`, m, modes.length > 1 ? i + 1 : 0));
     }
     sols.push("Netto → USt: netto × Steuersatz ÷ 100. Brutto → USt: brutto × Steuersatz ÷ (100 + Steuersatz). USt → netto: USt ÷ Steuersatz × 100. Brutto = netto + USt.");
     return krTask("us", "Rechne mit der Umsatzsteuer", US.name, "Steuersätze in Österreich: 20 % Normalsteuersatz, 10 % z. B. Lebensmittel, Bücher und Zeitschriften, Beherbergung, Personenbeförderung, Müllabfuhr, 13 % z. B. Blumen und Pflanzen, Kunst und Kultur.", parts, fields, [], sols);
   }
+  function wrInvoice(rng, fields, sols, parts, pre, m, no) {
+    const sups = wrShuffle(rng, PARTNERS.waren), goods = wrShuffle(rng, GOODS), h = `Rechnung${no ? " " + no : ""}`;
+    const line = it => { const q = rndStep(rng, [3, 25, 1]), u = rndStep(rng, [Math.round(it.u[0] / 100), Math.round(it.u[1] / 100), 1]) * 100; return [`${q} Stk. ${it.pl} à ${fmtNum(u)}`, q * u]; };
+    if (m === "v1" || m === "r1") {
+      const p = m === "v1" ? 20 : pickR(rng, [20, 20, 10, 13]);
+      if (m === "v1") {
+        const ls = goods.slice(0, rndStep(rng, [2, 3, 1])).map(line), net = ls.reduce((a, l) => a + l[1], 0), u = Math.round(net * p / 100);
+        const rows = [...ls.map(([l, a]) => ["", l, "", a, { given: true }]), ["=", "Summe netto", "", net], ["+", "Umsatzsteuer", "20 %", u], ["=", "Rechnungsbetrag brutto", "", net + u]];
+        parts.push({ h, text: `${esc(sups[0][0])} liefert uns Ware. Vervollständige die Rechnung.`, schemes: [{ head: "Rechnung", rows: krRows(fields, pre, rows) }] });
+        sols.push(`${h}: Summe netto ${P.fmt(net)}, USt 20 % ${P.fmt(u)}, brutto ${P.fmt(net + u)}.`);
+      } else {
+        const what = { 20: "Kleidung", 10: "Modezeitschriften und Fachbücher", 13: "Pflanzen und Blumen für den Verkaufsraum" }[p];
+        const b = rndStep(rng, [200, 9000, 1]) * 100 + rndStep(rng, [0, 99, 1]), u = Math.round(b * p / (100 + p)), net = b - u;
+        const rows = [["", "Summe netto", "", net, { tol: 1 }], ["+", "Umsatzsteuer", `${p} %`, u, { tol: 1 }], ["=", "Rechnungsbetrag brutto", "", b, { given: true }]];
+        parts.push({ h, text: `Wir haben eine Rechnung über ${esc(what)} (${p} % USt) erhalten. Leider ist nur noch der Rechnungsbetrag lesbar: ${P.fmt(b)}. Rechne rückwärts.`, schemes: [{ head: "Rechnung", rows: krRows(fields, pre, rows) }] });
+        sols.push(`${h}: USt = ${P.fmt(b)} × ${p} ÷ ${100 + p} = ${P.fmt(u)}, netto = ${P.fmt(b)} − ${P.fmt(u)} = ${P.fmt(net)}.`);
+      }
+      return;
+    }
+    const a = rndStep(rng, [300, 1500, 1]) * 100 + rndStep(rng, [0, 9, 1]) * 10, b = rndStep(rng, [20, 120, 1]) * 100, p2 = pickR(rng, [10, 13]);
+    const ua = Math.round(a * 20 / 100), ub = Math.round(b * p2 / 100), tot = a + b + ua + ub;
+    const it2 = p2 === 10 ? "Modezeitschriften für die Kundenlounge" : "Schnittblumen für das Schaufenster";
+    if (m === "v2") {
+      const rows = [["", "Kleidung, netto", "20 %", a, { given: true }], ["", it2 + ", netto", krP(p2), b, { given: true }], ["=", "Summe netto", "", a + b], ["+", "Umsatzsteuer", "20 %", ua], ["+", "Umsatzsteuer", `${p2} %`, ub], ["=", "Rechnungsbetrag brutto", "", tot]];
+      parts.push({ h, text: `Auf einer Rechnung stehen Kleidung (20 %) und ${esc(it2)} (${p2} %). Die Umsatzsteuer wird für jeden Steuersatz getrennt ausgewiesen.`, schemes: [{ head: "Rechnung", rows: krRows(fields, pre, rows) }] });
+      sols.push(`${h}: USt 20 % von ${P.fmt(a)} = ${P.fmt(ua)}, ${p2} % von ${P.fmt(b)} = ${P.fmt(ub)}, Rechnungsbetrag ${P.fmt(tot)}.`);
+    } else {
+      // teilweise rückwärts: Kleidung netto und Rechnungsbetrag sind bekannt
+      const b2 = tot - a - ua, ub2 = Math.round(b2 * p2 / (100 + p2)), nb2 = b2 - ub2;
+      const rows = [["", "Kleidung, netto", "20 %", a, { given: true }], ["", it2 + ", netto", krP(p2), nb2, { tol: 1 }], ["=", "Summe netto", "", a + nb2, { tol: 1 }], ["+", "Umsatzsteuer", "20 %", ua], ["+", "Umsatzsteuer", `${p2} %`, ub2, { tol: 1 }], ["=", "Rechnungsbetrag brutto", "", tot, { given: true }]];
+      parts.push({ h, text: `Auf der Rechnung sind nur Kleidung um ${P.fmt(a)} netto (20 %) und der Rechnungsbetrag ${P.fmt(tot)} lesbar. Der Rest entfällt auf ${esc(it2)} (${p2} %). Vervollständige die Rechnung.`, schemes: [{ head: "Rechnung", rows: krRows(fields, pre, rows) }] });
+      sols.push(`${h}: USt 20 % = ${P.fmt(ua)}. Kleidung brutto ${P.fmt(a + ua)}, Rest brutto ${P.fmt(tot)} − ${P.fmt(a + ua)} = ${P.fmt(b2)}. Davon USt ${p2} % = ${P.fmt(b2)} × ${p2} ÷ ${100 + p2} = ${P.fmt(ub2)}, netto ${P.fmt(nb2)}.`);
+    }
+  }
   const WR_MAKE = { zs: wrMakeZs, ru: wrMakeRu, pr: wrMakePr, sr: wrMakeSr, rsk: wrMakeRsk, us: wrMakeUs };
   Object.assign(KR_MAKE, WR_MAKE);
   Object.assign(BW_STEPS, {
-    zs: ["In Ziffern: Tausenderpunkt (oder Leerzeichen) in Dreiergruppen, Komma vor den Cent, immer zwei Kommastellen, z. B. 12.345,60.", "In Worten: Zahlen unter einer Million schreibt man zusammen, z. B. „dreitausendvierhundertzwölf Euro und fünfzig Cent“.", "Zuerst die Einer, dann die Zehner: 54 = vierundfünfzig."],
+    zs: ["Eurobeträge in Ziffern: Tausenderpunkt, Komma vor den Cent, immer zwei Kommastellen, z. B. 12.345,60.", "Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen zwischen Zahl und Einheit, z. B. 12 500 m oder 3,5 kg.", "In Worten: Zahlen unter einer Million schreibt man zusammen, z. B. „dreitausendvierhundertzwölf Euro und fünfzig Cent“.", "Zuerst die Einer, dann die Zehner: 54 = vierundfünfzig."],
     ru: ["Schau auf die erste Ziffer, die wegfällt.", "0, 1, 2, 3 oder 4: abrunden, die Ziffer davor bleibt.", "5, 6, 7, 8 oder 9: aufrunden, die Ziffer davor wird um 1 größer.", "Nur einmal runden, nicht Stelle für Stelle."],
     pr: ["Grundwert (G) = 100 %, Prozentsatz (p), Prozentanteil (A).", "A = G × p ÷ 100", "p = A ÷ G × 100", "G = A ÷ p × 100", "Vermehrter Grundwert (auf Hundert): Der Betrag entspricht 100 % + p. Verminderter Grundwert (im Hundert): 100 % − p."],
     sr: ["Bedingungssatz (das Bekannte) und Fragesatz (das Gesuchte) untereinander schreiben.", "Gerades Verhältnis: je mehr, desto mehr. Verkehrtes Verhältnis: je mehr, desto weniger.", "Über die Einheit rechnen: zuerst auf 1 schließen, dann auf die gesuchte Menge.", "Zusammengesetzt: jedes Verhältnis einzeln prüfen und nacheinander rechnen."],
@@ -5170,7 +5215,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     LEX.push(
       { id: "wr-zahlen", g: 9, title: "Zahlen und Beträge schreiben",
         text: "Auf Rechnungen, Überweisungen und Quittungen müssen Beträge eindeutig lesbar sein. In Ziffern trennt man die Tausender, in Worten schreibt man die Zahl in einem Wort.",
-        rules: ["In Ziffern: Dreiergruppen mit Punkt (oder Leerzeichen) trennen, Komma vor den Cent, immer zwei Kommastellen: € 12.345,60.", "In Worten: Zahlen unter einer Million in einem Wort: „zwölftausenddreihundertfünfundvierzig Euro und sechzig Cent“.", "Bei zweistelligen Zahlen kommt zuerst der Einer: 45 = fünfundvierzig."], go: [["wr", "zs"]] },
+        rules: ["Eurobeträge in Ziffern: Tausenderpunkt, Komma vor den Cent, immer zwei Kommastellen: € 12.345,60.", "Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen vor der Einheit: 12 500 m, 3,5 kg.", "In Worten: Zahlen unter einer Million in einem Wort: „zwölftausenddreihundertfünfundvierzig Euro und sechzig Cent“.", "Bei zweistelligen Zahlen kommt zuerst der Einer: 45 = fünfundvierzig."], go: [["wr", "zs"]] },
       { id: "wr-runden", g: 9, title: "Kaufmännisch runden",
         text: "Gerundet wird auf die Stelle, die gebraucht wird, bei Geldbeträgen meist auf Cent. Entscheidend ist die erste Ziffer, die wegfällt.",
         rules: ["0, 1, 2, 3, 4: abrunden. Beispiel: 12,344 → 12,34.", "5, 6, 7, 8, 9: aufrunden. Beispiel: 12,345 → 12,35.", "Nur einmal runden: 2,4449 auf eine Kommastelle ist 2,4 (nicht zuerst 2,445 → 2,45 → 2,5)."], go: [["wr", "ru"]] },
