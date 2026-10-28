@@ -3163,7 +3163,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"], ["dk", "Differenz\u00ADkalkulation"]];
   const BW_TYPES_K2 = [["kk", "Kalkulatorische Kosten"], ["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
-  const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
+  const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"], ["mob", "Make-or-Buy"]];
   const BW_TYPES_P = [["la", "Lohn und Gehalt abrechnen"], ["lu", "Abrechnung mit Überstunden"]];
   const BW_TYPES_W = [["zs", "Zahlen schreiben"], ["ru", "Kaufmännisch runden"], ["pr", "Prozent\u00ADrechnung"], ["sr", "Schluss\u00ADrechnung"], ["rsk", "Rabatt und Skonto"], ["us", "Umsatz\u00ADsteuer"]];
   // Bereiche, die sich die Bewertungs-Ansicht teilen: Typgruppen, Speicher-Schlüssel, Standard-Aufgabe
@@ -4719,60 +4719,113 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       return { n: p.n, kv, p: price, db: price - kv };
     });
   }
-  function krMakeDb(rng) {
-    const fields = [], sols = [], parts = [], n = { kompakt: 2, normal: 3, gross: 4 }[bwSize];
-    if (bwSize === "gross") {
-      const kv = rndStep(rng, [20, 60, 1]) * 100, F = rndStep(rng, [60, 160, 5]) * 10000, m1 = rndStep(rng, [20, 50, 1]) * 10, m2 = m1 + rndStep(rng, [5, 20, 1]) * 10;
-      const p = pickR(rng, KR_PROD);
-      parts.push({ h: "Teil A: Kosten in fix und variabel zerlegen", text: `Bei ${esc(p.n)} sind im März bei ${m1} Stück Gesamtkosten von ${P.fmt(F + kv * m1)} angefallen, im April bei ${m2} Stück ${P.fmt(F + kv * m2)}. Berechne die variablen Kosten je Stück und die Fixkosten.`,
-        form: [["kr-da-kv", "Variable Kosten je Stück"], ["kr-da-f", "Fixkosten im Monat"]] });
-      fields.push({ id: "kr-da-kv", amt: kv }, { id: "kr-da-f", amt: F });
-      sols.push(`Teil A: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz = ${P.fmt(kv * (m2 - m1))} ÷ ${m2 - m1} = ${P.fmt(kv)}. Fixkosten = ${P.fmt(F + kv * m1)} − ${m1} × ${P.fmt(kv)} = ${P.fmt(F)}.`);
-    }
-    const items = krItems(rng, n).map((it, i) => Object.assign(it, { id: `kr-d${i}`, q: rndStep(rng, [20, 120, 5]) }));
-    items.forEach(it => { it.q2 = Math.round(it.db / it.p * 10000); it.dbg = it.db * it.q; fields.push({ id: it.id + "-db", amt: it.db }, { id: it.id + "-dq", amt: it.q2, tol: 1 }, { id: it.id + "-g", amt: it.dbg }); });
-    const sdb = items.reduce((a, it) => a + it.dbg, 0), F = Math.round(sdb * (0.55 + rng() * 0.5) / 100000) * 100000, be = sdb - F;
-    fields.push({ id: "kr-ds", amt: sdb }, { id: "kr-dbe", amt: be });
-    const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
-    parts.push({ h: bwSize === "gross" ? "Teil B: Deckungsbeitragsrechnung" : "Deckungsbeitragsrechnung", text: `Im Monat Mai verkauft die Trachtenmanufaktur folgende Produkte. Die variablen Kosten sind Material und Fertigungslohn je Stück. Die Fixkosten des Monats betragen ${P.fmt(F)}.`,
-      html: `<div class="ab-scroll"><table class="av-table kr-table"><thead><tr><th>Produkt</th><th class="num">Preis netto je Stk.</th><th class="num">var. Kosten je Stk.</th><th class="num">Menge</th><th class="num">DB je Stk.</th><th class="num">DB-Quote %</th><th class="num">DB gesamt</th></tr></thead>
-        <tbody>${items.map(it => `<tr><td>${esc(it.n)}</td><td class="num mono">${fmtNum(it.p)}</td><td class="num mono">${fmtNum(it.kv)}</td><td class="num mono">${it.q}</td><td>${inp(it.id + "-db", it.n + " DB je Stück")}</td><td>${inp(it.id + "-dq", it.n + " DB-Quote")}</td><td>${inp(it.id + "-g", it.n + " DB gesamt")}</td></tr>`).join("")}</tbody>
-        <tfoot><tr><td colspan="6">Summe Deckungsbeiträge</td><td>${inp("kr-ds", "Summe Deckungsbeiträge")}</td></tr><tr><td colspan="6">− Fixkosten</td><td class="num mono">${fmtNum(F)}</td></tr><tr><td colspan="6">= Betriebsergebnis</td><td>${inp("kr-dbe", "Betriebsergebnis")}</td></tr></tfoot></table></div>` });
-    sols.push(`DB je Stück = Preis − variable Kosten. DB-Quote = DB ÷ Preis × 100. ${items.map(it => `${it.n}: DB ${fmtNum(it.db)}, Quote ${krN((it.q2 / 100).toFixed(2))} %, gesamt ${fmtNum(it.dbg)}`).join("; ")}.`, `Betriebsergebnis = Summe DB ${P.fmt(sdb)} − Fixkosten ${P.fmt(F)} = ${P.fmt(be)}${be < 0 ? " (Verlust)" : ""}.`);
-    return krTask("db", "Berechne die Deckungsbeiträge und das Betriebsergebnis", KR_PROD_FIRM, "Beträge auf Cent, die DB-Quote in Prozent auf zwei Kommastellen. Ein Verlust wird mit Minus eingetragen.", parts, fields, [], sols);
+  const krInp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
+  // Nettoerlös aus dem Bruttopreis (USt a. H.), optional Rabatt und Skonto (v. H.) bis zum Kassapreis
+  function krNettoerloes(b, r, s) {
+    const n = Math.round(b * 100 / 120), u = b - n, rab = r ? krPct(n, r) : 0, zp = n - rab, sko = s ? krPct(zp, s) : 0;
+    return { n, u, rab, zp, sko, kp: zp - sko };
+  }
+  function krNettoRows(b, r, s, kv, extra = []) {
+    const e = krNettoerloes(b, r, s), rows = [["", "Bruttoverkaufspreis", "", b, { given: true }], ["−", "Umsatzsteuer", "20 % a. H.", e.u], ["=", r ? "Nettoverkaufspreis" : "Nettoerlös", "", e.n]];
+    if (r) rows.push(["−", "Rabatt", krP(r), e.rab], ["=", "Zielverkaufspreis", "", e.zp], ["−", "Skonto", krP(s), e.sko], ["=", "Kassapreis (Nettoerlös)", "", e.kp]);
+    rows.push(...extra, ["−", "variable Selbstkosten", "", kv, { given: true }], ["=", "Deckungsbeitrag je Stück", "", e.kp - kv]);
+    return { e, db: e.kp - kv, rows };
   }
 
-  // ---------- Preisuntergrenze und Break-even ----------
+  // ---------- Deckungsbeitrag (Aufbau laut Buch) ----------
+  const KR_VARIATOR = [["Fertigungslöhne", [40000, 90000], [8, 9, 10]], ["Gehälter", [30000, 70000], [1, 2]], ["Energie", [6000, 15000], [5, 6, 7]], ["Hilfsstoffe", [4000, 9000], [7, 8, 9]], ["Kalkulatorische Abschreibung", [10000, 30000], [0, 2, 3]], ["Mietkosten", [12000, 30000], [0]], ["Andere betriebliche Kosten", [3000, 9000], [2, 2.5, 3]]];
+  function krMakeDb(rng) {
+    const fields = [], choices = [], sols = [], parts = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
+    // Teil A (umfangreich): Kostenauflösung mit dem Variator
+    if (gross) {
+      const ks = KR_VARIATOR.slice(0, 2).concat(KR_VARIATOR.slice(2).sort(() => rng() - 0.5).slice(0, 3)).map(([l, rg, vs], i) => {
+        const a = rndStep(rng, [rg[0] / 100, rg[1] / 100, 1]) * 10000, v = pickR(rng, vs), va = krPct(a, v * 10);
+        fields.push({ id: `kr-va${i}-f`, amt: a - va, zeroOk: true }, { id: `kr-va${i}-v`, amt: va, zeroOk: true });
+        return { l, a, v, va, id: `kr-va${i}` };
+      });
+      const sf = ks.reduce((s, k) => s + k.a - k.va, 0), sv = ks.reduce((s, k) => s + k.va, 0);
+      fields.push({ id: "kr-vas-f", amt: sf }, { id: "kr-vas-v", amt: sv });
+      parts.push({ h: "Teil A: Kostenauflösung mit dem Variator", text: "Der Variator gibt an, wie viele Zehntel einer Kostenart variabel sind (V 3 = 30 % variabel, 70 % fix). Teile die Kosten laut BÜB in fixe und variable Kosten.",
+        html: `<div class="ab-scroll"><table class="av-table kr-table"><thead><tr><th>Kostenart</th><th class="num">Kosten lt. BÜB</th><th class="num">Variator</th><th class="num">fixe Kosten</th><th class="num">variable Kosten</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(k.l)}</td><td class="num mono">${fmtNum(k.a)}</td><td class="num mono">V ${krN(k.v)}</td><td>${krInp(k.id + "-f", k.l + " fix")}</td><td>${krInp(k.id + "-v", k.l + " variabel")}</td></tr>`).join("")}</tbody>
+          <tfoot><tr><td colspan="3">Summe</td><td>${krInp("kr-vas-f", "Summe fix")}</td><td>${krInp("kr-vas-v", "Summe variabel")}</td></tr></tfoot></table></div>` });
+      sols.push(`Teil A: variable Kosten = Kosten × Variator ÷ 10, fixe Kosten = Rest. ${ks.map(k => `${k.l}: V ${krN(k.v)} → ${fmtNum(k.va)} variabel, ${fmtNum(k.a - k.va)} fix`).join("; ")}.`);
+    }
+    // Teil 1: DB je Stück aus dem Bruttopreis
+    {
+      const p = pickR(rng, KR_PROD), d = krProdData(rng, p), so = big ? rndStep(rng, [3, 12, 1]) * 100 : 0, kv = d.fm + d.fl + so;
+      const r = big ? pickR(rng, [5, 10, 15]) : 0, s = big ? pickR(rng, [2, 3]) : 0, neg = rng() < 0.35;
+      const f = r ? 1.2 / (1 - r / 100) / (1 - s / 100) : 1.2, b = Math.round(kv * f * (neg ? 0.85 + rng() * 0.12 : 1.15 + rng() * 0.5) / 100) * 100 - 10;
+      const pre = big ? [] : [];
+      const N = krNettoRows(b, r, s, kv, pre);
+      const kvTxt = big ? `Die variablen Selbstkosten setzen sich aus ${P.fmt(d.fm)} Fertigungsmaterial, ${P.fmt(d.fl)} Fertigungslöhnen und ${P.fmt(so)} sonstigen variablen Kosten zusammen (zusammen ${P.fmt(kv)}).` : `Die variablen Selbstkosten betragen ${P.fmt(kv)} je Stück.`;
+      parts.push({ h: gross ? "Teil B: Deckungsbeitrag je Stück" : "Teil 1: Deckungsbeitrag je Stück", text: `Ein Trachtengeschäft in Schladming möchte ${esc(p.n)} bestellen und höchstens ${P.fmt(b)} inkl. 20 % USt je Stück zahlen.${r ? ` Es verlangt ${krP(r)} Rabatt und ${krP(s)} Skonto.` : ""} ${kvTxt} Berechne den Deckungsbeitrag je Stück.`,
+        schemes: [{ head: p.n, sub: "je Stück", rows: krRows(fields, "kr-dn", N.rows) }], choice: { id: "kr-dn-ch", q: "Soll das Geschäft angenommen werden?", opts: [["ja", "ja"], ["nein", "nein"]] } });
+      choices.push({ id: "kr-dn-ch", v: N.db > 0 ? "ja" : "nein" });
+      sols.push(`${gross ? "Teil B" : "Teil 1"}: Bruttopreis ÷ 120 × 100 = Nettoverkaufspreis ${P.fmt(N.e.n)}${r ? `, − Rabatt ${P.fmt(N.e.rab)}, − Skonto ${P.fmt(N.e.sko)} = Kassapreis ${P.fmt(N.e.kp)}` : ""}. DB = ${P.fmt(N.e.kp)} − ${P.fmt(kv)} = ${P.fmt(N.db)}. ${N.db > 0 ? "Der DB ist positiv, das Geschäft trägt zur Deckung der Fixkosten bei." : "Der DB ist negativ: Nicht einmal die variablen Kosten sind gedeckt, das Geschäft ablehnen."}`);
+    }
+    // Teil 2: einstufige Deckungsbeitragsrechnung
+    const n = { kompakt: 3, normal: 4, gross: 5 }[bwSize];
+    const items = krItems(rng, n).map((it, i) => Object.assign(it, { id: `kr-d${i}`, q: rndStep(rng, [20, 120, 5]) }));
+    items.forEach(it => { it.dbg = it.db * it.q; it.u = it.p * it.q; fields.push({ id: it.id + "-db", amt: it.db }, { id: it.id + "-g", amt: it.dbg }); });
+    const sdb = items.reduce((a, it) => a + it.dbg, 0), su = items.reduce((a, it) => a + it.u, 0), F = Math.round(sdb * (0.55 + rng() * 0.5) / 100000) * 100000, be = sdb - F;
+    const quote = Math.round(sdb / su * 10000), beu = Math.round(F / (quote / 10000)), beuX = Math.round(F * su / sdb);
+    fields.push({ id: "kr-ds", amt: sdb }, { id: "kr-dbe", amt: be });
+    let foot = `<tr><td colspan="6">= Gesamtdeckungsbeitrag</td><td>${krInp("kr-ds", "Gesamtdeckungsbeitrag")}</td></tr><tr><td colspan="6">− Fixkosten</td><td class="num mono">${fmtNum(F)}</td></tr><tr><td colspan="6">= Betriebsergebnis</td><td>${krInp("kr-dbe", "Betriebsergebnis")}</td></tr>`;
+    if (big) {
+      foot += `<tr><td colspan="6">Nettoumsatz gesamt</td><td>${krInp("kr-du", "Nettoumsatz gesamt")}</td></tr><tr><td colspan="6">Deckungsbeitragsquote in %</td><td>${krInp("kr-dq", "Deckungsbeitragsquote")}</td></tr>`;
+      fields.push({ id: "kr-du", amt: su }, { id: "kr-dq", amt: quote, tol: 1 });
+    }
+    if (gross) { foot += `<tr><td colspan="6">Break-even-Umsatz</td><td>${krInp("kr-dbu", "Break-even-Umsatz")}</td></tr>`; fields.push({ id: "kr-dbu", amt: beu, tol: Math.abs(beu - beuX) + 200 }); }
+    parts.push({ h: gross ? "Teil C: Einstufige Deckungsbeitragsrechnung" : "Teil 2: Einstufige Deckungsbeitragsrechnung", text: `Im Monat Mai hat die Trachtenmanufaktur folgende Produkte verkauft. Die Fixkosten des Monats betragen ${P.fmt(F)}.${big ? " Berechne außerdem den Nettoumsatz und die Deckungsbeitragsquote (Gesamtdeckungsbeitrag ÷ Nettoumsatz × 100, auf zwei Kommastellen)." : ""}${gross ? " Bei welchem Umsatz ist die Gewinnschwelle erreicht (Break-even-Umsatz = Fixkosten ÷ DB-Quote)?" : ""}`,
+      html: `<div class="ab-scroll"><table class="av-table kr-table"><thead><tr><th>Produkt</th><th class="num">Nettoerlös je Stk.</th><th class="num">− var. Kosten je Stk.</th><th class="num">= DB je Stk.</th><th class="num">Menge</th><th></th><th class="num">DB gesamt</th></tr></thead>
+        <tbody>${items.map(it => `<tr><td>${esc(it.n)}</td><td class="num mono">${fmtNum(it.p)}</td><td class="num mono">${fmtNum(it.kv)}</td><td>${krInp(it.id + "-db", it.n + " DB je Stück")}</td><td class="num mono">${it.q}</td><td></td><td>${krInp(it.id + "-g", it.n + " DB gesamt")}</td></tr>`).join("")}</tbody>
+        <tfoot>${foot}</tfoot></table></div>` });
+    sols.push(`DB je Stück = Nettoerlös − variable Kosten, DB gesamt = DB je Stück × Menge. ${items.map(it => `${it.n}: ${fmtNum(it.db)} × ${it.q} = ${fmtNum(it.dbg)}`).join("; ")}.`, `Betriebsergebnis = Gesamtdeckungsbeitrag ${P.fmt(sdb)} − Fixkosten ${P.fmt(F)} = ${P.fmt(be)}${be < 0 ? " (Verlust)" : " (Gewinn)"}.`);
+    if (big) sols.push(`Nettoumsatz = Summe Nettoerlös × Menge = ${P.fmt(su)}. DB-Quote = ${P.fmt(sdb)} ÷ ${P.fmt(su)} × 100 = ${krN((quote / 100).toFixed(2))} %.`);
+    if (gross) sols.push(`Break-even-Umsatz = Fixkosten ÷ DB-Quote = ${P.fmt(F)} ÷ ${krN((quote / 100).toFixed(2))} % = ${P.fmt(beu)}. Ab diesem Umsatz arbeitet die Trachtenmanufaktur kostendeckend.`);
+    return krTask("db", "Berechne Deckungsbeiträge und das Betriebsergebnis", KR_PROD_FIRM, "Beträge auf Cent, Prozentsätze auf zwei Kommastellen. Ein negativer Wert (Verlust) wird mit Minus eingetragen.", parts, fields, choices, sols);
+  }
+
+  // ---------- Preisuntergrenze und Break-even (Aufbau laut Buch) ----------
   function krMakeBe(rng) {
-    const fields = [], choices = [], sols = [], parts = [];
+    const fields = [], choices = [], sols = [], parts = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
     const p = pickR(rng, KR_PROD), d = krProdData(rng, p), vk = rndStep(rng, [2, 8, 1]) * 100, kv = d.fm + d.fl + vk;
-    const M = rndStep(rng, [40, 160, 5]) * 10, price = Math.round(kv * (1.3 + rng() * 0.6) / 100) * 100, db = price - kv;
+    const M = rndStep(rng, [40, 160, 5]) * 10, net = Math.round(kv * (1.3 + rng() * 0.6) / 100) * 100, db = net - kv;
     const F = rndStep(rng, [Math.round(db * M * 0.45 / 100000), Math.round(db * M * 0.85 / 100000), 1]) * 100000;
     const kf = Math.round(F / M), sk = kv + kf, bem = Math.ceil(F / db);
-    parts.push({ h: "Angaben", text: `Die Trachtenmanufaktur plant für das nächste Jahr ${fmtNumInt(M)} Stück ${esc(p.n)}. Je Stück fallen ${P.fmt(d.fm)} Fertigungsmaterial, ${P.fmt(d.fl)} Fertigungslöhne und ${P.fmt(vk)} Verpackung und Versand an (alle variabel). Die Fixkosten der Produktlinie betragen ${P.fmt(F)} im Jahr. Der Verkaufspreis beträgt ${P.fmt(price)} netto.` });
-    const form1 = [["kr-e-kv", "Variable Kosten je Stück"], ["kr-e-kf", "Fixe Kosten je Stück"], ["kr-e-sk", "Selbstkosten je Stück"], ["kr-e-pl", "Langfristige Preisuntergrenze"], ["kr-e-pk", "Kurzfristige Preisuntergrenze"]];
-    fields.push({ id: "kr-e-kv", amt: kv }, { id: "kr-e-kf", amt: kf, tol: 1 }, { id: "kr-e-sk", amt: sk, tol: 1 }, { id: "kr-e-pl", amt: sk, tol: 1 }, { id: "kr-e-pk", amt: kv });
-    parts.push({ h: "Teil 1: Preisuntergrenzen", form: form1 });
-    sols.push(`Variable Kosten je Stück = ${fmtNum(d.fm)} + ${fmtNum(d.fl)} + ${fmtNum(vk)} = ${P.fmt(kv)}. Fixe Kosten je Stück = ${P.fmt(F)} ÷ ${fmtNumInt(M)} = ${P.fmt(kf)}.`, `Langfristige Preisuntergrenze = Selbstkosten je Stück (${P.fmt(sk)}), alle Kosten müssen gedeckt sein. Kurzfristige Preisuntergrenze = variable Kosten je Stück (${P.fmt(kv)}), die Fixkosten fallen ohnehin an.`);
-    const form2 = [["kr-e-db", "Deckungsbeitrag je Stück"], ["kr-e-bm", "Break-even-Menge (Stück, aufgerundet)"], ["kr-e-bu", "Break-even-Umsatz (Menge × Preis)"]];
-    fields.push({ id: "kr-e-db", amt: db }, { id: "kr-e-bm", amt: bem * 100, qty: true }, { id: "kr-e-bu", amt: bem * price });
-    if (bwSize === "gross") { form2.push(["kr-e-g", `Betriebsergebnis bei ${fmtNumInt(M)} Stück`]); fields.push({ id: "kr-e-g", amt: db * M - F }); }
-    parts.push({ h: "Teil 2: Break-even-Analyse", text: "Ab welcher Menge deckt der Deckungsbeitrag die Fixkosten?", form: form2 });
-    sols.push(`Break-even-Menge = Fixkosten ÷ DB je Stück = ${P.fmt(F)} ÷ ${P.fmt(db)} = ${krN((F / db).toFixed(2))}, aufgerundet ${fmtNumInt(bem)} Stück. Break-even-Umsatz = ${fmtNumInt(bem)} × ${P.fmt(price)} = ${P.fmt(bem * price)}.${bwSize === "gross" ? ` Betriebsergebnis bei ${fmtNumInt(M)} Stück = ${fmtNumInt(M)} × ${P.fmt(db)} − ${P.fmt(F)} = ${P.fmt(db * M - F)}.` : ""}`);
-    if (bwSize !== "kompakt") {
-      const yes = rng() < 0.6, q = rndStep(rng, [5, 20, 1]) * 10, off = yes ? Math.round((kv + rng() * (sk - kv) * 0.9 + 100) / 100) * 100 : Math.round((kv - rndStep(rng, [3, 15, 1]) * 100) / 100) * 100;
-      const ok = off > kv;
-      parts.push({ h: "Teil 3: Zusatzauftrag", text: `Ein Trachtengeschäft in Schladming bietet uns für ${q} Stück zusätzlich ${P.fmt(off)} je Stück. Wir haben freie Kapazitäten, die Fixkosten ändern sich nicht.`, form: [["kr-e-z", "Zusätzlicher Deckungsbeitrag (gesamt)"]], choice: { id: "kr-e-ch", q: "Nehmen wir den Zusatzauftrag an?", opts: [["ja", "annehmen"], ["nein", "ablehnen"]] } });
-      fields.push({ id: "kr-e-z", amt: (off - kv) * q }); choices.push({ id: "kr-e-ch", v: ok ? "ja" : "nein" });
-      sols.push(`Zusatzauftrag: ${P.fmt(off)} ${ok ? "liegt über" : "liegt unter"} der kurzfristigen Preisuntergrenze (${P.fmt(kv)}). Zusätzlicher DB = (${fmtNum(off)} − ${fmtNum(kv)}) × ${q} = ${P.fmt((off - kv) * q)}. ${ok ? "Annehmen, auch wenn der Preis unter den Selbstkosten liegt." : "Ablehnen, jedes Stück bringt einen negativen Deckungsbeitrag."}`);
+    const brutto = big && rng() < 0.5, b = net * 1.2;
+    parts.push({ h: "Angaben", text: `Die Trachtenmanufaktur plant für das nächste Jahr ${fmtNumInt(M)} Stück ${esc(p.n)}. Je Stück fallen ${P.fmt(d.fm)} Fertigungsmaterial, ${P.fmt(d.fl)} Fertigungslöhne und ${P.fmt(vk)} Verpackung und Versand an (alle variabel). Die Fixkosten der Produktlinie betragen ${P.fmt(F)} im Jahr. Der Verkaufspreis beträgt ${brutto ? `${P.fmt(b)} inkl. 20 % USt` : `${P.fmt(net)} netto`}.` });
+    fields.push({ id: "kr-e-kv", amt: kv }, { id: "kr-e-kf", amt: kf, tol: 1 }, { id: "kr-e-pl", amt: sk, tol: 1 }, { id: "kr-e-pk", amt: kv });
+    parts.push({ h: "Teil 1: Preisuntergrenzen", form: [["kr-e-kv", "Variable Selbstkosten je Stück"], ["kr-e-kf", "Fixe Kosten je Stück"], ["kr-e-pl", "Langfristige Preisuntergrenze"], ["kr-e-pk", "Kurzfristige Preisuntergrenze"]] });
+    sols.push(`Variable Selbstkosten je Stück = ${fmtNum(d.fm)} + ${fmtNum(d.fl)} + ${fmtNum(vk)} = ${P.fmt(kv)}. Fixe Kosten je Stück = ${P.fmt(F)} ÷ ${fmtNumInt(M)} = ${P.fmt(kf)}.`, `Langfristige Preisuntergrenze = Selbstkosten je Stück ${P.fmt(sk)} (fixe und variable Kosten gedeckt, gilt bei voller Auslastung). Kurzfristige Preisuntergrenze = variable Selbstkosten ${P.fmt(kv)} (gilt bei freien Kapazitäten).`);
+    const form2 = [];
+    if (brutto) { form2.push(["kr-e-n", "Nettoerlös je Stück"]); fields.push({ id: "kr-e-n", amt: net }); }
+    form2.push(["kr-e-db", "Deckungsbeitrag je Stück"], ["kr-e-bm", "Break-even-Point (Stück, aufgerundet)"], ["kr-e-bu", "Break-even-Umsatz (BEP × Nettoerlös)"]);
+    fields.push({ id: "kr-e-db", amt: db }, { id: "kr-e-bm", amt: bem * 100, qty: true }, { id: "kr-e-bu", amt: bem * net });
+    let mg = 0, bem2 = 0;
+    if (big) { mg = rndStep(rng, [Math.max(1, Math.round(F / 1000000)), Math.max(2, Math.round(F / 300000)), 1]) * 100000; bem2 = Math.ceil((F + mg) / db); form2.push(["kr-e-bg", `Break-even-Point mit ${P.fmt(mg)} Mindestgewinn`]); fields.push({ id: "kr-e-bg", amt: bem2 * 100, qty: true }); }
+    const exp = gross ? Math.round(bem * (rng() < 0.5 ? 0.7 + rng() * 0.25 : 1.1 + rng() * 0.4) / 10) * 10 : 0;
+    parts.push({ h: "Teil 2: Break-even-Analyse", text: `Ab welcher Menge erreicht die Trachtenmanufaktur die Gewinnschwelle?${gross ? ` Die Marktforschung rechnet mit einem Absatz von ${fmtNumInt(exp)} Stück.` : ""}`, form: form2,
+      ...(gross ? { choice: { id: "kr-e-ch2", q: "Wird bei diesem Absatz ein Gewinn erzielt?", opts: [["ja", "ja, Gewinn"], ["nein", "nein, Verlust"]] } } : {}) });
+    if (gross) choices.push({ id: "kr-e-ch2", v: exp > bem ? "ja" : "nein" });
+    sols.push(`${brutto ? `Nettoerlös = ${P.fmt(b)} ÷ 120 × 100 = ${P.fmt(net)}. ` : ""}DB je Stück = ${P.fmt(net)} − ${P.fmt(kv)} = ${P.fmt(db)}. Break-even-Point = Fixkosten ÷ DB = ${P.fmt(F)} ÷ ${P.fmt(db)} = ${krN((F / db).toFixed(2))}, aufgerundet ${fmtNumInt(bem)} Stück. Break-even-Umsatz = ${fmtNumInt(bem)} × ${P.fmt(net)} = ${P.fmt(bem * net)}.`);
+    if (big) sols.push(`Mit Mindestgewinn: (Fixkosten + Mindestgewinn) ÷ DB = (${P.fmt(F)} + ${P.fmt(mg)}) ÷ ${P.fmt(db)} = ${krN(((F + mg) / db).toFixed(2))}, aufgerundet ${fmtNumInt(bem2)} Stück.`);
+    if (gross) sols.push(`Erwarteter Absatz ${fmtNumInt(exp)} Stück ${exp > bem ? "liegt über" : "liegt unter"} dem Break-even-Point: ${exp > bem ? "Gewinn" : "Verlust"}.`);
+    if (big) {
+      const q = rndStep(rng, [5, 20, 1]) * 10, full = gross && rng() < 0.4;
+      const offN = full ? Math.round((rng() < 0.5 ? sk + rndStep(rng, [1, 10, 1]) * 100 : kv + (sk - kv) * (0.3 + rng() * 0.5)) / 100) * 100 : rng() < 0.6 ? Math.round((kv + (sk - kv) * (0.2 + rng() * 0.7)) / 100) * 100 : Math.round((kv - rndStep(rng, [3, 15, 1]) * 100) / 100) * 100;
+      const offB = offN * 1.2, ok = full ? offN >= sk : offN > kv;
+      fields.push({ id: "kr-e-zn", amt: offN }, { id: "kr-e-zd", amt: offN - kv }, { id: "kr-e-z", amt: (offN - kv) * q }); choices.push({ id: "kr-e-ch", v: ok ? "ja" : "nein" });
+      parts.push({ h: "Teil 3: Zusatzauftrag", text: `Ein Trachtengeschäft in Schladming möchte zusätzlich ${q} Stück kaufen und höchstens ${P.fmt(offB)} inkl. 20 % USt je Stück zahlen. ${full ? "Die Trachtenmanufaktur ist voll ausgelastet: Für den Auftrag müsste sie andere Aufträge verschieben." : "Die Trachtenmanufaktur hat freie Kapazitäten, die Fixkosten ändern sich nicht."}`,
+        form: [["kr-e-zn", "Nettoerlös je Stück"], ["kr-e-zd", "Deckungsbeitrag je Stück"], ["kr-e-z", `Deckungsbeitrag für ${q} Stück`]], choice: { id: "kr-e-ch", q: "Soll der Zusatzauftrag angenommen werden?", opts: [["ja", "annehmen"], ["nein", "ablehnen"]] } });
+      sols.push(`Zusatzauftrag: Nettoerlös ${P.fmt(offB)} ÷ 120 × 100 = ${P.fmt(offN)}, DB je Stück ${P.fmt(offN - kv)}, für ${q} Stück ${P.fmt((offN - kv) * q)}. ` + (full ? `Bei voller Auslastung gilt die langfristige Preisuntergrenze (Selbstkosten ${P.fmt(sk)}): ${ok ? "Der Preis deckt die Selbstkosten, annehmen." : "Der Preis liegt unter den Selbstkosten, ablehnen."}` : `Bei freien Kapazitäten gilt die kurzfristige Preisuntergrenze (${P.fmt(kv)}): ${ok ? "Der DB ist positiv und trägt zur Deckung der Fixkosten bei, annehmen, auch wenn der Preis unter den Selbstkosten liegt." : "Der DB ist negativ, nicht einmal die variablen Kosten sind gedeckt: ablehnen."}`));
     }
-    return krTask("be", "Berechne Preisuntergrenzen und Break-even-Punkt", KR_PROD_FIRM, "Beträge auf Cent. Fixe Kosten je Stück auf Cent runden. Die Break-even-Menge wird auf ganze Stück aufgerundet.", parts, fields, choices, sols);
+    return krTask("be", "Berechne Preisuntergrenzen und Break-even-Point", KR_PROD_FIRM, "Beträge auf Cent. Fixe Kosten je Stück auf Cent runden. Der Break-even-Point wird auf ganze Stück aufgerundet. Ein negativer DB wird mit Minus eingetragen.", parts, fields, choices, sols);
   }
 
-  // ---------- Programmplanung ----------
+  // ---------- Programmplanung (relativer Deckungsbeitrag laut Buch) ----------
   function krMakePp(rng) {
     const fields = [], choices = [], sols = [], eng = bwSize !== "kompakt", n = bwSize === "gross" ? 4 : 3;
-    const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
     let items, cap;
     for (let t = 0; t < 200; t++) {
       items = krItems(rng, n).map((it, i) => Object.assign(it, { id: `kr-p${i}`, max: rndStep(rng, [10, 60, 5]) * 10, min: rndStep(rng, [4, 30, 1]) }));
@@ -4781,7 +4834,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       const byRel = items.slice().sort((a, b) => b.rel - a.rel), byDb = items.slice().sort((a, b) => b.db - a.db);
       if (new Set(items.map(it => it.rel)).size < n || byRel.every((it, i) => it === byDb[i])) continue;
       const need = items.reduce((a, it) => a + it.max * it.min, 0);
-      cap = Math.round(need * (0.55 + rng() * 0.25) / 100) * 100;
+      cap = Math.round(need * (0.55 + rng() * 0.25) / 60) * 60;
       let rest = cap;
       byRel.forEach((it, i) => { it.rank = i + 1; it.q = Math.min(it.max, Math.floor(rest / it.min)); rest -= it.q * it.min; });
       if (byRel.some(it => it.q === 0) && bwSize !== "gross") continue;
@@ -4796,21 +4849,63 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     });
     const sdb = items.reduce((a, it) => a + it.dbg, 0), F = Math.round(sdb * (0.5 + rng() * 0.4) / 100000) * 100000;
     fields.push({ id: "kr-ps", amt: sdb }, { id: "kr-pbe", amt: sdb - F });
-    const head = `<th>Produkt</th><th class="num">Preis</th><th class="num">var. Kosten</th><th class="num">max. Absatz</th>${eng ? `<th class="num">Min. je Stk.</th>` : ""}<th class="num">DB je Stk.</th>${eng ? `<th class="num">DB je Minute</th><th class="num">Rang</th>` : `<th>herstellen?</th>`}<th class="num">Menge</th><th class="num">DB gesamt</th>`;
-    const body = items.map(it => `<tr><td>${esc(it.n)}</td><td class="num mono">${fmtNum(it.p)}</td><td class="num mono">${fmtNum(it.kv)}</td><td class="num mono">${it.max}</td>${eng ? `<td class="num mono">${it.min}</td>` : ""}<td>${inp(it.id + "-db", it.n + " DB je Stück")}</td>${eng ? `<td>${inp(it.id + "-rel", it.n + " DB je Minute")}</td><td>${inp(it.id + "-rk", it.n + " Rang")}</td>` : `<td>${bwSeg(it.id + "-ch", [["ja", "ja"], ["nein", "nein"]], it.n + " herstellen")}</td>`}<td>${inp(it.id + "-q", it.n + " Menge")}</td><td>${inp(it.id + "-g", it.n + " DB gesamt")}</td></tr>`).join("");
+    const head = `<th>Produkt</th><th class="num">Nettoerlös</th><th class="num">var. Kosten</th><th class="num">max. Absatz</th>${eng ? `<th class="num">Engpass min je Stk.</th>` : ""}<th class="num">DB je Stk.</th>${eng ? `<th class="num">relativer DB je min</th><th class="num">Rangfolge</th>` : `<th>erzeugen?</th>`}<th class="num">Menge</th><th class="num">DB gesamt</th>`;
+    const body = items.map(it => `<tr><td>${esc(it.n)}</td><td class="num mono">${fmtNum(it.p)}</td><td class="num mono">${fmtNum(it.kv)}</td><td class="num mono">${it.max}</td>${eng ? `<td class="num mono">${it.min}</td>` : ""}<td>${krInp(it.id + "-db", it.n + " DB je Stück")}</td>${eng ? `<td>${krInp(it.id + "-rel", it.n + " relativer DB")}</td><td>${krInp(it.id + "-rk", it.n + " Rangfolge")}</td>` : `<td>${bwSeg(it.id + "-ch", [["ja", "ja"], ["nein", "nein"]], it.n + " erzeugen")}</td>`}<td>${krInp(it.id + "-q", it.n + " Menge")}</td><td>${krInp(it.id + "-g", it.n + " DB gesamt")}</td></tr>`).join("");
     const span = eng ? 9 : 7;
     const html = `<div class="ab-scroll"><table class="av-table kr-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody>
-      <tfoot><tr><td colspan="${span}">Summe Deckungsbeiträge</td><td>${inp("kr-ps", "Summe Deckungsbeiträge")}</td></tr><tr><td colspan="${span}">− Fixkosten</td><td class="num mono">${fmtNum(F)}</td></tr><tr><td colspan="${span}">= Betriebsergebnis</td><td>${inp("kr-pbe", "Betriebsergebnis")}</td></tr></tfoot></table></div>`;
-    const text = eng ? `Alle Produkte werden auf der Stickmaschine bestickt. Sie steht im Monat nur ${fmtNumInt(cap)} Minuten zur Verfügung, das reicht nicht für alle Aufträge (Engpass). Plane das Produktionsprogramm mit dem höchsten Deckungsbeitrag. Die Fixkosten betragen ${P.fmt(F)}.`
-      : `Die Trachtenmanufaktur hat genug Kapazität für alle Aufträge. Entscheide für jedes Produkt, ob es hergestellt wird, und plane die Mengen. Die Fixkosten betragen ${P.fmt(F)} im Monat.`;
-    sols.push(...(eng ? [`DB je Minute = DB je Stück ÷ Minuten auf der Stickmaschine. Die Reihung erfolgt nach dem DB je Minute, nicht nach dem DB je Stück.`,
-      ...items.slice().sort((a, b) => a.rank - b.rank).map(it => `Rang ${it.rank}: ${it.n}, DB je Minute ${fmtNum(it.rel)}, Menge ${it.q} Stück (${it.q * it.min} Minuten), DB ${fmtNum(it.dbg)}.`)]
-      : [`Hergestellt wird jedes Produkt mit positivem Deckungsbeitrag, und zwar bis zum maximalen Absatz. ${items.filter(it => it.db < 0).map(it => `${it.n} hat einen negativen DB (${fmtNum(it.db)}) und wird nicht hergestellt.`).join(" ")}`]),
+      <tfoot><tr><td colspan="${span}">Gesamtdeckungsbeitrag</td><td>${krInp("kr-ps", "Gesamtdeckungsbeitrag")}</td></tr><tr><td colspan="${span}">− Fixkosten</td><td class="num mono">${fmtNum(F)}</td></tr><tr><td colspan="${span}">= Betriebsergebnis</td><td>${krInp("kr-pbe", "Betriebsergebnis")}</td></tr></tfoot></table></div>`;
+    const text = eng ? `Alle Produkte werden auf der Stickmaschine bestickt. Sie steht im Monat nur ${fmtNumInt(cap / 60)} Stunden zur Verfügung, das reicht nicht für alle Aufträge (Engpass). Ermittle den relativen Deckungsbeitrag, die Rangfolge und das gewinnoptimale Produktionsprogramm. Die Fixkosten betragen ${P.fmt(F)}.`
+      : `Die Trachtenmanufaktur hat genug Kapazität für alle Aufträge (kein Engpass). Entscheide für jedes Produkt, ob es erzeugt wird, und plane die Mengen. Die Fixkosten betragen ${P.fmt(F)} im Monat.`;
+    let rest = cap;
+    sols.push(...(eng ? [`Relativer DB = DB je Stück ÷ Beanspruchung des Engpasses (Minuten je Stück). Die Rangfolge ergibt sich aus dem relativen DB, nicht aus dem DB je Stück. Kapazität: ${fmtNumInt(cap / 60)} h × 60 = ${fmtNumInt(cap)} min.`,
+      ...items.slice().sort((a, b) => a.rank - b.rank).map(it => { rest -= it.q * it.min; return `Rang ${it.rank}: ${it.n}, relativer DB ${fmtNum(it.rel)} je min, ${it.q} Stück × ${it.min} min = ${fmtNumInt(it.q * it.min)} min, Restzeit ${fmtNumInt(rest)} min, DB ${fmtNum(it.dbg)}.`; })]
+      : [`Erzeugt wird jedes Produkt mit positivem Deckungsbeitrag, und zwar bis zum maximalen Absatz. ${items.filter(it => it.db < 0).map(it => `${it.n} hat einen negativen DB (${fmtNum(it.db)}) und wird nicht erzeugt.`).join(" ")}`]),
       `Betriebsergebnis = ${P.fmt(sdb)} − ${P.fmt(F)} = ${P.fmt(sdb - F)}.`);
-    return krTask("pp", eng ? "Plane das Produktionsprogramm mit Engpass" : "Plane das Produktionsprogramm", KR_PROD_FIRM, "Beträge auf Cent, DB je Minute auf Cent gerundet. Mengen in ganzen Stück. Leere Felder zählen als 0.", [{ h: eng ? "Programmplanung mit Engpass" : "Programmplanung ohne Engpass", text, html }], fields, choices, sols);
+    return krTask("pp", eng ? "Plane das Produktionsprogramm mit Engpass" : "Plane das Produktionsprogramm", KR_PROD_FIRM, "Beträge auf Cent, relativen DB auf Cent runden. Mengen in ganzen Stück. Leere Felder zählen als 0.", [{ h: eng ? "Programmplanung mit Engpass" : "Programmplanung ohne Engpass", text, html }], fields, choices, sols);
   }
 
-  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, dk: krMakeDk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
+  // ---------- Make-or-Buy (Eigenfertigung oder Fremdbezug) ----------
+  const KR_MOB = [["Hirschhornknopf-Sets", "eine Knopfmanufaktur in Tschechien", [180, 420]], ["Dirndlschürzen", "eine Näherei in Slowenien", [1400, 2600]], ["Stickereien für Trachtenjanker", "eine Stickerei in Vorarlberg", [600, 1500]], ["Trachtenblusen", "ein Lohnfertiger in Ungarn", [2200, 3800]]];
+  function krMakeMob(rng) {
+    const fields = [], choices = [], sols = [], parts = [], big = bwSize !== "kompakt", gross = bwSize === "gross";
+    const list = KR_MOB.slice().sort(() => rng() - 0.5);
+    // Teil 1: Kosten je Stück vergleichen (freie Kapazitäten)
+    {
+      const [w, von, rg] = list[0], kv = rndStep(rng, [rg[0], rg[1], 1]), ep = Math.round(kv * (0.7 + rng() * 0.5) / 10) * 10;
+      const tr = big ? Math.round(ep * (0.02 + rng() * 0.04) / 10) * 10 : Math.round(ep * 0.04 / 10) * 10, qp = big ? Math.round(ep * (0.01 + rng() * 0.03) / 10) * 10 : 0, est = ep + tr + qp;
+      const q = rndStep(rng, [2, 20, 1]) * 500, diff = kv - est;
+      const rows = [["", "Einkaufspreis", "", ep, { given: true }], ["+", "Transportkosten", "", tr, { given: true }]];
+      if (qp) rows.push(["+", "Qualitätsprüfung", "", qp, { given: true }]);
+      rows.push(["=", "Einstandspreis bei Fremdbezug", "", est]);
+      parts.push({ h: "Teil 1: Eigenfertigung oder Fremdbezug je Stück", text: `Die Trachtenmanufaktur stellt jährlich ${fmtNumInt(q)} ${esc(w)} selbst her. Die variablen Kosten bei Eigenfertigung betragen ${P.fmt(kv)} je Stück. ${esc(von[0].toUpperCase() + von.slice(1))} bietet sie um ${P.fmt(ep)} netto je Stück an. Dazu kommen ${P.fmt(tr)} Transportkosten${qp ? ` und ${P.fmt(qp)} für die Qualitätsprüfung` : ""} je Stück. Es sind ausreichend Kapazitäten frei, die Fixkosten bleiben gleich.`,
+        schemes: [{ head: "Fremdbezug", sub: "je Stück", rows: krRows(fields, "kr-o", rows) }], form: [["kr-o-d", "Ersparnis je Stück (positiv)"], ["kr-o-g", `Ersparnis für ${fmtNumInt(q)} Stück`]],
+        choice: { id: "kr-o-ch", q: "Wie soll entschieden werden?", opts: [["eigen", "Eigenfertigung"], ["fremd", "Fremdbezug"]] } });
+      fields.push({ id: "kr-o-d", amt: Math.abs(diff) }, { id: "kr-o-g", amt: Math.abs(diff) * q }); choices.push({ id: "kr-o-ch", v: diff > 0 ? "fremd" : "eigen" });
+      sols.push(`Teil 1: Einstandspreis bei Fremdbezug ${P.fmt(est)} gegenüber variablen Kosten bei Eigenfertigung ${P.fmt(kv)}. Bei freien Kapazitäten zählen nur die variablen Kosten. ${diff > 0 ? `Fremdbezug ist um ${P.fmt(diff)} je Stück billiger` : `Eigenfertigung ist um ${P.fmt(-diff)} je Stück billiger`}, für ${fmtNumInt(q)} Stück ${P.fmt(Math.abs(diff) * q)}.`);
+    }
+    // Teil 2: wegfallende Fixkosten
+    if (big) {
+      const [w, von, rg] = list[1], kv = rndStep(rng, [rg[0], rg[1], 1]), q = rndStep(rng, [4, 30, 1]) * 500, f = rndStep(rng, [5, 60, 1]) * 100000;
+      const fb = Math.round((kv + (f / q) * (0.4 + rng() * 1.2)) / 10) * 10, eg = kv * q + f, fg = fb * q, diff = eg - fg;
+      fields.push({ id: "kr-o2-ev", amt: kv * q }, { id: "kr-o2-e", amt: eg }, { id: "kr-o2-f", amt: fg }, { id: "kr-o2-d", amt: Math.abs(diff) }); choices.push({ id: "kr-o2-ch", v: diff > 0 ? "fremd" : "eigen" });
+      parts.push({ h: "Teil 2: Vergleich der Gesamtkosten", text: `Jährlich werden etwa ${fmtNumInt(q)} ${esc(w)} benötigt. Bei Eigenfertigung fallen variable Kosten von ${P.fmt(kv)} je Stück an. ${esc(von[0].toUpperCase() + von.slice(1))} würde sie um ${P.fmt(fb)} netto je Stück frei Haus liefern. Wird die Eigenfertigung eingestellt, fallen ${P.fmt(f)} Fixkosten pro Jahr weg, weil die Maschinen nicht mehr gebraucht werden.`,
+        form: [["kr-o2-ev", "Variable Kosten bei Eigenfertigung gesamt"], ["kr-o2-e", "Gesamtkosten bei Eigenfertigung"], ["kr-o2-f", "Kosten bei Fremdbezug gesamt"], ["kr-o2-d", "Ersparnis pro Jahr (positiv)"]], choice: { id: "kr-o2-ch", q: "Wie soll entschieden werden?", opts: [["eigen", "Eigenfertigung"], ["fremd", "Fremdbezug"]] } });
+      sols.push(`Teil 2: Fallen Fixkosten weg, werden die Gesamtkosten verglichen. Eigenfertigung: ${fmtNumInt(q)} × ${P.fmt(kv)} + ${P.fmt(f)} = ${P.fmt(eg)}. Fremdbezug: ${fmtNumInt(q)} × ${P.fmt(fb)} = ${P.fmt(fg)}. ${diff > 0 ? "Fremdbezug" : "Eigenfertigung"} spart ${P.fmt(Math.abs(diff))} im Jahr.`);
+    }
+    // Teil 3: kritische Menge
+    if (gross) {
+      const [w, von, rg] = list[2], kv = rndStep(rng, [rg[0], rg[1], 1]), fb = Math.round(kv * (1.15 + rng() * 0.5) / 10) * 10, f = rndStep(rng, [5, 40, 1]) * 100000, km = f / (fb - kv), kmU = Math.ceil(km);
+      const need = Math.round(km * (rng() < 0.5 ? 0.6 + rng() * 0.3 : 1.15 + rng() * 0.5) / 10) * 10;
+      fields.push({ id: "kr-o3-m", amt: kmU * 100, qty: true }); choices.push({ id: "kr-o3-ch", v: need > km ? "eigen" : "fremd" });
+      parts.push({ h: "Teil 3: Kritische Menge", text: `Für ${esc(w)} müsste die Trachtenmanufaktur eine Maschine leasen: ${P.fmt(f)} Fixkosten im Jahr, dazu ${P.fmt(kv)} variable Kosten je Stück. ${esc(von[0].toUpperCase() + von.slice(1))} liefert um ${P.fmt(fb)} je Stück. Ab welcher Menge lohnt sich die Eigenfertigung? Geplant sind ${fmtNumInt(need)} Stück im Jahr.`,
+        form: [["kr-o3-m", "Kritische Menge (Stück, aufgerundet)"]], choice: { id: "kr-o3-ch", q: `Wie soll bei ${fmtNumInt(need)} Stück entschieden werden?`, opts: [["eigen", "Eigenfertigung"], ["fremd", "Fremdbezug"]] } });
+      sols.push(`Teil 3: Bei der kritischen Menge sind beide Möglichkeiten gleich teuer: ${fmtNum(f)} + ${fmtNum(kv)} × x = ${fmtNum(fb)} × x, also x = ${fmtNum(f)} ÷ (${fmtNum(fb)} − ${fmtNum(kv)}) = ${krN(km.toFixed(2))}, aufgerundet ${fmtNumInt(kmU)} Stück. Darunter ist der Fremdbezug günstiger, darüber die Eigenfertigung. Bei ${fmtNumInt(need)} Stück: ${need > km ? "Eigenfertigung" : "Fremdbezug"}.`);
+    }
+    sols.push("Neben den Kosten zählen auch Qualität, Zuverlässigkeit der Lieferanten, Abhängigkeit und freie Kapazitäten.");
+    return krTask("mob", "Entscheide: Eigenfertigung oder Fremdbezug", KR_PROD_FIRM, "Beträge auf Cent. Ersparnisse als positiven Betrag eintragen, die Entscheidung wählst du darunter.", parts, fields, choices, sols);
+  }
+
+  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, dk: krMakeDk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp, mob: krMakeMob };
   const KR_RENDER = { bue: krRenderBue, bum: krRenderBue, bab: krRenderBab };
 
   // ================= Wirtschaftliches Rechnen =================
@@ -5268,9 +5363,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       "Achte auf den Zeitraum: Gilt der BÜB für einen Monat oder ein Quartal, zählt der Durchschnitt dieses Zeitraums.", "Jahresbeträge (Energie, Werbung, Versicherung, Instandhaltung, kalkulatorische Kosten) ÷ 12 für einen Monat, ÷ 4 für ein Quartal. Ist mehr gebucht als der Durchschnitt, kommt die Differenz in „−“, ist weniger gebucht, in „+“.", "Ist Miete für einen längeren Zeitraum gebucht (Quartal, Halbjahr), gehört nur der Anteil des Zeitraums dazu, der Rest wird abgezogen.", "Eingekauftes Material, das noch auf Lager liegt, abziehen. Verbrauchtes Material ohne gebuchte Rechnung zurechnen.", "Anteilige Sonderzahlungen zu den Löhnen und Gehältern zurechnen (2 Sonderzahlungen ÷ 12 = ein Sechstel). Werden Lohnnebenkosten in Prozent verrechnet, rechnest du sie dazu und ziehst die gebuchten Sonderzahlungen und Abgaben ab.", "GmbH: kein kalkulatorischer Unternehmerlohn."],
     bab: ["Gemeinkosten, die direkt einer Kostenstelle zugeordnet werden können (z. B. lt. Gehaltsliste), sind schon eingetragen.", "Alle anderen verteilst du nach dem Schlüssel: Betrag ÷ Summe der Schlüsselteile = Betrag je Teil, dann × Teile der Kostenstelle.", "Kontrolle: Die Summe der vier Kostenstellen muss den Gesamtbetrag ergeben.", "Herstellkosten = Fertigungsmaterial + Materialgemeinkosten + Fertigungslöhne + Fertigungsgemeinkosten.", "Zuschlagssätze: Materialgemeinkosten ÷ Fertigungsmaterial × 100, Fertigungsgemeinkosten ÷ Fertigungslöhne × 100, Verwaltungs- bzw. Vertriebsgemeinkosten ÷ Herstellkosten × 100."],
     zk: ["Fertigungsmaterial = Stoffverbrauch × Meterpreis + Zutaten. Fertigungslöhne = Fertigungsstunden × Stundenlohn.", "Fertigungsmaterial + Materialgemeinkosten (in % des Fertigungsmaterials) = Materialkosten.", "Materialkosten + Fertigungslöhne + Fertigungsgemeinkosten (in % der Fertigungslöhne) + Sondereinzelkosten der Fertigung = Herstellkosten.", "Herstellkosten + Verwaltungs- und Vertriebsgemeinkosten (in % der Herstellkosten) + Sondereinzelkosten des Vertriebs = Selbstkosten.", "Die Zuschlagssätze kommen aus dem BAB."],
-    db: ["Variable Kosten ändern sich mit der Menge (Material, Fertigungslohn), fixe Kosten bleiben gleich (Miete, Gehälter, Abschreibung).", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz. Fixkosten = Gesamtkosten − Menge × variable Kosten je Stück.", "Deckungsbeitrag je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100. Sie zeigt, wie viel Prozent vom Preis zur Deckung der Fixkosten bleiben.", "DB gesamt = DB je Stück × Menge. Betriebsergebnis = Summe der Deckungsbeiträge − Fixkosten."],
-    be: ["Variable Kosten je Stück zusammenzählen. Fixe Kosten je Stück = Fixkosten ÷ geplante Menge.", "Langfristige Preisuntergrenze = Selbstkosten je Stück (variable + fixe Kosten je Stück).", "Kurzfristige Preisuntergrenze = variable Kosten je Stück. Darunter verliert man mit jedem Stück zusätzlich Geld.", "Break-even-Menge = Fixkosten ÷ DB je Stück, auf ganze Stück aufrunden. Ab dieser Menge gibt es Gewinn.", "Zusatzauftrag bei freier Kapazität: annehmen, wenn der Preis über den variablen Kosten liegt (positiver Deckungsbeitrag)."],
-    pp: ["DB je Stück = Preis − variable Kosten je Stück.", "Ohne Engpass: Jedes Produkt mit positivem Deckungsbeitrag wird bis zum maximalen Absatz hergestellt. Produkte mit negativem DB werden nicht hergestellt.", "Mit Engpass: Rechne den relativen Deckungsbeitrag = DB je Stück ÷ Engpasseinheiten je Stück (hier Minuten auf der Stickmaschine).", "Reihe die Produkte nach dem relativen DB. Das beste Produkt bekommt so viel Kapazität, wie es braucht, dann das nächste, bis die Minuten aufgebraucht sind.", "Restkapazität ÷ Minuten je Stück, abgerundet auf ganze Stück. DB gesamt = DB je Stück × Menge, Betriebsergebnis = Summe DB − Fixkosten."],
+    db: ["Variator: Er gibt die variablen Zehntel einer Kostenart an. V 3 = 30 % variabel, 70 % fix.", "Bruttopreis − USt (20 % a. H.) = Nettoerlös. Bei Rabatt und Skonto weiter bis zum Kassapreis: Das ist der Nettoerlös.", "Deckungsbeitrag je Stück = Nettoerlös − variable Selbstkosten. Ist er negativ, sind nicht einmal die variablen Kosten gedeckt: ablehnen bzw. nicht erzeugen.", "Einstufige DB-Rechnung: DB je Stück × Menge = DB gesamt. Gesamtdeckungsbeitrag − Fixkosten = Betriebsergebnis.", "DB-Quote = Gesamtdeckungsbeitrag ÷ Nettoumsatz × 100. Break-even-Umsatz = Fixkosten ÷ DB-Quote."],
+    be: ["Langfristige Preisuntergrenze = Selbstkosten je Stück (variable + fixe Kosten je Stück). Sie gilt bei voller Auslastung.", "Kurzfristige Preisuntergrenze = variable Selbstkosten je Stück. Sie gilt bei freien Kapazitäten.", "Break-even-Point = Fixkosten ÷ DB je Stück, aufrunden. Mit Mindestgewinn: (Fixkosten + Mindestgewinn) ÷ DB je Stück.", "Break-even-Umsatz = Break-even-Point × Nettoerlös je Stück.", "Zusatzauftrag: Preis inkl. USt zuerst auf netto umrechnen. Freie Kapazität: annehmen, wenn der DB positiv ist. Volle Auslastung: nur annehmen, wenn die Selbstkosten gedeckt sind."],
+    pp: ["DB je Stück = Nettoerlös − variable Kosten.", "Ohne Engpass: Jedes Produkt mit positivem DB wird bis zum maximalen Absatz erzeugt, Produkte mit negativem DB nicht.", "Mit Engpass: Kapazität in Minuten umrechnen (Stunden × 60). Relativer DB = DB je Stück ÷ Engpassminuten je Stück.", "Rangfolge nach dem relativen DB. Die Kapazität der Reihe nach vergeben: Restzeit = Kapazität − Menge × Minuten.", "Gesamtdeckungsbeitrag − Fixkosten = Betriebsergebnis."],
+    mob: ["Freie Kapazitäten, Fixkosten bleiben gleich: Einstandspreis bei Fremdbezug (Einkaufspreis + Transport + Qualitätsprüfung) mit den variablen Kosten der Eigenfertigung vergleichen.", "Fallen bei Fremdbezug Fixkosten weg: Gesamtkosten vergleichen. Eigenfertigung = Menge × variable Kosten + Fixkosten, Fremdbezug = Menge × Preis.", "Kritische Menge = Fixkosten ÷ (Preis Fremdbezug − variable Kosten Eigenfertigung). Darüber lohnt sich die Eigenfertigung.", "Auch Qualität, Zuverlässigkeit der Lieferanten und Abhängigkeit bedenken."],
   });
 
   // ---------- Buchungssätze in der Bewertung ----------
@@ -5665,19 +5761,23 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         go: [["kr", "zk"]] },
       { id: "kr-db", g: 8, title: "Teilkostenrechnung und Deckungsbeitrag",
         text: "Die Teilkostenrechnung rechnet einem Produkt nur die <b>variablen Kosten</b> zu. Was vom Preis übrig bleibt, ist der <b>Deckungsbeitrag</b>: Er deckt zuerst die Fixkosten, der Rest ist Gewinn.",
-        rules: ["DB je Stück = Verkaufspreis netto − variable Kosten je Stück.", "DB-Quote = DB je Stück ÷ Verkaufspreis × 100.", "Betriebsergebnis (einstufig) = Summe aller Deckungsbeiträge − Fixkosten.", "Kostenauflösung: variable Kosten je Stück = Kostendifferenz ÷ Mengendifferenz."],
-        ex: [{ t: "Eine Trachtenbluse kostet € 89,00 netto, die variablen Kosten betragen € 52,40 je Stück. Verkauft werden 120 Stück.", s: [], h: [], n: "DB je Stück = € 36,60, DB-Quote = 41,12 %, DB gesamt = € 4.392,00." }],
+        rules: ["DB je Stück = Nettoerlös − variable Selbstkosten. Nettoerlös = Bruttopreis ÷ 120 × 100 (bei Rabatt und Skonto weiter bis zum Kassapreis).", "Einstufige DB-Rechnung: Gesamtdeckungsbeitrag − Fixkosten = Betriebsergebnis.", "DB-Quote = Gesamtdeckungsbeitrag ÷ Nettoumsatz × 100. Break-even-Umsatz = Fixkosten ÷ DB-Quote.", "Kostenauflösung mit dem Variator: V 3 bedeutet 30 % variabel und 70 % fix.", "Negativer DB: Nicht einmal die variablen Kosten sind gedeckt, das Produkt nicht erzeugen bzw. den Auftrag ablehnen."],
+        ex: [{ t: "Eine Trachtenbluse kostet € 89,00 netto, die variablen Kosten betragen € 52,40 je Stück. Verkauft werden 120 Stück.", s: [], h: [], n: "DB je Stück = € 36,60, DB gesamt = € 4.392,00, DB-Quote = 4.392,00 ÷ 10.680,00 × 100 = 41,12 %." }],
         go: [["kr", "db"]] },
       { id: "kr-be", g: 8, title: "Preisuntergrenze und Break-even",
         text: "Wie billig darf ein Produkt höchstens werden? Und ab welcher Menge verdient das Unternehmen Geld? Beides beantwortet die Teilkostenrechnung.",
-        rules: ["Langfristige Preisuntergrenze = Selbstkosten je Stück (alle Kosten sind gedeckt).", "Kurzfristige Preisuntergrenze = variable Kosten je Stück (die Fixkosten fallen ohnehin an).", "Break-even-Menge = Fixkosten ÷ DB je Stück, aufrunden. Break-even-Umsatz = Break-even-Menge × Preis.", "Zusatzauftrag bei freier Kapazität: annehmen, wenn der Preis über den variablen Kosten liegt."],
-        ex: [{ t: "Fixkosten € 30.000,00, Preis € 160,00, variable Kosten € 85,00 je Stück.", s: [], h: [], n: "DB je Stück € 75,00. Break-even-Menge = 30.000 ÷ 75 = 400 Stück, Break-even-Umsatz € 64.000,00." }],
+        rules: ["Langfristige Preisuntergrenze = Selbstkosten je Stück (alle Kosten sind gedeckt).", "Kurzfristige Preisuntergrenze = variable Kosten je Stück (die Fixkosten fallen ohnehin an).", "Break-even-Point = Fixkosten ÷ DB je Stück, aufrunden. Mit Mindestgewinn: (Fixkosten + Mindestgewinn) ÷ DB je Stück.", "Break-even-Umsatz = Break-even-Point × Nettoerlös je Stück.", "Zusatzauftrag bei freier Kapazität: annehmen, wenn der Nettoerlös über den variablen Selbstkosten liegt. Bei voller Auslastung gilt die langfristige Preisuntergrenze."],
+        ex: [{ t: "Fixkosten € 30.000,00, Preis € 160,00, variable Kosten € 85,00 je Stück.", s: [], h: [], n: "DB je Stück € 75,00. Break-even-Point = 30.000 ÷ 75 = 400 Stück, Break-even-Umsatz € 64.000,00." }],
         go: [["kr", "be"]] },
       { id: "kr-pp", g: 8, title: "Programmplanung",
         text: "Welche Produkte sollen in welcher Menge hergestellt werden? Ziel ist der höchste Deckungsbeitrag.",
-        rules: ["Ohne Engpass: alle Produkte mit positivem DB bis zum maximalen Absatz herstellen.", "Mit Engpass (z. B. eine Maschine mit begrenzten Minuten): relativer DB = DB je Stück ÷ Engpasseinheiten je Stück.", "Produkte nach dem relativen DB reihen, nicht nach dem DB je Stück.", "Die Kapazität der Reihe nach vergeben, bis sie aufgebraucht ist."],
+        rules: ["Ohne Engpass: alle Produkte mit positivem DB bis zum maximalen Absatz herstellen.", "Mit Engpass (z. B. eine Maschine mit begrenzten Stunden): relativer DB = DB je Stück ÷ Engpasseinheiten je Stück (z. B. Minuten).", "Produkte nach dem relativen DB reihen, nicht nach dem DB je Stück.", "Die Kapazität der Reihe nach vergeben, bis sie aufgebraucht ist."],
         ex: [{ t: "Ein Janker bringt € 60,00 DB und braucht 20 Minuten auf der Stickmaschine, eine Bluse bringt € 30,00 DB und braucht 6 Minuten.", s: [], h: [], n: "Relativer DB: Janker € 3,00 je Minute, Bluse € 5,00 je Minute. Die Bluse kommt zuerst, obwohl ihr DB je Stück kleiner ist." }],
         go: [["kr", "pp"]] },
+      { id: "kr-mob", g: 8, title: "Make-or-Buy",
+        text: "Soll ein Teil selbst hergestellt (<b>Eigenfertigung</b>) oder zugekauft werden (<b>Fremdbezug</b>)? Die Kostenrechnung vergleicht die Kosten, die durch die Entscheidung wirklich entstehen.",
+        rules: ["Freie Kapazitäten, Fixkosten bleiben gleich: variable Kosten der Eigenfertigung mit dem Einstandspreis bei Fremdbezug vergleichen.", "Einstandspreis bei Fremdbezug = Einkaufspreis + Transportkosten + Qualitätsprüfung.", "Fallen Fixkosten weg: Gesamtkosten vergleichen (Menge × variable Kosten + Fixkosten gegen Menge × Preis).", "Kritische Menge = Fixkosten ÷ (Preis Fremdbezug − variable Kosten).", "Vorteile Eigenfertigung: Unabhängigkeit, eigene Qualität, Nutzung freier Kapazitäten. Vorteile Fremdbezug: Kostenreduktion, weniger Risiko, Konzentration auf die Kernkompetenz."],
+        go: [["kr", "mob"]] },
     );
   }
   let lexQuery = "", lexOpen = store.get("lexOpen", "konten");
