@@ -309,7 +309,11 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .kr-given { display: block; text-align: right; padding: 0 4px; }
 .kr-base { display: block; font-size: 0.72rem; color: var(--muted); }
 .kr-kv { max-width: 560px; }
-@media (max-width: 520px) { .kr-scheme .pc { width: 4.6rem; font-size: 0.78rem; } .kr-scheme td.num { width: 7.5rem; } .kr-scheme { font-size: 0.85rem; } }
+@media (max-width: 520px) { .kr-scheme .pc { width: 3.6rem; font-size: 0.78rem; white-space: normal; } .kr-scheme td.num { width: 7rem; } .kr-scheme { font-size: 0.85rem; } .kr-scheme td { padding-left: 4px; padding-right: 4px; } .kr-scheme td:nth-child(2) { hyphens: auto; } .kr-scheme td.num input { min-width: 5.6rem; } .kr-scheme .kr-pin { width: 3.6rem; }
+  .wr-us-box { overflow-x: visible; } .wr-us thead { display: none; } .wr-us, .wr-us tbody { display: block; }
+  .wr-us tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .wr-us td { padding: 0; width: auto !important; } .wr-us td:first-child { grid-column: 1 / 3; } .wr-us td.pc { text-align: right; }
+  .wr-us td:nth-child(n+3)::before { display: block; font-size: 0.72rem; color: var(--muted); text-align: left; font-family: var(--font-body); } .wr-us td:nth-child(3)::before { content: "netto"; } .wr-us td:nth-child(4)::before { content: "USt"; } .wr-us td:nth-child(5)::before { content: "brutto"; } .wr-us input { min-width: 0; } }
 .hu-bar { display: grid; gap: 10px; margin-bottom: 14px; border: 2px solid var(--accent); border-radius: 12px; padding: 14px; background: var(--accent-soft); min-width: 0; }
 .hu-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
 .hu-score { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; } .hu-score .big { font-size: 1.6rem; font-weight: 700; }
@@ -1132,6 +1136,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
 <script>
 (() => {
+  if (!document.documentElement.lang) document.documentElement.lang = "de"; // für deutsche Silbentrennung
   // ---------- Kontenplan ----------
   // typ: aktiv | passiv | aufwand | ertrag | privat | erlmind (Erlösminderung) | aufwmind (Aufwandsminderung)
   // Auszug aus dem Schulkontenplan (Kontenplan allgemein, TRAUNER Verlag)
