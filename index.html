@@ -273,6 +273,19 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .kr-scheme .kr-pin { width: 5.5rem; }
 .kr-scheme tr.sum td { border-top: 1.5px solid var(--ink); font-weight: 600; }
 .kr-form { max-width: 560px; }
+.wr-list { margin: 0; padding-left: 1.4em; display: grid; gap: 12px; }
+.wr-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 210px); gap: 6px 14px; align-items: center; }
+.wr-list li::marker { color: var(--muted); }
+.wr-a { display: flex; align-items: center; gap: 6px; }
+.wr-a input { width: 100%; min-width: 0; text-align: right; }
+.wr-list li:has(.wr-a.wr-wide) { grid-template-columns: minmax(0, 1fr); }
+.wr-a.wr-wide input { text-align: left; }
+.wr-u { color: var(--muted); font-size: .9em; min-width: 2.2em; }
+.wr-us-box { overflow-x: auto; }
+.wr-q, .bw-sol li { overflow-wrap: anywhere; }
+.wr-us td.num { width: 8rem; }
+.wr-us input { min-width: 6rem; }
+@media (max-width: 600px) { .wr-list li { grid-template-columns: minmax(0, 1fr); } }
 .kr-info { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
 .kr-choice { display: grid; gap: 6px; margin-top: 10px; }
 .kr-table input { width: 100%; min-width: 6.5rem; text-align: right; }
@@ -989,6 +1002,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-k1" hidden><span class="field-label">Kalkulation im Handel</span><div class="seg bw-type" id="bw-seg-type-k1" role="group" aria-label="Aufgabe zur Kalkulation im Handel wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-k2" hidden><span class="field-label">Vollkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k2" role="group" aria-label="Aufgabe zur Vollkostenrechnung wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-w" hidden><span class="field-label">Wirtschaftliches Rechnen</span><div class="seg bw-type" id="bw-seg-type-w" role="group" aria-label="Aufgabe zum wirtschaftlichen Rechnen wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-k3" hidden><span class="field-label">Teilkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k3" role="group" aria-label="Aufgabe zur Teilkostenrechnung wählen"></div></div>
         </div>
           <div class="bw-pick-opts">
@@ -3135,9 +3149,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
   const BW_TYPES_K2 = [["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
   const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
+  const BW_TYPES_W = [["zs", "Zahlen schreiben"], ["ru", "Kaufmännisch runden"], ["pr", "Prozent\u00ADrechnung"], ["sr", "Schluss\u00ADrechnung"], ["rsk", "Rabatt und Skonto"], ["us", "Umsatz\u00ADsteuer"]];
   // Bereiche, die sich die Bewertungs-Ansicht teilen: Typgruppen, Speicher-Schlüssel, Standard-Aufgabe
-  const BW_AREAS = { bw: { groups: ["a", "u"], key: "bwType", def: "av", name: "Bewertung" }, ea: { groups: ["e"], key: "eaType", def: "vt", name: "E/A-Rechnung" }, kr: { groups: ["k1", "k2", "k3"], key: "krType", def: "bk", name: "Kostenrechnung" } };
-  const bwAreaOf = t => [...BW_TYPES_E].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
+  const BW_AREAS = { bw: { groups: ["a", "u"], key: "bwType", def: "av", name: "Bewertung" }, ea: { groups: ["e"], key: "eaType", def: "vt", name: "E/A-Rechnung" }, kr: { groups: ["k1", "k2", "k3"], key: "krType", def: "bk", name: "Kostenrechnung" }, wr: { groups: ["w"], key: "wrType", def: "zs", name: "Wirtschaftliches Rechnen" } };
+  const bwAreaOf = t => BW_TYPES_W.some(x => x[0] === t) ? "wr" : [...BW_TYPES_E].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
   let bwArea = "bw";
   const BW_TYPES_U = [["lk", "Lagerkartei"], ["fo", "Forderungen"], ["ra", "Abgrenzungen"], ["rs", "Rückstellungen"]];
   const BW_STEPS = {
@@ -4555,6 +4570,260 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, bue: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
   const KR_RENDER = { bue: krRenderBue, bab: krRenderBab };
 
+  // ================= Wirtschaftliches Rechnen =================
+  // Beträge in Cent; rundet a ÷ b kaufmännisch (nur positive ganze Zahlen)
+  const wrDiv = (a, b) => Math.floor((2 * a + b) / (2 * b));
+  const wrDots = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  // ganze Zahl mit dec Nachkommastellen anzeigen, z. B. wrDec(123456, 4) = "12,3456"
+  const wrDec = (v, dec) => { if (!dec) return wrDots(v); const s = String(v).padStart(dec + 1, "0"); return wrDots(s.slice(0, -dec)) + "," + s.slice(-dec); };
+  const wrNum = v => v % 100 ? fmtNum(v) : wrDots(v / 100);
+  const WR_ONES = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf", "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn"];
+  const WR_TENS = ["", "", "zwanzig", "dreißig", "vierzig", "fünfzig", "sechzig", "siebzig", "achtzig", "neunzig"];
+  const wr99 = n => n < 20 ? WR_ONES[n] : (n % 10 ? (n % 10 === 1 ? "ein" : WR_ONES[n % 10]) + "und" : "") + WR_TENS[Math.floor(n / 10)];
+  const wr999 = n => (n >= 100 ? (n >= 200 ? WR_ONES[Math.floor(n / 100)] : "ein") + "hundert" : "") + (n % 100 ? wr99(n % 100) : "");
+  const wrWords = n => n >= 1000 ? wr999(Math.floor(n / 1000)).replace(/eins$/, "ein") + "tausend" + (n % 1000 ? wr999(n % 1000) : "") : wr999(n);
+  const wrEuroWords = c => `${wrWords(Math.floor(c / 100)).replace(/eins$/, "ein")} Euro${c % 100 ? ` und ${wr99(c % 100).replace(/eins$/, "ein")} Cent` : ""}`;
+  // „einhundert“ = „hundert“, „eintausend“ = „tausend“, „und“ vor den Cent ist freiwillig
+  const wrWordNorm = s => String(s).toLowerCase().replace(/ß/g, "ss").replace(/€/g, "euro").replace(/[^a-zäöü]/g, "")
+    .replace(/euround/g, "euro").replace(/eins(euro|cent)/g, "ein$1").replace(/^eintausend/, "tausend").replace(/(^|tausend)einhundert/g, "$1hundert");
+  // Ziffern: Tausenderpunkt oder Leerzeichen, wahlweise mit € bzw. EUR
+  const wrFigNorm = s => String(s).trim().toUpperCase().replace(/(\d)\s+(?=\d{3}\b)/g, "$1.").replace(/\s+/g, "").replace(/^(€|EUR)|(€|EUR)$/g, "").replace(/[–—]/g, "-").replace(/,-$/, ",00");
+  const wrIn = (id, lbl, wide) => `<input id="${id}" class="wr-in${wide ? " wr-wide" : ""}"${wide ? ' autocomplete="off" spellcheck="false"' : ' inputmode="decimal"'} aria-label="${esc(lbl)}">`;
+  // Liste von Fragen: [Frage-HTML, Feld-ID, Einheit, breit]
+  const wrList = qs => `<ol class="wr-list">${qs.map(([q, id, unit, wide]) => `<li><span class="wr-q">${q}</span><span class="wr-a${wide ? " wr-wide" : ""}">${wrIn(id, q.replace(/<[^>]+>/g, ""), wide)}${wide ? "" : `<span class="wr-u">${unit || ""}</span>`}</span></li>`).join("")}</ol>`;
+  const wrCount = (k, n, g) => ({ kompakt: k, normal: n, gross: g })[bwSize];
+  const wrShuffle = (rng, a) => a.map(x => [rng(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+
+  // ---------- Zahlen schreiben ----------
+  function wrMakeZs(rng) {
+    const fields = [], sols = [], n = wrCount(2, 3, 4), max = wrCount(9999, 99999, 999999);
+    const amt = () => { const e = rndStep(rng, [rng() < 0.3 ? 11 : 101, max, 1]); return e * 100 + (rng() < 0.2 ? 0 : rndStep(rng, [1, 99, 1])); };
+    const fig = [], wor = [];
+    for (let i = 0; i < n; i++) {
+      const a = amt(), id = `wr-zf${i}`, t = fmtNum(a);
+      fields.push({ id, code: t, norm: wrFigNorm });
+      fig.push([`<b>${esc(wrEuroWords(a))}</b>`, id, "", false]);
+      sols.push(`${wrEuroWords(a)} = € ${t}`);
+    }
+    for (let i = 0; i < n; i++) {
+      const a = amt(), id = `wr-zw${i}`, w = wrEuroWords(a);
+      fields.push({ id, code: w, norm: wrWordNorm });
+      wor.push([`<b class="mono">€ ${fmtNum(a)}</b>`, id, "", true]);
+      sols.push(`€ ${fmtNum(a)} = ${w}`);
+    }
+    const parts = [
+      { h: "In Ziffern schreiben", text: "Schreib den Betrag in Ziffern, mit Tausenderpunkt und zwei Kommastellen, z. B. 12.345,60.", html: wrList(fig) },
+      { h: "In Worten schreiben", text: "Schreib den Betrag in Worten. Zahlen in Worten werden zusammengeschrieben, z. B. „zweitausenddreihundertfünf Euro und vierzig Cent“.", html: wrList(wor) }];
+    sols.push("Tausenderpunkt (oder Leerzeichen) in Dreiergruppen, Komma vor den Cent. Zahlwörter unter einer Million schreibt man in einem Wort.");
+    return krTask("zs", "Schreib die Beträge richtig", US.name, "Beträge, wie sie auf Rechnungen, Überweisungen und Quittungen stehen.", parts, fields, [], sols);
+  }
+
+  // ---------- Kaufmännisch runden ----------
+  function wrMakeRu(rng) {
+    const fields = [], sols = [], qs = [];
+    // Ziel: [Text, Stellen, auf die gerundet wird (in 1/10000)]
+    const T = [["auf Cent (2 Kommastellen)", 100], ["auf eine Kommastelle", 1000], ["auf ganze Euro", 10000], ["auf Zehner", 100000], ["auf Hunderter", 1000000]];
+    const n = wrCount(5, 7, 9), mix = wrShuffle(rng, [0, 0, 1, 2, 2, 3, 4, 0, 2, 1]).slice(0, n);
+    mix.forEach((ti, i) => {
+      const [tt, step] = T[ti], dec = step === 100 ? pickR(rng, [3, 4]) : pickR(rng, [2, 3, 4]);
+      // Ziffer hinter der Rundungsstelle gezielt wählen: 4, 5 und 9 sind die Stolpersteine
+      const unit = 10 ** (4 - dec), whole = rndStep(rng, [step >= 100000 ? 120 : 1, step >= 100000 ? 99999 : 9999, 1]);
+      let v = whole * 10000 + rndStep(rng, [0, 9999, 1]);
+      v = Math.floor(v / unit) * unit;
+      const crit = pickR(rng, [4, 5, 5, 9, 0, 6]), digit = step / 10;
+      if (digit >= unit) v = v - (Math.floor(v / digit) % 10) * digit + crit * digit;
+      if (v % step === 0) v += unit;
+      const r = Math.floor((v + step / 2) / step) * step, id = `wr-ru${i}`, shown = wrDec(v / unit, dec);
+      fields.push({ id, amt: r / 100, tol: 0, qty: true });
+      qs.push([`${shown} ${tt}`, id, "", false]);
+      sols.push(`${shown} ${tt}: ${step >= 10000 ? wrDots(r / 10000) : step === 1000 ? wrDec(r / 1000, 1) : wrDec(r / 100, 2)}`);
+    });
+    const parts = [{ h: "Runde kaufmännisch", text: "Entscheidend ist die erste Ziffer, die wegfällt: 0 bis 4 abrunden, 5 bis 9 aufrunden.", html: wrList(qs) }];
+    if (bwSize !== "kompakt") {
+      const qs2 = [], k = wrCount(0, 2, 3);
+      const S = [["ein Meter", q => `Ein Stoffballen mit ${q} m Leinenstoff`], ["ein Knopf", q => `Ein Karton mit ${q} Hornknöpfen`], ["ein Kleiderbügel", q => `Ein Paket mit ${q} Kleiderbügeln`], ["ein Meter", q => `Eine Rolle mit ${q} m Spitzenborte`], ["ein Paar", q => `Ein Karton mit ${q} Paar Socken`]];
+      wrShuffle(rng, S).slice(0, k).forEach(([u, what], i) => {
+        const q = rndStep(rng, [7, 48, 1]);
+        let tot = rndStep(rng, [q * 80, q * 900, 1]);
+        if (tot % q === 0) tot += 1;
+        const r = wrDiv(tot, q), id = `wr-rp${i}`;
+        fields.push({ id, amt: r, tol: 0 });
+        qs2.push([`${what(q)} kostet ${P.fmt(tot)}. Wie viel kostet ${u}?`, id, "€", false]);
+        sols.push(`${P.fmt(tot)} ÷ ${q} = ${wrDec(Math.floor(tot * 100 / q), 4)}… ≈ ${P.fmt(r)}`);
+      });
+      if (qs2.length) parts.push({ h: "Preis je Einheit", text: "Rechne den Preis je Einheit aus und runde auf Cent.", html: wrList(qs2) });
+    }
+    sols.push("Kaufmännisch runden: Ist die erste wegfallende Ziffer 5 oder größer, wird aufgerundet, sonst abgerundet. Nur einmal runden, nicht schrittweise.");
+    return krTask("ru", "Runde kaufmännisch", US.name, "Schreib das Ergebnis mit Komma, z. B. 12,35. Beim Runden auf ganze Euro, Zehner oder Hunderter reicht die ganze Zahl.", parts, fields, [], sols);
+  }
+
+  // ---------- Prozentrechnung ----------
+  function wrMakePr(rng) {
+    const fields = [], sols = [], qs = [];
+    const g = () => pickR(rng, GOODS), E = (a, b) => rndStep(rng, [a, b, 1]) * 100;
+    const K = {
+      A: () => { const it = g(), G = rndStep(rng, [it.u[0] / 100, it.u[1] / 100, 1]) * 100, p = pickR(rng, [15, 20, 25, 30, 40, 50, 12, 35]), A = Math.round(G * p / 100);
+        return pickR(rng, [
+          [`Ein Stück ${it.item} kostet ${P.fmt(G)}. Im Abverkauf wird der Preis um ${p} % gesenkt. Um wie viel Euro wird es billiger?`, A, "€", `${p} % von ${P.fmt(G)} = ${P.fmt(G)} × ${p} ÷ 100 = ${P.fmt(A)}`],
+          [`Wir kaufen ${it.pl} um ${P.fmt(G * 10)}. Der Lieferant gewährt ${p} % Treuerabatt. Wie viel Euro beträgt der Rabatt?`, Math.round(G * 10 * p / 100), "€", `${P.fmt(G * 10)} × ${p} ÷ 100 = ${P.fmt(Math.round(G * 10 * p / 100))}`]]); },
+      A2: () => { const U = E(60000, 240000) * 10, p = pickR(rng, [2.5, 3.5, 4, 4.5, 6, 1.5]), A = Math.round(U * p / 100);
+        return [`Der Jahresumsatz des Modehauses beträgt ${P.fmt(U)}. Für Werbung werden ${krN(p)} % des Umsatzes ausgegeben. Wie viel Euro sind das?`, A, "€", `${P.fmt(U)} × ${krN(p)} ÷ 100 = ${P.fmt(A)}`]; },
+      p: () => pickR(rng, [
+        () => { const G = rndStep(rng, [120, 480, 1]), A = rndStep(rng, [Math.round(G * 0.08), Math.round(G * 0.45), 1]), p = wrDiv(A * 10000, G);
+          return [`Im Oktober kaufen ${G} Kundinnen und Kunden im Modehaus ein, ${A} davon bezahlen mit Karte. Wie viel Prozent sind das? (auf 2 Kommastellen)`, p, "%", `${A} ÷ ${G} × 100 = ${krN((p / 100).toFixed(2))} %`, 1]; },
+        () => { const G = E(40, 240), p = pickR(rng, [10, 15, 20, 25, 30, 35, 40]), A = G * p / 100;
+          return [`Ein Mantel kostete ${P.fmt(G)}. Im Abverkauf wird er um ${P.fmt(A)} billiger. Um wie viel Prozent wurde der Preis gesenkt?`, p * 100, "%", `${P.fmt(A)} ÷ ${P.fmt(G)} × 100 = ${krN(p)} %`, 0]; },
+        () => { const G = E(3000, 9000), p = pickR(rng, [18, 22, 24, 26, 28, 32]), A = Math.round(G * p / 100);
+          return [`Andrea Maier verdient ${P.fmt(G)} brutto im Monat. Davon bezahlt sie ${P.fmt(A)} Miete für ihre Wohnung. Wie viel Prozent des Gehalts sind das?`, p * 100, "%", `${P.fmt(A)} ÷ ${P.fmt(G)} × 100 = ${p} %`, 0]; }])(),
+      G: () => pickR(rng, [
+        () => { const G = E(800, 4000) * 10, p = pickR(rng, [2, 3, 4, 5, 6, 8]), A = G * p / 100;
+          return [`Die Werbekosten im September betragen ${P.fmt(A)}. Das sind ${p} % des Monatsumsatzes. Wie hoch ist der Umsatz?`, G, "€", `${P.fmt(A)} ÷ ${p} × 100 = ${P.fmt(G)}`]; },
+        () => { const G = E(200, 2000), p = pickR(rng, [2, 3]), A = G * p / 100;
+          return [`Wir ziehen bei einer Lieferantenrechnung ${p} % Skonto ab, das sind ${P.fmt(A)}. Wie hoch war der Rechnungsbetrag?`, G, "€", `${P.fmt(A)} ÷ ${p} × 100 = ${P.fmt(G)}`]; }])(),
+      Gp: () => { const G = E(40, 300), p = pickR(rng, [5, 8, 10, 12, 15]), V = G + G * p / 100;
+        return [`Nach einer Preiserhöhung um ${p} % kostet ein Wintermantel ${P.fmt(V)}. Wie viel kostete er vorher? (vermehrter Grundwert)`, G, "€", `${P.fmt(V)} entspricht 100 % + ${p} % = ${100 + p} %. Vorher: ${P.fmt(V)} ÷ ${100 + p} × 100 = ${P.fmt(G)}`]; },
+      Gm: () => { const G = E(40, 300), p = pickR(rng, [10, 20, 25, 30, 40, 50]), V = G - G * p / 100;
+        return [`Im Abverkauf kostet ein Dirndl nach ${p} % Preisnachlass nur noch ${P.fmt(V)}. Wie hoch war der ursprüngliche Preis? (verminderter Grundwert)`, G, "€", `${P.fmt(V)} entspricht 100 % − ${p} % = ${100 - p} %. Ursprünglich: ${P.fmt(V)} ÷ ${100 - p} × 100 = ${P.fmt(G)}`]; }
+    };
+    const kinds = wrCount(["A", "p", "G"], ["A", "A2", "p", "G", "Gp"], ["A", "A2", "p", "p", "G", "Gp", "Gm"]);
+    kinds.forEach((k, i) => {
+      const [q, a, unit, sol, tol] = K[k](), id = `wr-pr${i}`;
+      fields.push(unit === "%" ? { id, amt: a, tol: tol || 0, qty: true } : { id, amt: a, tol: 0 });
+      qs.push([q, id, unit, false]);
+      sols.push(sol);
+    });
+    sols.push("Prozentanteil = Grundwert × Prozentsatz ÷ 100, Prozentsatz = Prozentanteil ÷ Grundwert × 100, Grundwert = Prozentanteil ÷ Prozentsatz × 100.");
+    return krTask("pr", "Rechne mit Prozenten", US.name, "Beträge auf Cent genau, Prozentsätze ohne %-Zeichen (z. B. 12,5).", [{ h: "Aufgaben", html: wrList(qs) }], fields, [], sols);
+  }
+
+  // ---------- Schlussrechnung ----------
+  function wrMakeSr(rng) {
+    const fields = [], sols = [], qs = [];
+    const D = [
+      () => { const m1 = rndStep(rng, [4, 15, 1]), pm = rndStep(rng, [800, 3500, 5]), m2 = rndStep(rng, [3, 25, 1]) + 0.5 * (rng() < 0.4), c1 = m1 * pm, c2 = wrDiv(Math.round(m2 * 2) * pm, 2);
+        return [`${m1} m Dirndlstoff kosten ${P.fmt(c1)}. Wie viel kosten ${krN(m2)} m?`, c2, "€", `1 m kostet ${P.fmt(c1)} ÷ ${m1} = ${P.fmt(pm)}, ${krN(m2)} m kosten ${P.fmt(c2)} (gerades Verhältnis: mehr Meter, mehr Kosten).`]; },
+      () => { const s1 = rndStep(rng, [6, 20, 1]), p = rndStep(rng, [1500, 6000, 10]), s2 = rndStep(rng, [3, 30, 1]);
+        return [`Für ${s1} Herrenhemden bezahlen wir ${P.fmt(s1 * p)}. Wie viel kosten ${s2} Hemden?`, s2 * p, "€", `${P.fmt(s1 * p)} ÷ ${s1} × ${s2} = ${P.fmt(s2 * p)} (gerades Verhältnis).`]; },
+      () => { const h1 = rndStep(rng, [3, 9, 1]), r = rndStep(rng, [3, 8, 1]), h2 = rndStep(rng, [2, 12, 1]);
+        return [`Eine Schneiderin kürzt in ${h1} Stunden ${h1 * r} Hosen. Wie viele Hosen kürzt sie in ${h2} Stunden?`, h2 * r * 100, "Stk.", `${h1 * r} ÷ ${h1} × ${h2} = ${h2 * r} Hosen (gerades Verhältnis).`, true]; }];
+    const I = [
+      () => { const w1 = rndStep(rng, [2, 6, 1]); let w2; do w2 = rndStep(rng, [2, 8, 1]); while (w2 === w1); const b = pickR(rng, [1, 1.5, 2, 2.5, 3]);
+        const d1 = w2 * b, d2 = w1 * b;
+        return [`${w1} Mitarbeiterinnen brauchen für die Inventur ${krN(d1)} Stunden. Wie lange brauchen ${w2} Mitarbeiterinnen?`, Math.round(d2 * 100), "Std.", `${w1} × ${krN(d1)} = ${krN(w1 * d1)} Stunden Arbeit insgesamt, ÷ ${w2} = ${krN(d2)} Stunden (verkehrtes Verhältnis: mehr Personen, weniger Zeit).`, true]; },
+      () => { const n1 = rndStep(rng, [3, 8, 1]); let n2; do n2 = rndStep(rng, [2, 10, 1]); while (n2 === n1); const k = rndStep(rng, [2, 6, 1]), tot = n1 * n2 * k;
+        return [`Ein Vorrat an Verpackungsmaterial reicht bei ${tot / n1} Paketen pro Tag ${n1} Tage. Wie viele Tage reicht er bei ${tot / n2} Paketen pro Tag?`, n2 * 100, "Tage", `${tot / n1} × ${n1} = ${tot} Pakete insgesamt, ÷ ${tot / n2} = ${n2} Tage (verkehrtes Verhältnis).`, true]; }];
+    const C = [
+      () => { const n1 = rndStep(rng, [2, 5, 1]), t1 = rndStep(rng, [3, 8, 1]), r = rndStep(rng, [2, 6, 1]), n2 = rndStep(rng, [2, 7, 1]), t2 = rndStep(rng, [2, 10, 1]);
+        return [`${n1} Näherinnen nähen in ${t1} Tagen ${n1 * t1 * r} Schürzen. Wie viele Schürzen nähen ${n2} Näherinnen in ${t2} Tagen?`, n2 * t2 * r * 100, "Stk.", `1 Näherin schafft an 1 Tag ${n1 * t1 * r} ÷ ${n1} ÷ ${t1} = ${r} Schürzen, ${n2} Näherinnen in ${t2} Tagen: ${r} × ${n2} × ${t2} = ${n2 * t2 * r} (zusammengesetzte Schlussrechnung).`, true]; },
+      () => { let n1, h1, n2, h2, d1, d2, tot, g = 0;
+        do { n1 = rndStep(rng, [2, 6, 1]); h1 = pickR(rng, [4, 6, 8]); n2 = rndStep(rng, [2, 6, 1]); h2 = pickR(rng, [4, 5, 6, 8]); d2 = rndStep(rng, [2, 9, 1]); tot = n2 * h2 * d2; d1 = tot / (n1 * h1); } while ((d1 % 1 || d1 < 1 || d1 > 20 || n1 === n2) && g++ < 200);
+        return [`${n1} Verkäuferinnen brauchen bei ${h1} Stunden täglich ${d1} Tage, um die neue Kollektion auszuzeichnen. Wie viele Tage brauchen ${n2} Verkäuferinnen bei ${h2} Stunden täglich?`, d2 * 100, "Tage", `${n1} × ${h1} × ${d1} = ${tot} Arbeitsstunden, ÷ (${n2} × ${h2}) = ${d2} Tage (beide Verhältnisse verkehrt).`, true]; }];
+    const pick = (arr, k) => wrShuffle(rng, arr).slice(0, k).map(f => f());
+    const items = [...pick(D, wrCount(2, 2, 2)), ...pick(I, wrCount(1, 2, 2)), ...pick(C, wrCount(0, 0, 2))];
+    items.forEach(([q, a, unit, sol, isQty], i) => {
+      const id = `wr-sr${i}`;
+      fields.push(isQty ? { id, amt: a, tol: 0, qty: true } : { id, amt: a, tol: 1 });
+      qs.push([q, id, unit, false]);
+      sols.push(sol);
+    });
+    sols.push("Schlussrechnung: zuerst auf 1 schließen, dann auf die gesuchte Menge. Gerades Verhältnis: je mehr, desto mehr (× und ÷ wie gewohnt). Verkehrtes Verhältnis: je mehr, desto weniger (umgekehrt rechnen).");
+    return krTask("sr", "Löse mit der Schlussrechnung", US.name, "Überleg zuerst: gerades oder verkehrtes Verhältnis? Beträge auf Cent genau.", [{ h: "Aufgaben", html: wrList(qs) }], fields, [], sols);
+  }
+
+  // ---------- Rabatte und Skonto ----------
+  function wrMakeRsk(rng) {
+    const fields = [], choices = [], parts = [], sols = [];
+    const goods = wrShuffle(rng, GOODS), sups = wrShuffle(rng, PARTNERS.waren);
+    const unit = it => rndStep(rng, [Math.round(it.u[0] / 100), Math.round(it.u[1] / 100), 1]) * 100;
+    const R = () => pickR(rng, [5, 10, 15, 20, 25]), S = () => pickR(rng, [2, 2.5, 3]);
+    // Vorwärts: Listenpreis → Zielpreis → Kassapreis
+    {
+      const it = goods[0], q = bwSize === "kompakt" ? 0 : rndStep(rng, [5, 40, 1]), up = unit(it), lp = q ? q * up : up * rndStep(rng, [8, 30, 1]);
+      const r = R(), r2 = bwSize === "gross" ? pickR(rng, [2, 3, 5]) : 0, s = S();
+      const rows = [];
+      let cur = lp;
+      rows.push(["", "Listenpreis", q ? `${q} Stk. × ${fmtNum(up)}` : "", lp, q ? {} : { given: true }]);
+      const ra = Math.round(cur * r / 100); cur -= ra; rows.push(["−", r2 ? "Mengenrabatt" : "Rabatt", krP(r), ra]);
+      if (r2) { rows.push(["=", "Preis nach Mengenrabatt", "", cur]); const rb = Math.round(cur * r2 / 100); cur -= rb; rows.push(["−", "Treuerabatt", krP(r2), rb]); }
+      rows.push(["=", "Zielpreis (Rechnungsbetrag)", "", cur]);
+      const sk = Math.round(cur * s / 100); rows.push(["−", "Skonto", krP(s), sk]); rows.push(["=", "Kassapreis (Überweisungsbetrag)", "", cur - sk]);
+      parts.push({ h: "Rechnung des Lieferanten", text: `${esc(sups[0][0])} liefert uns ${q ? `${q} Stück ${esc(it.item)} zu ${P.fmt(up)} je Stück` : `${esc(it.pl)} um ${P.fmt(lp)} (Listenpreis)`}. Wir erhalten ${krP(r)} ${r2 ? "Mengenrabatt und zusätzlich " + krP(r2) + " Treuerabatt" : "Rabatt"}. Bei Zahlung innerhalb von 10 Tagen dürfen wir ${krP(s)} Skonto abziehen.`, schemes: [{ head: "Vom Listenpreis zum Kassapreis", rows: krRows(fields, "wr-rs", rows) }] });
+      sols.push(`Rabatt vom Listenpreis${r2 ? ", der Treuerabatt vom Preis nach dem Mengenrabatt" : ""}, Skonto vom Zielpreis. Überweisungsbetrag ${P.fmt(cur - sk)}.`);
+    }
+    if (bwSize !== "kompakt") {
+      // Rabattsatz gesucht und Skontofrist
+      const qs = [], lp = rndStep(rng, [20, 120, 1]) * 1000, r = pickR(rng, [8, 12, 15, 18, 22, 25]), zp = lp - lp * r / 100;
+      fields.push({ id: "wr-rs-p", amt: r * 100, tol: 0, qty: true });
+      qs.push([`Ein Kunde bekommt auf eine Bestellung mit Listenpreis ${P.fmt(lp)} einen Rabatt und bezahlt ${P.fmt(zp)}. Wie viel Prozent Rabatt hat er erhalten?`, "wr-rs-p", "%", false]);
+      sols.push(`Rabatt ${P.fmt(lp - zp)} ÷ ${P.fmt(lp)} × 100 = ${r} %.`);
+      const day = rndStep(rng, [3, 20, 1]), late = rng() < 0.5, pay = day + (late ? rndStep(rng, [11, 25, 1]) : rndStep(rng, [2, 10, 1])), amt = rndStep(rng, [300, 3000, 1]) * 100, s = S();
+      const d = x => { const dt = new Date(2026, 9, x); return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.2026`; };
+      const due = late ? amt : amt - Math.round(amt * s / 100);
+      fields.push({ id: "wr-rs-pay", amt: due, tol: 0 });
+      choices.push({ id: "wr-rs-sk", v: late ? "n" : "j" });
+      qs.push([`Rechnung vom ${d(day)} über ${P.fmt(amt)}, Zahlungsbedingungen: 10 Tage ${krP(s)} Skonto, 30 Tage netto. Wir überweisen am ${d(pay)}. Wie viel überweisen wir?`, "wr-rs-pay", "€", false]);
+      sols.push(`Zahlung ${pay - day} Tage nach dem Rechnungsdatum: ${late ? "Skontofrist vorbei, wir zahlen den vollen Betrag" : `innerhalb der Skontofrist, ${P.fmt(amt)} − ${krP(s)} = ${P.fmt(due)}`}.`);
+      parts.push({ h: "Rabattsatz und Skontofrist", html: wrList(qs), choice: { id: "wr-rs-sk", q: "Dürfen wir bei der zweiten Rechnung Skonto abziehen?", opts: [["j", "ja"], ["n", "nein"]] } });
+    }
+    if (bwSize === "gross") {
+      // Rückwärts: vom Überweisungsbetrag zum Listenpreis
+      const it = goods[1], r = R(), s = S(), lp = unit(it) * rndStep(rng, [10, 40, 1]), zp = lp - Math.round(lp * r / 100), kp = zp - Math.round(zp * s / 100);
+      const zpb = Math.round(kp * 100 / (100 - s)), lpb = Math.round(zpb * 100 / (100 - r));
+      const rows = [["", "Listenpreis", "", lpb, { tol: 2 }], ["−", "Rabatt", krP(r) + " i. H.", lpb - zpb, { tol: 2 }], ["=", "Zielpreis", "", zpb, { tol: 1 }], ["−", "Skonto", krP(s) + " i. H.", zpb - kp, { tol: 1 }], ["=", "Kassapreis", "", kp, { given: true }]];
+      parts.push({ h: "Vom Überweisungsbetrag zurück zum Listenpreis", text: `Für ${esc(it.pl)} haben wir nach Abzug von ${krP(r)} Rabatt und ${krP(s)} Skonto ${P.fmt(kp)} überwiesen. Wie hoch war der Listenpreis?`, schemes: [{ head: "Rückwärts rechnen (im Hundert)", rows: krRows(fields, "wr-rb", rows) }] });
+      sols.push(`Zielpreis = ${P.fmt(kp)} ÷ ${100 - s} × 100 = ${P.fmt(zpb)}, Listenpreis = ${P.fmt(zpb)} ÷ ${100 - r} × 100 = ${P.fmt(lpb)}.`);
+    }
+    sols.push("Rabatt wird vom Listenpreis gerechnet, Skonto vom Zielpreis (Rechnungsbetrag). Skonto gibt es nur, wenn innerhalb der Skontofrist bezahlt wird.");
+    return krTask("rsk", "Rechne Rabatt und Skonto", `${US.name} · Einkauf`, "Rechne auf Cent genau und runde jeden Zwischenschritt kaufmännisch.", parts, fields, choices, sols);
+  }
+
+  // ---------- Umsatzsteuer ----------
+  const WR_UST_ITEMS = [
+    [20, "Damenblazer für das Sortiment"], [20, "Kleiderbügel aus Holz"], [20, "Büromaterial"], [20, "Schaufensterpuppe"], [20, "Wartung der Nähmaschine"], [20, "Werbeplakat für den Abverkauf"],
+    [10, "Modezeitschriften für die Kundenlounge"], [10, "Kaffee und Kekse für Kundinnen"], [10, "Hotelübernachtung bei der Modemesse"], [10, "Fachbuch über Schnitttechnik"], [10, "Taxifahrt zum Lieferanten"], [10, "Müllabfuhr"],
+    [13, "Schnittblumen für das Schaufenster"], [13, "Zimmerpflanzen für den Verkaufsraum"], [13, "Eintrittskarten für eine Modeausstellung"], [13, "Bild einer Grazer Künstlerin für das Büro"]];
+  function wrMakeUs(rng) {
+    const fields = [], sols = [], parts = [];
+    const n = wrCount(4, 6, 8), items = wrShuffle(rng, WR_UST_ITEMS);
+    // jeder Steuersatz kommt vor
+    const first = [20, 10, 13].map(p => items.find(x => x[0] === p)), pick = first.concat(items.filter(x => !first.includes(x))).slice(0, n);
+    const kinds = wrShuffle(rng, ["n", "b", "u", "n", "b", "u", "b", "n"]).slice(0, n);
+    const rows = pick.map(([p, what], i) => {
+      const step = p === 13 ? 100 : p === 10 ? 10 : 5, net = rndStep(rng, [Math.ceil(1500 / step), Math.floor(250000 / step), 1]) * step;
+      const k = kinds[i], pre = `wr-us${i}`;
+      let n0 = net, u = Math.round(net * p / 100), b = n0 + u;
+      if (k === "b") { u = Math.round(b * p / (100 + p)); n0 = b - u; }
+      const cell = (key, v) => (key === k ? { given: v } : { id: `${pre}-${key}`, v });
+      [["n", n0], ["u", u], ["b", b]].forEach(([key, v]) => { if (key !== k) fields.push({ id: `${pre}-${key}`, amt: v, tol: k === "b" ? 1 : 0 }); });
+      sols.push(`${what} (${p} %): ${k === "n" ? `USt = ${P.fmt(n0)} × ${p} ÷ 100 = ${P.fmt(u)}, brutto ${P.fmt(b)}` : k === "b" ? `USt = ${P.fmt(b)} × ${p} ÷ ${100 + p} = ${P.fmt(u)}, netto ${P.fmt(n0)}` : `netto = ${P.fmt(u)} ÷ ${p} × 100 = ${P.fmt(n0)}, brutto ${P.fmt(b)}`}`);
+      return { what, p, c: { n: cell("n", n0), u: cell("u", u), b: cell("b", b) } };
+    });
+    const td = (c, l) => `<td class="num">${c.given !== undefined ? `<span class="mono">${fmtNum(c.given)}</span>` : `<input id="${c.id}" inputmode="decimal" aria-label="${esc(l)}">`}</td>`;
+    parts.push({ h: "Netto, Umsatzsteuer, Brutto", text: "Ein Betrag ist jeweils gegeben, rechne die beiden anderen aus.",
+      html: `<div class="kr-box wr-us-box"><table class="kr-scheme wr-us"><thead><tr><th>Leistung</th><th class="pc">USt-Satz</th><th class="num">netto</th><th class="num">USt</th><th class="num">brutto</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.what)}</td><td class="pc">${r.p} %</td>${td(r.c.n, r.what + " netto")}${td(r.c.u, r.what + " USt")}${td(r.c.b, r.what + " brutto")}</tr>`).join("")}</tbody></table></div>` });
+    if (bwSize !== "kompakt") {
+      // Rechnung mit zwei Steuersätzen
+      const a = rndStep(rng, [300, 1500, 1]) * 100 + rndStep(rng, [0, 9, 1]) * 10, b = rndStep(rng, [20, 120, 1]) * 100, p2 = pickR(rng, [10, 13]);
+      const ua = Math.round(a * 20 / 100), ub = Math.round(b * p2 / 100);
+      const it2 = p2 === 10 ? "Modezeitschriften für die Kundenlounge" : "Schnittblumen für das Schaufenster";
+      const sr = [["", "Kleidung, netto", "20 %", a, { given: true }], ["", it2 + ", netto", krP(p2), b, { given: true }], ["=", "Summe netto", "", a + b], ["+", "Umsatzsteuer 20 %", "", ua], ["+", `Umsatzsteuer ${p2} %`, "", ub], ["=", "Rechnungsbetrag brutto", "", a + b + ua + ub]];
+      parts.push({ h: "Rechnung mit zwei Steuersätzen", text: `Auf einer Rechnung stehen Kleidung um ${P.fmt(a)} netto (20 %) und ${esc(it2)} um ${P.fmt(b)} netto (${p2} %). Die Umsatzsteuer wird für jeden Steuersatz getrennt ausgewiesen.`, schemes: [{ head: "Rechnung", rows: krRows(fields, "wr-u2", sr) }] });
+      sols.push(`Umsatzsteuer 20 % von ${P.fmt(a)} = ${P.fmt(ua)}, ${p2} % von ${P.fmt(b)} = ${P.fmt(ub)}, Rechnungsbetrag ${P.fmt(a + b + ua + ub)}.`);
+    }
+    sols.push("Netto → USt: netto × Steuersatz ÷ 100. Brutto → USt: brutto × Steuersatz ÷ (100 + Steuersatz). USt → netto: USt ÷ Steuersatz × 100. Brutto = netto + USt.");
+    return krTask("us", "Rechne mit der Umsatzsteuer", US.name, "Steuersätze in Österreich: 20 % Normalsteuersatz, 10 % z. B. Lebensmittel, Bücher und Zeitschriften, Beherbergung, Personenbeförderung, Müllabfuhr, 13 % z. B. Blumen und Pflanzen, Kunst und Kultur.", parts, fields, [], sols);
+  }
+  const WR_MAKE = { zs: wrMakeZs, ru: wrMakeRu, pr: wrMakePr, sr: wrMakeSr, rsk: wrMakeRsk, us: wrMakeUs };
+  Object.assign(KR_MAKE, WR_MAKE);
+  Object.assign(BW_STEPS, {
+    zs: ["In Ziffern: Tausenderpunkt (oder Leerzeichen) in Dreiergruppen, Komma vor den Cent, immer zwei Kommastellen, z. B. 12.345,60.", "In Worten: Zahlen unter einer Million schreibt man zusammen, z. B. „dreitausendvierhundertzwölf Euro und fünfzig Cent“.", "Zuerst die Einer, dann die Zehner: 54 = vierundfünfzig."],
+    ru: ["Schau auf die erste Ziffer, die wegfällt.", "0, 1, 2, 3 oder 4: abrunden, die Ziffer davor bleibt.", "5, 6, 7, 8 oder 9: aufrunden, die Ziffer davor wird um 1 größer.", "Nur einmal runden, nicht Stelle für Stelle."],
+    pr: ["Grundwert (G) = 100 %, Prozentsatz (p), Prozentanteil (A).", "A = G × p ÷ 100", "p = A ÷ G × 100", "G = A ÷ p × 100", "Vermehrter Grundwert (auf Hundert): Der Betrag entspricht 100 % + p. Verminderter Grundwert (im Hundert): 100 % − p."],
+    sr: ["Bedingungssatz (das Bekannte) und Fragesatz (das Gesuchte) untereinander schreiben.", "Gerades Verhältnis: je mehr, desto mehr. Verkehrtes Verhältnis: je mehr, desto weniger.", "Über die Einheit rechnen: zuerst auf 1 schließen, dann auf die gesuchte Menge.", "Zusammengesetzt: jedes Verhältnis einzeln prüfen und nacheinander rechnen."],
+    rsk: ["Listenpreis − Rabatt = Zielpreis (Rechnungsbetrag) − Skonto = Kassapreis (Überweisungsbetrag).", "Rabatt vom Listenpreis, Skonto vom Zielpreis. Mehrere Rabatte nacheinander: jeweils vom schon verminderten Preis.", "Skonto nur bei Zahlung innerhalb der Skontofrist.", "Rückwärts (im Hundert): Zielpreis = Kassapreis ÷ (100 − Skontosatz) × 100."],
+    us: ["Netto + Umsatzsteuer = Brutto.", "USt = netto × Steuersatz ÷ 100.", "Aus dem Bruttobetrag: USt = brutto × Steuersatz ÷ (100 + Steuersatz), netto = brutto − USt.", "Aus der USt: netto = USt ÷ Steuersatz × 100.", "Steuersätze: 20 %, 10 %, 13 %."]
+  });
+
   Object.assign(BW_STEPS, {
     bk: ["Progressiv (von oben nach unten): Einkaufspreis − Lieferantenrabatt = rabattierter Preis + Fakturenspesen = Zielpreis − Lieferantenskonto = Kassapreis + Beschaffungsnebenkosten = Einstandspreis.", "Der Rabatt wird vom Hundert (v. H.) des Einkaufspreises gerechnet, der Skonto vom Hundert des Zielpreises.", "Fakturenspesen stellt der Lieferant auf der Rechnung in Rechnung (z. B. Verpackung), deshalb gibt es auf sie auch Skonto. Beschaffungsnebenkosten (Fracht durch einen Spediteur, Versicherung, Zoll) kommen erst nach dem Skonto dazu.", "Bei mehreren Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd rechnest du von unten nach oben: Einstandspreis − Beschaffungsnebenkosten = Kassapreis. Skonto und Rabatt im Hundert (i. H.): Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz), Einkaufspreis = rabattierter Preis × 100 ÷ (100 − Rabattsatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Einkaufspreis."],
     ak: ["Progressiv: Selbstkosten + Gewinn (v. H. der Selbstkosten) = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme.", "Verkaufsprovision, Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil sie später vom höheren Preis gerechnet werden: Kassapreis = Zwischensumme × 100 ÷ (100 − Provisionssatz), Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis + 20 % USt (v. H.) = Bruttoverkaufspreis.", "Retrograd rechnest du von unten nach oben: Die USt steckt auf Hundert (a. H.) im Bruttoverkaufspreis: Listenverkaufspreis = brutto × 100 ÷ 120.", "Kundenrabatt, Kundenskonto und Verkaufsprovision ziehst du vom Hundert (v. H.) des jeweiligen Preises ab. Der Gewinn steckt auf Hundert im Nettoverkaufspreis: Selbstkosten = Nettoverkaufspreis × 100 ÷ (100 + Gewinnsatz).", "Differenzkalkulation: retrograd vom Bruttoverkaufspreis bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten, in Prozent der Selbstkosten."],
@@ -4619,7 +4888,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function bwRender() {
     $("bw-count").textContent = `${BW_AREAS[bwArea].name} · Aufgabe ${bwNo}`;
     // Zusammenfassung in der eingeklappten Aufgabenauswahl
-    const tn = [...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].find(x => x[0] === bw.type);
+    const tn = [...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3, ...BW_TYPES_W].find(x => x[0] === bw.type);
     $("bw-pick-type").textContent = tn ? tn[1].replace(/\u00AD/g, "") : "";
     $("bw-pick-size").textContent = "· " + { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" }[bwSize];
     $("bw-title").textContent = bw.title;
@@ -4673,7 +4942,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     bw.fields.forEach(f => {
       if (f.text !== undefined) return; // Bezeichnungen werden nicht geprüft
       if (f.code !== undefined) {
-        const el = $(f.id), norm = x => String(x).toUpperCase().replace(/\s+/g, "").replace(/[–—]/g, "-"), v = norm(el.value);
+        const el = $(f.id), norm = f.norm || (x => String(x).toUpperCase().replace(/\s+/g, "").replace(/[–—]/g, "-")), v = norm(el.value);
         const good = [f.code, ...(f.alts || [])].some(c => norm(c) === v);
         el.classList.remove("ok", "err"); el.classList.add(good ? "ok" : "err"); total++; if (good) ok++;
         return;
@@ -4725,7 +4994,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("bw-new").addEventListener("click", bwBuild);
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
-  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType)))));
+  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3", "w"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType)))));
   const bwPickType = v => { v = bwAvMap(v); bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); $("bw-pick").open = false; bwBuild(); };
   // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
   function bwSetArea(a, type) {
@@ -4744,6 +5013,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   renderSeg("bw-seg-type-k1", BW_TYPES_K1, bwType, bwPickType);
   renderSeg("bw-seg-type-k2", BW_TYPES_K2, bwType, bwPickType);
   renderSeg("bw-seg-type-k3", BW_TYPES_K3, bwType, bwPickType);
+  renderSeg("bw-seg-type-w", BW_TYPES_W, bwType, bwPickType);
   renderSeg("bw-seg-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], bwSize, v => { bwSize = v; store.set("bwSize", v); bwBuild(); });
   renderSeg("bw-seg-av", BW_AV_MODES, bwAvMode, v => { bwAvMode = v; store.set("bwAvMode", v); bwType = v; store.set("bwType", v); bwBuild(); });
   renderSeg("bw-seg-bw", [[false, "vorgegeben"], [true, "selbst berechnen"]], bwCalcBw, v => { bwCalcBw = v; store.set("bwCalcBw", v); bwBuild(); });
@@ -4888,15 +5158,35 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       text: "Rückstellungen sind Schulden, deren Höhe oder Zeitpunkt noch nicht genau feststeht, etwa für Steuerberatung, Prozesskosten, Urlaub oder Garantien. Sie werden am 31.12. als Aufwand gebildet.",
       rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
   ];
-  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)", "Kostenrechnung"];
-  const LEX_ORDER = [0, 8, 1, 2, 3, 4, 5, 6, 7, 9];
+  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)", "Kostenrechnung", "Wirtschaftliches Rechnen"];
+  const LEX_ORDER = [0, 10, 8, 1, 2, 3, 4, 5, 6, 7, 9];
   const LEX_TYPES = { aktiv: "aktives Bestandskonto", passiv: "passives Bestandskonto", aufwand: "Aufwandskonto", ertrag: "Ertragskonto", erlmind: "Erlösminderung", aufwmind: "Aufwandsminderung", privat: "Privatkonto", korr: "Wertberichtigung (Korrekturposten)" };
-  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben", kr: "Kostenrechnung üben" };
+  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben", kr: "Kostenrechnung üben", wr: "Wirtschaftliches Rechnen üben" };
   // Kostenrechnung im Lexikon: Lehrbeispiele mit fertig gerechnetem Schema
   {
     const sch = (head, rows) => krSchemeHtml({ head, rows: rows.map(r => Object.assign(r, { id: null, pid: false })) });
     const bk = krBezugProg([], "x", { lep: 10000, r: 10, fs: 200, s: 2, bnk: 350 }), akO = { sk: 10000, g: 10, ns: 200, vp: 5, s: 2, r: 10 }, akV = Object.assign({ sk: 10000 }, krAbsatzVals(akO)), ak = { rows: krRows([], "x", krAbsatzRows(akO, akV, "prog")), b: akV.b };
     const zk = krZuschlag([], "x", { fm: 17560, fl: 19500, mgk: 2298, fgk: 6626, vwvt: 5929 });
+    LEX.push(
+      { id: "wr-zahlen", g: 9, title: "Zahlen und Beträge schreiben",
+        text: "Auf Rechnungen, Überweisungen und Quittungen müssen Beträge eindeutig lesbar sein. In Ziffern trennt man die Tausender, in Worten schreibt man die Zahl in einem Wort.",
+        rules: ["In Ziffern: Dreiergruppen mit Punkt (oder Leerzeichen) trennen, Komma vor den Cent, immer zwei Kommastellen: € 12.345,60.", "In Worten: Zahlen unter einer Million in einem Wort: „zwölftausenddreihundertfünfundvierzig Euro und sechzig Cent“.", "Bei zweistelligen Zahlen kommt zuerst der Einer: 45 = fünfundvierzig."], go: [["wr", "zs"]] },
+      { id: "wr-runden", g: 9, title: "Kaufmännisch runden",
+        text: "Gerundet wird auf die Stelle, die gebraucht wird, bei Geldbeträgen meist auf Cent. Entscheidend ist die erste Ziffer, die wegfällt.",
+        rules: ["0, 1, 2, 3, 4: abrunden. Beispiel: 12,344 → 12,34.", "5, 6, 7, 8, 9: aufrunden. Beispiel: 12,345 → 12,35.", "Nur einmal runden: 2,4449 auf eine Kommastelle ist 2,4 (nicht zuerst 2,445 → 2,45 → 2,5)."], go: [["wr", "ru"]] },
+      { id: "wr-prozent", g: 9, title: "Prozentrechnung",
+        text: "Prozent heißt „von Hundert“. Der <b>Grundwert</b> (G) entspricht 100 %, der <b>Prozentanteil</b> (A) ist der Teil davon, der <b>Prozentsatz</b> (p) sagt, wie viele Hundertstel das sind.",
+        rules: ["A = G × p ÷ 100", "p = A ÷ G × 100", "G = A ÷ p × 100", "Vermehrter Grundwert (auf Hundert): Ein Preis nach einer Erhöhung um p % entspricht (100 + p) %.", "Verminderter Grundwert (im Hundert): Ein Preis nach einem Nachlass um p % entspricht (100 − p) %."], go: [["wr", "pr"]] },
+      { id: "wr-schluss", g: 9, title: "Schlussrechnung",
+        text: "Mit der Schlussrechnung rechnest du von einer bekannten Menge auf eine gesuchte Menge. Zuerst schließt du auf die Einheit (1 Stück, 1 Meter, 1 Person), dann auf die gesuchte Menge.",
+        rules: ["<b>Gerades Verhältnis</b>: je mehr, desto mehr (mehr Meter Stoff → höherer Preis).", "<b>Verkehrtes Verhältnis</b>: je mehr, desto weniger (mehr Mitarbeiterinnen → weniger Zeit).", "<b>Zusammengesetzte Schlussrechnung</b>: mehrere Größen ändern sich, jedes Verhältnis wird einzeln geprüft."], go: [["wr", "sr"]] },
+      { id: "wr-rabatt", g: 9, title: "Rabatt und Skonto",
+        text: "Der <b>Rabatt</b> ist ein Preisnachlass, zum Beispiel für große Mengen oder treue Kundschaft. Der <b>Skonto</b> ist ein Nachlass für schnelles Bezahlen innerhalb der Skontofrist.",
+        rules: ["Listenpreis − Rabatt = Zielpreis (Rechnungsbetrag) − Skonto = Kassapreis (Überweisungsbetrag).", "Rabatt vom Listenpreis, Skonto vom Zielpreis. Mehrere Rabatte werden nacheinander vom schon verminderten Preis abgezogen.", "„10 Tage 2 % Skonto, 30 Tage netto“: Wer innerhalb von 10 Tagen zahlt, darf 2 % abziehen, sonst ist der volle Betrag in 30 Tagen fällig."], go: [["wr", "rsk"]] },
+      { id: "wr-ust", g: 9, title: "Rechnen mit der Umsatzsteuer",
+        text: "Unternehmen schlagen auf ihre Nettopreise die Umsatzsteuer auf. Der Bruttobetrag ist das, was die Kundin bezahlt.",
+        rules: ["Netto + Umsatzsteuer = Brutto.", "USt = netto × Steuersatz ÷ 100.", "Aus dem Bruttobetrag: USt = brutto × Steuersatz ÷ (100 + Steuersatz), netto = brutto − USt.", "Steuersätze in Österreich: 20 % Normalsteuersatz, 10 % z. B. Lebensmittel, Bücher, Zeitschriften, Beherbergung, Personenbeförderung, 13 % z. B. Blumen, Pflanzen, Kunst und Kultur."], go: [["wr", "us"]] }
+    );
     LEX.push(
       { id: "kr-grund", g: 8, title: "Aufwand und Kosten",
         text: "Die Buchhaltung erfasst <b>Aufwände</b> (alles, was den Gewinn mindert). Die Kostenrechnung fragt: Was kostet uns der Betrieb wirklich? <b>Kosten</b> sind nur der betriebliche, normale und periodenrichtige Werteverzehr.",
@@ -4965,7 +5255,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function lexEntryHtml(e) {
     const ex = lexExamples(e);
     const buttons = [e.tp ? `<button class="btn primary" type="button" data-lexgo="bs" data-v="${e.tp}">Buchungssätze üben</button>` : "",
-      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : BW_AREAS[m] ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
+      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : BW_AREAS[m] ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3, ...BW_TYPES_W].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
     return `<div class="lex-body">
         <p>${e.text}</p>
         ${e.rules ? `<div class="lex-rules"><span class="field-label">Das solltest du dir merken</span><ul>${e.rules.map(r => `<li>${r}</li>`).join("")}</ul></div>` : ""}
@@ -5015,7 +5305,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   window.addEventListener("hashchange", () => {
     const h = location.hash.toLowerCase();
     if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c && !(hu && hu.code === c.code)) huStart(c); return; }
-    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "home", "#buchungssaetze": "bs", "#test": "test" }[h];
+    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#rechnen": "wr", "#wr": "wr", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "home", "#buchungssaetze": "bs", "#test": "test" }[h];
     if (simple) { showModule(simple); return; }
     if (!h.startsWith("#lex-") || !LEX.some(e => e.id === h.slice(5))) return;
     lexOpen = h.slice(5); lexQuery = ""; $("lex-search").value = ""; showModule("lex"); lexRender();
@@ -5025,7 +5315,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Hausübung: Aufgabe per Code (fester Startwert), Abgabe mit Ergebniscode =================
   // Code: HU-<Art>-<Umfang K/N/U><Buchwert selbst 0/1>-<Startwert>, z. B. HU-VT-N0-3KD9
-  const HU_TYPES = [...BW_TYPES_E, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
+  const HU_TYPES = [...BW_TYPES_W, ...BW_TYPES_E, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
   const HU_SIZE = { kompakt: "K", normal: "N", gross: "U" }, HU_SIZE_R = { K: "kompakt", N: "normal", U: "gross" };
   const HU_SIZE_TXT = { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" };
   const HU_URL = "https://grup-mog.github.io/Rechnungswesen/";
@@ -5104,7 +5394,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   });
   $("hu-input").addEventListener("keydown", e => { if (e.key === "Enter") $("hu-load").click(); });
   // Lehrkraft: Code erstellen
-  $("hu-type").innerHTML = [["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3]]
+  $("hu-type").innerHTML = [["Wirtschaftliches Rechnen", BW_TYPES_W], ["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3]]
     .map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map(([v, l]) => `<option value="${v}">${esc(l.replace(/­/g, ""))}</option>`).join("")}</optgroup>`).join("");
   let huSize = "normal";
   renderSeg("hu-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], huSize, v => { huSize = v; });
@@ -5119,6 +5409,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ================= Startseite und Bereich für Lehrkräfte =================
   const chipList = ts => ts.map(([v, l]) => [v, l.replace(/\u00AD/g, "")]);
   const HOME = [
+    ["Grundlagen", [["wr", "Wirtschaftliches Rechnen", "Zahlen schreiben, runden, Prozent- und Schlussrechnung, Rabatt, Skonto und Umsatzsteuer.", chipList(BW_TYPES_W)]]],
     ["Doppelte Buchhaltung", [["bs", "Buchungssätze", `Geschäftsfälle verbuchen, mit Text oder Belegen, ${TOPICS.length} Themengebiete.`], ["tk", "T-Konten", "Geschäftsfälle auf T-Konten buchen und die Konten abschließen."]]],
     ["Jahresabschluss", [["bw", "Bewertung", "Anlagen, Vorräte, Forderungen, Abgrenzungen und Rückstellungen bewerten und buchen.", chipList([...BW_TYPES_A, ...BW_TYPES_U])]]],
     ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
@@ -5161,7 +5452,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ---------- Module umschalten ----------
   // Test / Schularbeit ist ein eigener Menüpunkt, nutzt aber die Ansichten des Buchungssätze-Trainers
   // Name für die Brotkrumen-Leiste (Funktion, weil syncNav schon beim Start aufgerufen wird)
-  function modName(m) { return { bs: "Buchungssätze", tk: "T-Konten", ab: "Abschluss", bw: "Bewertung", ea: "E/A-Rechnung", kr: "Kostenrechnung", test: "Test / Schularbeit" }[m] || ""; }
+  function modName(m) { return { bs: "Buchungssätze", tk: "T-Konten", ab: "Abschluss", bw: "Bewertung", ea: "E/A-Rechnung", kr: "Kostenrechnung", wr: "Wirtschaftliches Rechnen", test: "Test / Schularbeit" }[m] || ""; }
   function syncNav() {
     const m = curModule === "bs" || curModule === "test" ? (mode === "test" ? "test" : "bs") : curModule;
     curModule = m;
@@ -5216,8 +5507,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c) huStart(c); else showModule("hu"); }
     else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
     else if (h === "#kr" || h === "#kostenrechnung") showModule("kr");
+    else if (h === "#rechnen" || h === "#wr") showModule("wr");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["bs", "tk", "bw", "ea", "kr", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["bs", "tk", "bw", "ea", "kr", "wr", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
     else if (!h.startsWith("#test-")) showModule("home");
   }
   connectDb();
