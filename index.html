@@ -283,6 +283,19 @@ details.kp summary { cursor: pointer; font-family: var(--font-display); font-wei
 .wr-u { color: var(--muted); font-size: .9em; min-width: 2.2em; }
 .wr-us-box { overflow-x: auto; }
 .wr-q, .bw-sol li { overflow-wrap: anywhere; }
+.pv-db { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--surface-2, transparent); }
+.pv-db summary { cursor: pointer; font-weight: 600; }
+.pv-db-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 10px; font-size: .9em; }
+.pv-db-grid > div { min-width: 0; overflow-x: auto; }
+.pv-t { border-collapse: collapse; margin-top: 4px; width: 100%; }
+.pv-t td, .pv-t th { padding: 3px 6px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
+.pv-t th { color: var(--muted); font-size: .9em; }
+.pv-t .num { text-align: right; white-space: nowrap; }
+.pv-t td:first-child { white-space: nowrap; }
+.pv-info { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 0; }
+.pv-info dt { color: var(--muted); }
+.pv-info dd { margin: 0; }
+@media (max-width: 600px) { .pv-info { grid-template-columns: minmax(0, 1fr); gap: 0; } .pv-info dd { margin-bottom: 6px; } }
 .wr-us td.num { width: 8rem; }
 .wr-us input { min-width: 6rem; }
 @media (max-width: 600px) { .wr-list li { grid-template-columns: minmax(0, 1fr); } }
@@ -1002,6 +1015,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           <div class="bw-tgroup" id="bw-tg-e" hidden><span class="field-label">Einnahmen-Ausgaben-Rechnung</span><div class="seg bw-type" id="bw-seg-type-e" role="group" aria-label="Aufgabe zur Einnahmen-Ausgaben-Rechnung wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-k1" hidden><span class="field-label">Kalkulation im Handel</span><div class="seg bw-type" id="bw-seg-type-k1" role="group" aria-label="Aufgabe zur Kalkulation im Handel wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-k2" hidden><span class="field-label">Vollkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k2" role="group" aria-label="Aufgabe zur Vollkostenrechnung wählen"></div></div>
+          <div class="bw-tgroup" id="bw-tg-p" hidden><span class="field-label">Personalverrechnung</span><div class="seg bw-type" id="bw-seg-type-p" role="group" aria-label="Aufgabe zur Personalverrechnung wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-w" hidden><span class="field-label">Wirtschaftliches Rechnen</span><div class="seg bw-type" id="bw-seg-type-w" role="group" aria-label="Aufgabe zum wirtschaftlichen Rechnen wählen"></div></div>
           <div class="bw-tgroup" id="bw-tg-k3" hidden><span class="field-label">Teilkostenrechnung</span><div class="seg bw-type" id="bw-seg-type-k3" role="group" aria-label="Aufgabe zur Teilkostenrechnung wählen"></div></div>
         </div>
@@ -3149,10 +3163,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
   const BW_TYPES_K2 = [["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
   const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
+  const BW_TYPES_P = [["la", "Lohn und Gehalt abrechnen"]];
   const BW_TYPES_W = [["zs", "Zahlen schreiben"], ["ru", "Kaufmännisch runden"], ["pr", "Prozent\u00ADrechnung"], ["sr", "Schluss\u00ADrechnung"], ["rsk", "Rabatt und Skonto"], ["us", "Umsatz\u00ADsteuer"]];
   // Bereiche, die sich die Bewertungs-Ansicht teilen: Typgruppen, Speicher-Schlüssel, Standard-Aufgabe
-  const BW_AREAS = { bw: { groups: ["a", "u"], key: "bwType", def: "av", name: "Bewertung" }, ea: { groups: ["e"], key: "eaType", def: "vt", name: "E/A-Rechnung" }, kr: { groups: ["k1", "k2", "k3"], key: "krType", def: "bk", name: "Kostenrechnung" }, wr: { groups: ["w"], key: "wrType", def: "zs", name: "Wirtschaftliches Rechnen" } };
-  const bwAreaOf = t => BW_TYPES_W.some(x => x[0] === t) ? "wr" : [...BW_TYPES_E].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
+  const BW_AREAS = { bw: { groups: ["a", "u"], key: "bwType", def: "av", name: "Bewertung" }, ea: { groups: ["e"], key: "eaType", def: "vt", name: "E/A-Rechnung" }, kr: { groups: ["k1", "k2", "k3"], key: "krType", def: "bk", name: "Kostenrechnung" }, wr: { groups: ["w"], key: "wrType", def: "zs", name: "Wirtschaftliches Rechnen" }, pv: { groups: ["p"], key: "pvType", def: "la", name: "Personalverrechnung" } };
+  const bwAreaOf = t => BW_TYPES_P.some(x => x[0] === t) ? "pv" : BW_TYPES_W.some(x => x[0] === t) ? "wr" : [...BW_TYPES_E].some(x => x[0] === t) ? "ea" : [...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3].some(x => x[0] === t) ? "kr" : "bw";
   let bwArea = "bw";
   const BW_TYPES_U = [["lk", "Lagerkartei"], ["fo", "Forderungen"], ["ra", "Abgrenzungen"], ["rs", "Rückstellungen"]];
   const BW_STEPS = {
@@ -4860,6 +4875,110 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
   const WR_MAKE = { zs: wrMakeZs, ru: wrMakeRu, pr: wrMakePr, sr: wrMakeSr, rsk: wrMakeRsk, us: wrMakeUs };
   Object.assign(KR_MAKE, WR_MAKE);
+
+  // ================= Personalverrechnung: laufende Lohn- und Gehaltsabrechnung =================
+  // Werte JÄHRLICH ANPASSEN: neues Jahr als eigenen Eintrag ergänzen (Quelle: TRAUNER-Datenblatt Personalverrechnung).
+  // Beträge in Cent, Sätze in Hundertstel-Prozent. Effektiv-Tarif: Abzug inkl. Verkehrsabsetzbetrag.
+  const PV_WERTE = {
+    2026: {
+      quelle: "TRAUNER-Datenblatt Personalverrechnung, Stand 1. Jänner 2026",
+      sv: [[222500, 1512], [242700, 1612], [263000, 1712], [Infinity, 1807]], hbgl: 693000,
+      tarif: [[113925, 0, 0], [184367, 2000, 26918], [304917, 3000, 45355], [587475, 4000, 75846], [874925, 4800, 122844], [8334433, 5000, 140343], [Infinity, 5500, 557065]],
+      aeab: [0, 5100, 6900, 2275], // 1 Kind, 2 Kinder, jedes weitere Kind
+      fabo: { u18: 16668, ue18: 5834 },
+      ppKlein: [[2000, 0], [4000, 5800], [6000, 11300], [Infinity, 16800]], ppGross: [[199, 0], [2000, 3100], [4000, 12300], [6000, 21400], [Infinity, 30600]],
+      peKm: 600, service: 2685, serviceJahr: 2027
+    }
+  };
+  const PV_JAHR = (() => { const ys = Object.keys(PV_WERTE).map(Number).sort((a, b) => a - b), now = new Date().getFullYear(); return ys.filter(y => y <= now).pop() || ys[0]; })();
+  const PV = PV_WERTE[PV_JAHR];
+  const pvSv = b => PV.sv.find(r => b <= r[0])[1];
+  const pvAeab = k => k <= 0 ? 0 : k === 1 ? PV.aeab[1] : PV.aeab[2] + (k - 2) * PV.aeab[3];
+  const pvTarif = bmg => PV.tarif.find(r => bmg <= r[0]);
+  const pvPP = (km, gross) => (gross ? PV.ppGross : PV.ppKlein).find(r => km * 100 <= r[0])[1];
+  const pvE = c => fmtNum(c);
+  // Datenblatt zum Nachschlagen (aufklappbar)
+  function pvDatenblatt() {
+    const lim = (arr, i) => i === 0 ? `bis ${pvE(arr[0][0])}` : arr[i][0] === Infinity ? `über ${pvE(arr[i - 1][0])}` : `${pvE(arr[i - 1][0] + 1)} bis ${pvE(arr[i][0])}`;
+    const pc = p => krN((p / 100).toFixed(2)) + " %";
+    return `<details class="pv-db"><summary>Datenblatt ${PV_JAHR} (Werte zum Nachschlagen)</summary><div class="pv-db-grid">
+      <div><b>SV-DNA laufend</b> (Arbeiter/innen, Angestellte)<table class="pv-t">${PV.sv.map((r, i) => `<tr><td>${lim(PV.sv, i)}</td><td class="num">${pc(r[1])}</td></tr>`).join("")}</table></div>
+      <div><b>Lohnsteuer: Effektiv-Tarif monatlich</b><table class="pv-t"><tr><th>BMG</th><th class="num">Satz</th><th class="num">Abzug ohne AVAB/AEAB</th><th class="num">mit AVAB/AEAB 1 Kind</th><th class="num">2 Kinder</th></tr>${PV.tarif.map((r, i) => `<tr><td>${lim(PV.tarif, i)}</td><td class="num">${r[1] / 100} %</td><td class="num">${pvE(r[2])}</td><td class="num">${r[1] ? pvE(r[2] + PV.aeab[1]) : "0,00"}</td><td class="num">${r[1] ? pvE(r[2] + PV.aeab[2]) : "0,00"}</td></tr>`).join("")}</table><small>Jedes weitere Kind: Abzug + ${pvE(PV.aeab[3])}. Der Verkehrsabsetzbetrag ist im Abzug enthalten.</small></div>
+      <div><b>Familienbonus Plus monatlich</b><table class="pv-t"><tr><td>Kind bis 18 Jahre</td><td class="num">${pvE(PV.fabo.u18)} (halb ${pvE(PV.fabo.u18 / 2)})</td></tr><tr><td>Kind ab 18 Jahre</td><td class="num">${pvE(PV.fabo.ue18)} (halb ${pvE(PV.fabo.ue18 / 2)})</td></tr></table></div>
+      <div><b>Pendlerpauschale monatlich</b><table class="pv-t"><tr><th>einfache Strecke</th><th class="num">klein</th><th class="num">groß</th></tr>${PV.ppGross.slice(1).map((r, i) => `<tr><td>${["2 bis 20 km", "über 20 bis 40 km", "über 40 bis 60 km", "über 60 km"][i]}</td><td class="num">${pvE(PV.ppKlein.find(k => k[0] >= r[0])[1])}</td><td class="num">${pvE(r[1])}</td></tr>`).join("")}</table>
+        <small>Pendlereuro: ${pvE(PV.peKm)} je km einfache Strecke und Jahr, monatlich ÷ 12. Zahlt der Arbeitgeber ein Jahresticket, wird 1/12 davon von der Pendlerpauschale abgezogen; der Pendlereuro bleibt ungekürzt.</small></div>
+      <div><b>Service-Entgelt</b> (e-card, im November für ${PV.serviceJahr}): ${pvE(PV.service)}</div>
+    </div><p class="note">Quelle: ${esc(PV.quelle)}.</p></details>`;
+  }
+  const PV_STAFF = [["Lena Hofer", "Verkäuferin", "g"], ["Jonas Pichler", "Maßschneider", "l"], ["Sophie Wagner", "Filialleiterin", "g"], ["Mia Gruber", "Schaufensterdekorateurin", "g"], ["Elias Steiner", "Lagerarbeiter", "l"],
+    ["Hannah Leitner", "Modeberaterin", "g"], ["Felix Brunner", "Buchhalter", "g"], ["Anna Krenn", "Änderungsschneiderin", "l"], ["Laura Fuchs", "Einkäuferin", "g"], ["David Weber", "Zusteller", "l"], ["Sarah Pammer", "Onlineshop-Betreuerin", "g"], ["Nina Url", "Näherin", "l"]];
+  const PV_MON = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  function pvMakeLa(rng) {
+    const fields = [], sols = [], parts = [], kompakt = bwSize === "kompakt", gross = bwSize === "gross";
+    const [name, job, art] = pickR(rng, PV_STAFF), lohn = art === "l" ? "Lohn" : "Gehalt";
+    // Bruttobezug: oft in der Nähe der AV-Stufen, damit der richtige SV-Satz gewählt werden muss
+    const band = pickR(rng, [0, 1, 2, 3, 3, 3]), lo = band === 0 ? 170000 : PV.sv[band - 1][0] + 1, hi = band === 3 ? 520000 : PV.sv[band][0];
+    const brutto = rndStep(rng, [Math.ceil(lo / 100), Math.floor(hi / 100), 1]) * 100 + (rng() < 0.4 ? rndStep(rng, [1, 99, 1]) : 0);
+    const mon = gross && rng() < 0.6 ? 10 : rndStep(rng, [0, 11, 1]), nov = mon === 10;
+    // Kinder, Familienbonus Plus, AVAB/AEAB
+    let kids = [], aeab = false, fb = 0, km = 0, ppGross = false, ticket = 0, akonto = 0;
+    if (!kompakt && rng() < 0.75) {
+      const n = gross ? pickR(rng, [1, 2, 2, 3]) : pickR(rng, [1, 1, 2]);
+      for (let i = 0; i < n; i++) kids.push({ u18: rng() < 0.75, half: rng() < 0.4 });
+      aeab = rng() < 0.5;
+    }
+    if (!kompakt) {
+      if (rng() < 0.7) { ppGross = rng() < 0.5; km = ppGross ? rndStep(rng, [3, 75, 1]) : rndStep(rng, [21, 75, 1]); }
+      if (rng() < 0.4) fb = rndStep(rng, [1, 12, 1]) * 500;
+    }
+    if (gross && km && !ppGross && rng() < 0.6) ticket = rndStep(rng, [30000, 130000, 10]);
+    if (gross && rng() < 0.6) akonto = rndStep(rng, [1, 6, 1]) * 5000;
+    const svp = pvSv(brutto), sv = Math.round(Math.min(brutto, PV.hbgl) * svp / 10000);
+    const ppFull = km ? pvPP(km, ppGross) : 0, ppT = Math.round(ticket / 12), pp = Math.max(0, ppFull - ppT), pe = km * PV.peKm / 12;
+    const se = nov ? PV.service : 0;
+    const bmg = brutto - sv - fb - pp - se;
+    const [, rate, abz0] = pvTarif(bmg), abz = rate ? abz0 + (aeab ? pvAeab(kids.length) : 0) : 0;
+    const fabo = kids.reduce((a, k) => a + (k.u18 ? PV.fabo.u18 : PV.fabo.ue18) / (k.half ? 2 : 1), 0);
+    const roh = Math.round(bmg * rate / 10000), lst = Math.max(0, roh - abz - fabo - pe);
+    const aus = brutto - sv - lst - se - akonto;
+    // Angabe
+    const kTxt = kids.length ? `${kids.length} ${kids.length === 1 ? "Kind" : "Kinder"} (${kids.map(k => `${k.u18 ? "unter" : "über"} 18 Jahre, Familienbonus Plus ${k.half ? "halb" : "ganz"}`).join("; ")})` : "keine Kinder";
+    const info = [[lohn + " brutto", P.fmt(brutto)], ["Abrechnungsmonat", `${PV_MON[mon]} ${PV_JAHR}`], ["Kinder", kTxt]];
+    if (kids.length) info.push(["AVAB/AEAB", aeab ? "ja" : "nein"]);
+    if (!kompakt) info.push(["Freibetrag laut Bescheid", fb ? P.fmt(fb) + " monatlich" : "keiner"]);
+    if (!kompakt) info.push(["Arbeitsweg", km ? `${km} km einfache Strecke, ${ppGross ? "öffentliches Verkehrsmittel nicht zumutbar (großes Pendlerpauschale)" : "öffentliches Verkehrsmittel zumutbar (kleines Pendlerpauschale)"}` : "unter 2 km bzw. kein Anspruch auf Pendlerpauschale"]);
+    if (ticket) info.push(["Jahresticket", `Der Arbeitgeber bezahlt das Öffi-Jahresticket um ${P.fmt(ticket)}.`]);
+    if (nov) info.push(["Service-Entgelt", `${P.fmt(PV.service)} (e-card, wird im November abgezogen)`]);
+    if (gross) info.push(["Akontozahlung", akonto ? P.fmt(akonto) : "keine"]);
+    parts.push({ h: `${name}, ${job}`, html: `<dl class="pv-info">${info.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` + pvDatenblatt() });
+    // Schema: SV, LSt-Bemessungsgrundlage, Lohnsteuer, Auszahlung
+    const r1 = [["", lohn + " brutto", "", brutto, { given: true }], ["−", "SV-DNA laufend", "", sv, { pid: svp }]];
+    if (fb) r1.push(["−", "Freibetrag laut Bescheid", "", fb, { given: true }]);
+    if (km) r1.push(["−", ticket ? "Pendlerpauschale (abzüglich 1/12 Jahresticket)" : "Pendlerpauschale", "", pp]);
+    if (se) r1.push(["−", "Service-Entgelt", "", se, { given: true }]);
+    r1.push(["=", "Bemessungsgrundlage Lohnsteuer", "", bmg]);
+    const r2 = [["", "Bemessungsgrundlage × Steuersatz", "", roh, { pid: rate }], ["−", `Abzug laut Effektiv-Tarif${aeab && kids.length ? " (mit AVAB/AEAB)" : ""}`, "", abz]];
+    if (fabo) r2.push(["−", "Familienbonus Plus", "", fabo]);
+    if (pe) r2.push(["−", "Pendlereuro", "", pe]);
+    r2.push(["=", "Lohnsteuer", "", lst]);
+    const r3 = [["", lohn + " brutto", "", brutto, { given: true }], ["−", "SV-DNA laufend", "", sv], ["−", "Lohnsteuer", "", lst]];
+    if (se) r3.push(["−", "Service-Entgelt", "", se, { given: true }]);
+    if (akonto) r3.push(["−", "Akontozahlung", "", akonto, { given: true }]);
+    r3.push(["=", "Auszahlung (Überweisung)", "", aus]);
+    parts.push({ h: "Abrechnung " + PV_MON[mon], schemes: [{ head: "Bemessungsgrundlage", rows: krRows(fields, "pv-a", r1) }, { head: "Lohnsteuer", rows: krRows(fields, "pv-b", r2) }, { head: "Auszahlung", rows: krRows(fields, "pv-c", r3) }] });
+    // Lösungsweg
+    sols.push(`SV-DNA: ${lohn} ${P.fmt(brutto)} liegt in der Stufe mit ${krN((svp / 100).toFixed(2))} %. ${P.fmt(brutto)} × ${krN((svp / 100).toFixed(2))} % = ${P.fmt(sv)}.`);
+    if (km) sols.push(`Pendlerpauschale ${ppGross ? "groß" : "klein"} bei ${km} km: ${P.fmt(ppFull)}${ticket ? ` − ${P.fmt(ticket)} ÷ 12 (${P.fmt(ppT)}) = ${P.fmt(pp)}` : ""}. Pendlereuro: ${km} km × ${pvE(PV.peKm)} ÷ 12 = ${P.fmt(pe)}.`);
+    sols.push(`Bemessungsgrundlage: ${P.fmt(bmg)}. Effektiv-Tarif: ${rate / 100} %, Abzug ${P.fmt(abz)}${aeab && kids.length ? ` (inkl. AVAB/AEAB für ${kids.length} ${kids.length === 1 ? "Kind" : "Kinder"})` : ""}.`);
+    if (fabo) sols.push(`Familienbonus Plus: ${kids.map(k => `${pvE(k.u18 ? PV.fabo.u18 : PV.fabo.ue18)}${k.half ? " ÷ 2" : ""}`).join(" + ")} = ${P.fmt(fabo)}.`);
+    sols.push(`Lohnsteuer: ${P.fmt(bmg)} × ${rate / 100} % = ${P.fmt(roh)} − ${P.fmt(abz)}${fabo ? ` − ${P.fmt(fabo)}` : ""}${pe ? ` − ${P.fmt(pe)}` : ""} = ${roh - abz - fabo - pe < 0 ? `${P.fmt(roh - abz - fabo - pe)}, also keine Lohnsteuer (€ 0,00)` : P.fmt(lst)}.`);
+    sols.push(`Auszahlung: ${P.fmt(aus)}.`);
+    return krTask("la", `Erstelle die Abrechnung für ${PV_MON[mon]}`, `${US.name} · Personalverrechnung`, `Laufende Abrechnung mit den Werten ${PV_JAHR}. Rechne auf Cent genau. Ergibt die Lohnsteuer einen negativen Betrag, ist sie € 0,00. Prozentsätze ohne %-Zeichen eintragen (z. B. 17,12).`, parts, fields, [], sols);
+  }
+  Object.assign(KR_MAKE, { la: pvMakeLa });
+  Object.assign(BW_STEPS, {
+    la: ["SV-DNA laufend: Bruttobezug × SV-Satz. Der Satz hängt vom Bruttobezug ab (niedrigerer AV-Beitrag bei geringem Einkommen).", "Bemessungsgrundlage Lohnsteuer = Brutto − SV-DNA − Freibetrag − Pendlerpauschale − Service-Entgelt (nur im November).", "Lohnsteuer = Bemessungsgrundlage × Steuersatz − Abzug laut Effektiv-Tarif (mit AVAB/AEAB, wenn zutreffend) − Familienbonus Plus − Pendlereuro. Negativ = € 0,00.", "Auszahlung = Brutto − SV-DNA − Lohnsteuer − Service-Entgelt − Akontozahlung."]
+  });
   Object.assign(BW_STEPS, {
     zs: ["Eurobeträge in Ziffern: Tausenderpunkt, Komma vor den Cent, immer zwei Kommastellen, z. B. 12.345,60.", "Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen zwischen Zahl und Einheit, z. B. 12 500 m oder 3,5 kg.", "In Worten: Zahlen unter einer Million schreibt man zusammen, z. B. „dreitausendvierhundertzwölf Euro und fünfzig Cent“.", "Zuerst die Einer, dann die Zehner: 54 = vierundfünfzig."],
     ru: ["Schau auf die erste Ziffer, die wegfällt.", "0, 1, 2, 3 oder 4: abrunden, die Ziffer davor bleibt.", "5, 6, 7, 8 oder 9: aufrunden, die Ziffer davor wird um 1 größer.", "Nur einmal runden, nicht Stelle für Stelle."],
@@ -4933,7 +5052,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function bwRender() {
     $("bw-count").textContent = `${BW_AREAS[bwArea].name} · Aufgabe ${bwNo}`;
     // Zusammenfassung in der eingeklappten Aufgabenauswahl
-    const tn = [...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3, ...BW_TYPES_W].find(x => x[0] === bw.type);
+    const tn = [...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3, ...BW_TYPES_W, ...BW_TYPES_P].find(x => x[0] === bw.type);
     $("bw-pick-type").textContent = tn ? tn[1].replace(/\u00AD/g, "") : "";
     $("bw-pick-size").textContent = "· " + { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" }[bwSize];
     $("bw-title").textContent = bw.title;
@@ -5039,7 +5158,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   $("bw-new").addEventListener("click", bwBuild);
   $("bw-check").addEventListener("click", bwCheck);
   $("bw-solution").addEventListener("click", bwReveal);
-  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3", "w"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType)))));
+  const bwSyncSegs = () => ["a", "u", "e", "k1", "k2", "k3", "w", "p"].forEach(g => $("bw-seg-type-" + g).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === (bwType === "an" ? "av" : bwType)))));
   const bwPickType = v => { v = bwAvMap(v); bwType = v; store.set(BW_AREAS[bwArea].key, v); bwSyncSegs(); $("bw-pick").open = false; bwBuild(); };
   // Bewertung und E/A-Rechnung teilen sich die Ansicht, merken sich aber je eine eigene Aufgabenart
   function bwSetArea(a, type) {
@@ -5059,6 +5178,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   renderSeg("bw-seg-type-k2", BW_TYPES_K2, bwType, bwPickType);
   renderSeg("bw-seg-type-k3", BW_TYPES_K3, bwType, bwPickType);
   renderSeg("bw-seg-type-w", BW_TYPES_W, bwType, bwPickType);
+  renderSeg("bw-seg-type-p", BW_TYPES_P, bwType, bwPickType);
   renderSeg("bw-seg-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], bwSize, v => { bwSize = v; store.set("bwSize", v); bwBuild(); });
   renderSeg("bw-seg-av", BW_AV_MODES, bwAvMode, v => { bwAvMode = v; store.set("bwAvMode", v); bwType = v; store.set("bwType", v); bwBuild(); });
   renderSeg("bw-seg-bw", [[false, "vorgegeben"], [true, "selbst berechnen"]], bwCalcBw, v => { bwCalcBw = v; store.set("bwCalcBw", v); bwBuild(); });
@@ -5203,16 +5323,19 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       text: "Rückstellungen sind Schulden, deren Höhe oder Zeitpunkt noch nicht genau feststeht, etwa für Steuerberatung, Prozesskosten, Urlaub oder Garantien. Sie werden am 31.12. als Aufwand gebildet.",
       rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
   ];
-  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)", "Kostenrechnung", "Wirtschaftliches Rechnen"];
-  const LEX_ORDER = [0, 10, 8, 1, 2, 3, 4, 5, 6, 7, 9];
+  const LEX_GROUPS = ["Grundlagen", ...CHAPTERS, "Einnahmen-Ausgaben-Rechnung (1. Klasse)", "Kostenrechnung", "Wirtschaftliches Rechnen", "Personalverrechnung"];
+  const LEX_ORDER = [0, 10, 8, 1, 2, 3, 4, 5, 6, 7, 9, 11];
   const LEX_TYPES = { aktiv: "aktives Bestandskonto", passiv: "passives Bestandskonto", aufwand: "Aufwandskonto", ertrag: "Ertragskonto", erlmind: "Erlösminderung", aufwmind: "Aufwandsminderung", privat: "Privatkonto", korr: "Wertberichtigung (Korrekturposten)" };
-  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben", kr: "Kostenrechnung üben", wr: "Wirtschaftliches Rechnen üben" };
+  const LEX_GO = { tk: "T-Konten üben", ab: "Abschluss üben", bw: "Bewertung üben", ea: "E/A-Rechnung üben", kr: "Kostenrechnung üben", wr: "Wirtschaftliches Rechnen üben", pv: "Personalverrechnung üben" };
   // Kostenrechnung im Lexikon: Lehrbeispiele mit fertig gerechnetem Schema
   {
     const sch = (head, rows) => krSchemeHtml({ head, rows: rows.map(r => Object.assign(r, { id: null, pid: false })) });
     const bk = krBezugProg([], "x", { lep: 10000, r: 10, fs: 200, s: 2, bnk: 350 }), akO = { sk: 10000, g: 10, ns: 200, vp: 5, s: 2, r: 10 }, akV = Object.assign({ sk: 10000 }, krAbsatzVals(akO)), ak = { rows: krRows([], "x", krAbsatzRows(akO, akV, "prog")), b: akV.b };
     const zk = krZuschlag([], "x", { fm: 17560, fl: 19500, mgk: 2298, fgk: 6626, vwvt: 5929 });
     LEX.push(
+      { id: "pv-lohn", g: 10, title: "Lohn- und Gehaltsabrechnung",
+        text: "Vom Bruttobezug werden der Sozialversicherungsbeitrag des Dienstnehmers (SV-DNA) und die Lohnsteuer abgezogen. Was übrig bleibt, wird überwiesen. Die Werte (Prozentsätze, Tarif, Absetzbeträge) ändern sich jedes Jahr.",
+        rules: ["SV-DNA laufend = Brutto × SV-Satz. Bei geringem Einkommen ist der Arbeitslosenversicherungsbeitrag niedriger, daher gibt es vier Stufen.", "Bemessungsgrundlage Lohnsteuer = Brutto − SV-DNA − Freibetrag laut Bescheid − Pendlerpauschale − Service-Entgelt (im November).", "Lohnsteuer laut Effektiv-Tarif: Bemessungsgrundlage × Steuersatz − Abzug (enthält den Verkehrsabsetzbetrag, mit AVAB/AEAB höher) − Familienbonus Plus − Pendlereuro. Ein negatives Ergebnis bedeutet € 0,00 Lohnsteuer.", "Zahlt der Arbeitgeber ein Jahresticket, wird 1/12 des Ticketpreises vom monatlichen Pendlerpauschale abgezogen. Der Pendlereuro bleibt ungekürzt.", "Auszahlung = Brutto − SV-DNA − Lohnsteuer − Service-Entgelt − Akontozahlung."], go: [["pv", "la"]] },
       { id: "wr-zahlen", g: 9, title: "Zahlen und Beträge schreiben",
         text: "Auf Rechnungen, Überweisungen und Quittungen müssen Beträge eindeutig lesbar sein. In Ziffern trennt man die Tausender, in Worten schreibt man die Zahl in einem Wort.",
         rules: ["Eurobeträge in Ziffern: Tausenderpunkt, Komma vor den Cent, immer zwei Kommastellen: € 12.345,60.", "Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen vor der Einheit: 12 500 m, 3,5 kg.", "In Worten: Zahlen unter einer Million in einem Wort: „zwölftausenddreihundertfünfundvierzig Euro und sechzig Cent“.", "Bei zweistelligen Zahlen kommt zuerst der Einer: 45 = fünfundvierzig."], go: [["wr", "zs"]] },
@@ -5300,7 +5423,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function lexEntryHtml(e) {
     const ex = lexExamples(e);
     const buttons = [e.tp ? `<button class="btn primary" type="button" data-lexgo="bs" data-v="${e.tp}">Buchungssätze üben</button>` : "",
-      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : BW_AREAS[m] ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3, ...BW_TYPES_W].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
+      ...(e.go || []).filter(([m, v]) => !(m === "bs" && v === e.tp)).map(([m, v]) => `<button class="btn" type="button" data-lexgo="${m}" data-v="${v || ""}">${m === "bs" ? "Buchungssätze üben" : BW_AREAS[m] ? `${esc(([...BW_TYPES_A, ...BW_TYPES_U, ...BW_TYPES_E, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3, ...BW_TYPES_W, ...BW_TYPES_P].find(x => x[0] === v) || ["", "Bewertung"])[1].replace(/­/g, ""))} üben` : LEX_GO[m]}</button>`)].join("");
     return `<div class="lex-body">
         <p>${e.text}</p>
         ${e.rules ? `<div class="lex-rules"><span class="field-label">Das solltest du dir merken</span><ul>${e.rules.map(r => `<li>${r}</li>`).join("")}</ul></div>` : ""}
@@ -5350,7 +5473,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   window.addEventListener("hashchange", () => {
     const h = location.hash.toLowerCase();
     if (h.startsWith("#hu-")) { const c = huParse(h.slice(1)); if (c && !(hu && hu.code === c.code)) huStart(c); return; }
-    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#rechnen": "wr", "#wr": "wr", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "home", "#buchungssaetze": "bs", "#test": "test" }[h];
+    const simple = { "#start": "home", "#lehrkraefte": "teach", "#hausuebung": "hu", "#lexikon": "lex", "#kr": "kr", "#kostenrechnung": "kr", "#rechnen": "wr", "#wr": "wr", "#pv": "pv", "#personalverrechnung": "pv", "#ea": "ea", "#bewertung": "bw", "#tkonten": "tk", "#abschluss": "home", "#buchungssaetze": "bs", "#test": "test" }[h];
     if (simple) { showModule(simple); return; }
     if (!h.startsWith("#lex-") || !LEX.some(e => e.id === h.slice(5))) return;
     lexOpen = h.slice(5); lexQuery = ""; $("lex-search").value = ""; showModule("lex"); lexRender();
@@ -5360,7 +5483,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ================= Hausübung: Aufgabe per Code (fester Startwert), Abgabe mit Ergebniscode =================
   // Code: HU-<Art>-<Umfang K/N/U><Buchwert selbst 0/1>-<Startwert>, z. B. HU-VT-N0-3KD9
-  const HU_TYPES = [...BW_TYPES_W, ...BW_TYPES_E, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
+  const HU_TYPES = [...BW_TYPES_W, ...BW_TYPES_P, ...BW_TYPES_E, ...BW_TYPES_A_HU, ...BW_TYPES_U, ...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3];
   const HU_SIZE = { kompakt: "K", normal: "N", gross: "U" }, HU_SIZE_R = { K: "kompakt", N: "normal", U: "gross" };
   const HU_SIZE_TXT = { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" };
   const HU_URL = "https://grup-mog.github.io/Rechnungswesen/";
@@ -5439,7 +5562,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   });
   $("hu-input").addEventListener("keydown", e => { if (e.key === "Enter") $("hu-load").click(); });
   // Lehrkraft: Code erstellen
-  $("hu-type").innerHTML = [["Wirtschaftliches Rechnen", BW_TYPES_W], ["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3]]
+  $("hu-type").innerHTML = [["Wirtschaftliches Rechnen", BW_TYPES_W], ["Einnahmen-Ausgaben-Rechnung", BW_TYPES_E], ["Bewertung: Anlagevermögen", BW_TYPES_A_HU], ["Bewertung: Umlaufvermögen und Abgrenzungen", BW_TYPES_U], ["Kostenrechnung: Kalkulation im Handel", BW_TYPES_K1], ["Kostenrechnung: Vollkostenrechnung", BW_TYPES_K2], ["Kostenrechnung: Teilkostenrechnung", BW_TYPES_K3], ["Personalverrechnung", BW_TYPES_P]]
     .map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map(([v, l]) => `<option value="${v}">${esc(l.replace(/­/g, ""))}</option>`).join("")}</optgroup>`).join("");
   let huSize = "normal";
   renderSeg("hu-size", [["kompakt", "Kompakt"], ["normal", "Normal"], ["gross", "Umfangreich"]], huSize, v => { huSize = v; });
@@ -5459,6 +5582,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     ["Jahresabschluss", [["bw", "Bewertung", "Anlagen, Vorräte, Forderungen, Abgrenzungen und Rückstellungen bewerten und buchen.", chipList([...BW_TYPES_A, ...BW_TYPES_U])]]],
     ["Einnahmen-Ausgaben-Rechnung (1. Klasse)", [["ea", "E/A-Rechnung", "Kassa- und Bankbuch mit Verteilungstabelle, Wareneingangsbuch und Anlagenverzeichnis.", chipList(BW_TYPES_E)]]],
     ["Kostenrechnung", [["kr", "Kostenrechnung", "Kalkulation im Handel, Voll- und Teilkostenrechnung.", chipList([...BW_TYPES_K1, ...BW_TYPES_K2, ...BW_TYPES_K3])]]],
+    ["Personalverrechnung", [["pv", "Personalverrechnung", `Laufende Lohn- und Gehaltsabrechnung mit den Werten ${PV_JAHR}: SV, Lohnsteuer und Auszahlungsbetrag.`, chipList(BW_TYPES_P)]]],
     ["Wiederholen und testen", [["test", "Test / Schularbeit", "Stell dir selbst einen Test aus Buchungssätzen zusammen."], ["lex", "Lexikon", "Alle Themen kurz erklärt, mit Merksätzen und Lehrbeispielen."]]],
   ];
   // Fortschritt als kleines Zeichen am Knopf: ✓ = schon einmal ganz richtig, sonst letztes Ergebnis
@@ -5497,7 +5621,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ---------- Module umschalten ----------
   // Test / Schularbeit ist ein eigener Menüpunkt, nutzt aber die Ansichten des Buchungssätze-Trainers
   // Name für die Brotkrumen-Leiste (Funktion, weil syncNav schon beim Start aufgerufen wird)
-  function modName(m) { return { bs: "Buchungssätze", tk: "T-Konten", ab: "Abschluss", bw: "Bewertung", ea: "E/A-Rechnung", kr: "Kostenrechnung", wr: "Wirtschaftliches Rechnen", test: "Test / Schularbeit" }[m] || ""; }
+  function modName(m) { return { bs: "Buchungssätze", tk: "T-Konten", ab: "Abschluss", bw: "Bewertung", ea: "E/A-Rechnung", kr: "Kostenrechnung", wr: "Wirtschaftliches Rechnen", pv: "Personalverrechnung", test: "Test / Schularbeit" }[m] || ""; }
   function syncNav() {
     const m = curModule === "bs" || curModule === "test" ? (mode === "test" ? "test" : "bs") : curModule;
     curModule = m;
@@ -5553,8 +5677,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     else if (h === "#ea" || h === "#einnahmen-ausgaben") showModule("ea");
     else if (h === "#kr" || h === "#kostenrechnung") showModule("kr");
     else if (h === "#rechnen" || h === "#wr") showModule("wr");
+    else if (h === "#pv" || h === "#personalverrechnung") showModule("pv");
     else if (h.startsWith("#lex-")) { lexOpen = h.slice(5); showModule("lex"); const d = $("lex-" + lexOpen); if (d) setTimeout(() => d.scrollIntoView({ block: "start" }), 50); }
-    else if (!h.startsWith("#test-") && ["bs", "tk", "bw", "ea", "kr", "wr", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
+    else if (!h.startsWith("#test-") && ["bs", "tk", "bw", "ea", "kr", "wr", "pv", "test", "lex", "hu", "home", "teach"].includes(saved)) showModule(saved);
     else if (!h.startsWith("#test-")) showModule("home");
   }
   connectDb();
