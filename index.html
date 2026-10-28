@@ -1869,7 +1869,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ---------- Hilfsfunktionen ----------
   function fmtNum(cents) { return (cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function parseAmount(str) {
-    let s = String(str || "").replace(/[€\s ']/g, "");
+    let s = String(str || "").replace(/[€\s ']/g, "").replace(/[−–]/g, "-");
     if (!s) return null;
     if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
     else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
@@ -3161,7 +3161,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   let bwAvMode = store.get("bwAvMode", "an");
   const bwAvMap = t => t === "av" ? bwAvMode : t;
   const BW_TYPES_E = [["vt", "Kassa-/Bank\u00ADbuch"], ["web", "Wareneingangs\u00ADbuch"], ["eav", "Anlagen\u00ADverzeichnis"]];
-  const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"]];
+  const BW_TYPES_K1 = [["bk", "Bezugs\u00ADkalkulation"], ["ak", "Absatz\u00ADkalkulation"], ["dk", "Differenz\u00ADkalkulation"]];
   const BW_TYPES_K2 = [["kk", "Kalkulatorische Kosten"], ["bue", "Kostenarten (BÜB)"], ["bab", "Kostenstellen (BAB)"], ["zk", "Zuschlags\u00ADkalkulation"]];
   const BW_TYPES_K3 = [["db", "Deckungs\u00ADbeitrag"], ["be", "Preisuntergrenze, Break-even"], ["pp", "Programm\u00ADplanung"]];
   const BW_TYPES_P = [["la", "Lohn und Gehalt abrechnen"], ["lu", "Abrechnung mit Überstunden"]];
@@ -4303,7 +4303,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function krAbsatzRows(o, v, mode) {
     const pr = mode === "prog", T = (p, r) => ({ tol: pr ? p : r });
     const rows = [["", "Selbstkosten", "", v.sk, mode === "dif" ? { given: true } : T(0, 3)]];
-    if (mode === "dif") rows.push(["+", "Gewinn", "", v.gB, { tol: 2, pid: v.gp, ptol: 2 }]);
+    if (mode === "dif") rows.push(["+", "Gewinn bzw. Verlust", "", v.gB, { tol: 2, pid: v.gp, ptol: 2 }]);
     else rows.push(["+", "Gewinn", krP(o.g) + (pr ? " v. H." : " a. H."), v.gB, T(0, 2)]);
     rows.push(["=", "Nettoverkaufspreis", "", v.nvp, T(0, 2)]);
     if (o.ns) rows.push(["+", "nominelle Sonderkosten", "", o.ns], ["=", "Zwischensumme", "", v.zs, T(0, 2)]);
@@ -4315,6 +4315,26 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     // „= Kassapreis“ ohne Provision ist nur eine Wiederholung: weglassen
     return rows.filter((r, i, a) => !(r[1] === "Kassapreis" && !o.vp && a[i - 1][0] === "="));
   }
+  // ---------- Differenzkalkulation (Verkaufspreis vorgegeben, retrograd bis zum Nettoverkaufspreis) ----------
+  function krMakeDk(rng) {
+    const fields = [], parts = [], sols = [], goods = GOODS.slice().sort(() => rng() - 0.5), n = bwSize === "gross" ? 2 : 1;
+    const why = ["Der Hersteller gibt einen Verkaufspreis vor für", "Die Konkurrenz in der Grazer Innenstadt verkauft", "Im Katalog der Herbstkollektion ist der Preis fixiert für"];
+    for (let i = 0; i < n; i++) {
+      const g = goods[i], o = { s: pickR(rng, [2, 2.5, 3]), r: pickR(rng, [5, 10, 15, 20]) };
+      if (bwSize !== "kompakt") o.ns = rndStep(rng, [80, 600, 10]);
+      if (bwSize === "gross" && i === 1) o.vp = pickR(rng, [3, 4, 5]);
+      const b = rndStep(rng, [Math.round(g.u[0] / 100), Math.round(g.u[1] / 100), 1]) * 100 - pickR(rng, [0, 10, 100]);
+      const d = krAbsatzBack(b, o), loss = bwSize !== "kompakt" && rng() < 0.3;
+      const sk = Math.round(d.nvp * (loss ? 1 + (1 + rng() * 6) / 100 : 1 / (1 + (3 + rng() * 17) / 100)));
+      const gB = d.nvp - sk, gp = Math.round(gB / sk * 10000), v = Object.assign({}, d, { sk, gB, gp, b });
+      const extra = (o.ns ? ` Für Verpackung und Versand rechnen wir mit ${P.fmt(o.ns)} je Stück (nominelle Sonderkosten).` : "") + (o.vp ? ` Die Handelsvertreterin bekommt ${krP(o.vp)} Verkaufsprovision.` : "");
+      parts.push({ h: n > 1 ? `Teil ${i + 1}: ${g.item}` : g.item, text: `${pickR(rng, why)} ${esc(g.pl)}: ${P.fmt(b)} je Stück inkl. 20 % USt. Die Selbstkosten betragen laut Kalkulation ${P.fmt(sk)} je Stück. Wir gewähren ${krP(o.r)} Rabatt und ${krP(o.s)} Skonto.${extra} Wie hoch ist der Gewinn bzw. Verlust in Euro und in Prozent der Selbstkosten?`,
+        schemes: [{ head: g.item, sub: "Differenzkalkulation", rows: krRows(fields, `kr-d${i}`, krAbsatzRows(o, v, "dif")) }] });
+      sols.push(`${n > 1 ? `Teil ${i + 1}: ` : ""}Vom Bruttoverkaufspreis retrograd bis zum Nettoverkaufspreis: USt a. H. (÷ 120 × 100), Rabatt und Skonto${o.vp ? " und Verkaufsprovision" : ""} v. H.${o.ns ? ", nominelle Sonderkosten abziehen" : ""}. Nettoverkaufspreis ${P.fmt(d.nvp)} − Selbstkosten ${P.fmt(sk)} = ${gB < 0 ? "Verlust" : "Gewinn"} ${P.fmt(Math.abs(gB))}, das sind ${krN((gp / 100).toFixed(2))} % der Selbstkosten (${P.fmt(gB)} ÷ ${P.fmt(sk)} × 100).`);
+    }
+    return krTask("dk", "Berechne den Gewinn bzw. Verlust", `${US.name} · Differenzkalkulation`, "Der Verkaufspreis ist vorgegeben. Rechne von unten nach oben bis zum Nettoverkaufspreis, dann Gewinn = Nettoverkaufspreis − Selbstkosten. Einen Verlust schreibst du mit Minus (z. B. -12,40). Den Prozentsatz rundest du auf zwei Kommastellen. Abweichungen von wenigen Cent durch Rundung werden akzeptiert.", parts, fields, [], sols);
+  }
+
   function krMakeAk(rng) {
     const fields = [], parts = [], sols = [], goods = GOODS.slice().sort(() => rng() - 0.5);
     const G = () => pickR(rng, [8, 10, 12, 15, 20]), S = () => pickR(rng, [2, 3]), R = () => pickR(rng, [5, 10, 15, 20]), VP = () => pickR(rng, [3, 4, 5, 6]);
@@ -4790,7 +4810,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return krTask("pp", eng ? "Plane das Produktionsprogramm mit Engpass" : "Plane das Produktionsprogramm", KR_PROD_FIRM, "Beträge auf Cent, DB je Minute auf Cent gerundet. Mengen in ganzen Stück. Leere Felder zählen als 0.", [{ h: eng ? "Programmplanung mit Engpass" : "Programmplanung ohne Engpass", text, html }], fields, choices, sols);
   }
 
-  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
+  const KR_MAKE = { bk: krMakeBk, ak: krMakeAk, dk: krMakeDk, kk: krMakeKk, bue: krMakeBue, bum: krMakeBue, bab: krMakeBab, zk: krMakeZk, db: krMakeDb, be: krMakeBe, pp: krMakePp };
   const KR_RENDER = { bue: krRenderBue, bum: krRenderBue, bab: krRenderBab };
 
   // ================= Wirtschaftliches Rechnen =================
@@ -5241,6 +5261,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   Object.assign(BW_STEPS, {
     bk: ["Progressiv (von oben nach unten): Einkaufspreis − Lieferantenrabatt = rabattierter Preis + Fakturenspesen = Zielpreis − Lieferantenskonto = Kassapreis + Beschaffungsnebenkosten = Einstandspreis.", "Der Rabatt wird vom Hundert (v. H.) des Einkaufspreises gerechnet, der Skonto vom Hundert des Zielpreises.", "Fakturenspesen stellt der Lieferant auf der Rechnung in Rechnung (z. B. Verpackung), deshalb gibt es auf sie auch Skonto. Beschaffungsnebenkosten (Fracht durch einen Spediteur, Versicherung, Zoll) kommen erst nach dem Skonto dazu.", "Bei mehreren Stück rechnest du zuerst mit dem Gesamtbetrag und teilst am Ende durch die Stückzahl.", "Retrograd rechnest du von unten nach oben: Einstandspreis − Beschaffungsnebenkosten = Kassapreis. Skonto und Rabatt im Hundert (i. H.): Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz), Einkaufspreis = rabattierter Preis × 100 ÷ (100 − Rabattsatz).", "Beim Angebotsvergleich entscheidet der Einstandspreis, nicht der Einkaufspreis."],
+    dk: ["Der Bruttoverkaufspreis ist vorgegeben (Preisempfehlung, Konkurrenz). Rechne retrograd von unten nach oben bis zum Nettoverkaufspreis.", "USt auf Hundert: Listenverkaufspreis = Bruttoverkaufspreis ÷ 120 × 100.", "Kundenrabatt, Kundenskonto und Verkaufsprovision vom Hundert des jeweiligen Preises abziehen, dann die nominellen Sonderkosten abziehen.", "Gewinn bzw. Verlust = Nettoverkaufspreis − Selbstkosten. Ist das Ergebnis negativ, ist es ein Verlust.", "Gewinn in % = Gewinn ÷ Selbstkosten × 100."],
     ak: ["Progressiv: Selbstkosten + Gewinn (v. H. der Selbstkosten) = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme.", "Verkaufsprovision, Kundenskonto und Kundenrabatt werden im Hundert (i. H.) aufgeschlagen, weil sie später vom höheren Preis gerechnet werden: Kassapreis = Zwischensumme × 100 ÷ (100 − Provisionssatz), Zielpreis = Kassapreis × 100 ÷ (100 − Skontosatz).", "Listenverkaufspreis + 20 % USt (v. H.) = Bruttoverkaufspreis.", "Retrograd rechnest du von unten nach oben: Die USt steckt auf Hundert (a. H.) im Bruttoverkaufspreis: Listenverkaufspreis = brutto × 100 ÷ 120.", "Kundenrabatt, Kundenskonto und Verkaufsprovision ziehst du vom Hundert (v. H.) des jeweiligen Preises ab. Der Gewinn steckt auf Hundert im Nettoverkaufspreis: Selbstkosten = Nettoverkaufspreis × 100 ÷ (100 + Gewinnsatz).", "Differenzkalkulation: retrograd vom Bruttoverkaufspreis bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten, in Prozent der Selbstkosten."],
     kk: ["Kalkulatorische Abschreibung: Wiederbeschaffungswert − Restwert = Abschreibungsbasis, ÷ tatsächliche (reale) Nutzungsdauer.", "Mit Index: Wiederbeschaffungswert = Anschaffungswert × Index heute ÷ Index bei der Anschaffung.", "Kalkulatorische Wagnisse = Prozentsatz × Bezugsgröße (Beständewagnis vom durchschnittlichen Lagerbestand, Gewährleistungswagnis und sonstige Wagnisse vom Umsatz, Ausfallwagnis vom Forderungsbestand).", "Kalkulatorischer Unternehmerlohn = Jahresgehalt (14 Monatsbezüge) + Unternehmerzuschlag. Nur bei Einzelunternehmen und Personengesellschaften, nicht bei der GmbH.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital lt. Bilanz × Zinssatz."],
     bue: ["Übernimm die Salden der Aufwandskonten in die Spalte „Aufwand“.", "Grundkosten (z. B. Handelswareneinsatz, Gehälter, Miete) übernimmst du unverändert als Kosten.", "Neutrale Aufwände (betriebsfremd, außerordentlich, periodenfremd) und private Anteile kommen zur Gänze in „Abgrenzung −“.", "Ersetzte Aufwände oben zur Gänze ausscheiden (−): 7010 Abschreibung, 7819 Schadensfälle, 7740 GSVG-Beiträge, 8280 Zinsenaufwand. Unten in eigenen Zeilen dazuschreiben (+): kalkulatorische Wagnisse, Abschreibung, Zinsen und Unternehmerlohn.", "Kalkulatorische Zinsen = Fremdkapitalzinsen lt. GuV + Eigenkapital × Zinssatz. Kalkulatorischer Unternehmerlohn = Jahresgehalt + Unternehmerzuschlag.", "Preissteigerungen, mit denen schon gerechnet wird, kommen in „+“.", "Kosten = Aufwand − Abgrenzung + Abgrenzung.",
@@ -5623,7 +5644,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         text: "Die Absatzkalkulation ermittelt den <b>Verkaufspreis</b>. Auf die Selbstkosten kommen der Gewinn, nominelle Sonderkosten (z. B. Verpackung und Versand), die Verkaufsprovision, Skonto und Rabatt für die Kundschaft und zum Schluss die Umsatzsteuer.",
         rules: ["Selbstkosten + Gewinn = Nettoverkaufspreis + nominelle Sonderkosten = Zwischensumme + Verkaufsprovision = Kassapreis + Kundenskonto = Zielpreis + Kundenrabatt = Listenverkaufspreis + USt = Bruttoverkaufspreis.", "Progressiv: Gewinn und USt vom Hundert (v. H.), Verkaufsprovision, Kundenskonto und Kundenrabatt im Hundert (i. H.).", "Retrograd: USt und Gewinn auf Hundert (a. H.), Kundenrabatt, Kundenskonto und Verkaufsprovision vom Hundert (v. H.).", "Differenzkalkulation: Ist der Verkaufspreis vorgegeben, rechnest du retrograd bis zum Nettoverkaufspreis. Gewinn = Nettoverkaufspreis − Selbstkosten."],
         ex: [{ t: "Selbstkosten € 100,00, 10 % Gewinn, nominelle Sonderkosten € 2,00, 5 % Verkaufsprovision, 2 % Kundenskonto, 10 % Kundenrabatt.", s: [], h: [], html: sch("Absatzkalkulation", ak.rows), n: `Der Bruttoverkaufspreis beträgt ${P.fmt(ak.b)}.` }],
-        go: [["kr", "ak"]] },
+        go: [["kr", "ak"], ["kr", "dk"]] },
       { id: "kr-kalk", g: 8, title: "Kalkulatorische Kosten",
         text: "Kalkulatorische Kosten zeigen den <b>tatsächlichen Werteverzehr</b>. Sie ersetzen Aufwände, die in der Buchhaltung anders bewertet sind (Anderskosten), oder kommen zusätzlich dazu (Zusatzkosten).",
         rules: ["<b>Kalkulatorische Abschreibung</b> = (Wiederbeschaffungswert − Restwert) ÷ tatsächliche Nutzungsdauer. Wiederbeschaffungswert mit Index = Anschaffungswert × Index heute ÷ Index bei der Anschaffung.", "<b>Kalkulatorische Wagnisse</b> = Prozentsatz × Bezugsgröße, z. B. Beständewagnis 2 % vom durchschnittlichen Lagerbestand, Gewährleistungswagnis 1 % vom Umsatz. Sie ersetzen die zufälligen Schadensfälle.", "<b>Kalkulatorischer Unternehmerlohn</b> = Jahresgehalt inkl. Sonderzahlungen + Unternehmerzuschlag (10–20 %). Nur bei Einzelunternehmen und Personengesellschaften. Er ersetzt die GSVG-Beiträge (7740).", "<b>Kalkulatorische Zinsen</b> = Fremdkapitalzinsen lt. GuV + Eigenkapital lt. Bilanz × Zinssatz."],
