@@ -1141,6 +1141,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
 <script>
 (() => {
+  const GJ = new Date().getFullYear(); // Geschäftsjahr = aktuelles Kalenderjahr, schaltet am 1. Jänner weiter
   if (!document.documentElement.lang) document.documentElement.lang = "de"; // für deutsche Silbentrennung
   // ---------- Kontenplan ----------
   // typ: aktiv | passiv | aufwand | ertrag | privat | erlmind (Erlösminderung) | aufwmind (Aufwandsminderung)
@@ -1385,11 +1386,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   ];
   const JA_MIETER = [["Das Fotostudio Lichtblick", "dem Fotostudio Lichtblick"], ["Die Maßschneiderin Petra Hauer", "der Maßschneiderin Petra Hauer"], ["Das Nagelstudio Glanzpunkt", "dem Nagelstudio Glanzpunkt"], ["Die Stilberaterin Julia Moser", "der Stilberaterin Julia Moser"], ["Die Fußpflegerin Anna Lechner", "der Fußpflegerin Anna Lechner"], ["Das Reisebüro Fernweh", "dem Reisebüro Fernweh"], ["Die Schmuckdesignerin Lena Gold", "der Schmuckdesignerin Lena Gold"], ["Der Friseursalon Schnittpunkt", "dem Friseursalon Schnittpunkt"]];
   const JA_RST = [
-    { t: "Für die Erstellung des Jahresabschlusses 2026 durch unsere Steuerberatungskanzlei fallen im Frühjahr 2027 Kosten an.", short: "die Erstellung des Jahresabschlusses", aw: "steuerber", rst: "rstber", r: [1500, 5000, 50], inv: true },
+    { t: "Für die Erstellung des Jahresabschlusses " + GJ + " durch unsere Steuerberatungskanzlei fallen im Frühjahr " + (GJ + 1) + " Kosten an.", short: "die Erstellung des Jahresabschlusses", aw: "steuerber", rst: "rstber", r: [1500, 5000, 50], inv: true },
     { t: "Für die laufende Steuerberatung im Dezember liegt noch keine Rechnung vor.", short: "die Steuerberatung im Dezember", aw: "steuerber", rst: "rstber", r: [400, 1500, 10], inv: true },
-    { t: "Unsere Anwältin berät uns bei einem Streit um den Mietvertrag, ihre Honorarnote kommt erst 2027.", short: "die Rechtsberatung zum Mietvertrag", aw: "rechtsber", rst: "rstber", r: [600, 2500, 10], inv: true },
+    { t: "Unsere Anwältin berät uns bei einem Streit um den Mietvertrag, ihre Honorarnote kommt erst " + (GJ + 1) + ".", short: "die Rechtsberatung zum Mietvertrag", aw: "rechtsber", rst: "rstber", r: [600, 2500, 10], inv: true },
     { t: "Eine Kundin klagt uns wegen eines beschädigten Brautkleids. Für den Prozess erwarten wir Kosten.", short: "den Prozess", aw: "rechtsber", rst: "rstproz", r: [1500, 6000, 50] },
-    { t: "Unsere Mitarbeiterinnen haben noch nicht verbrauchten Urlaub aus 2026.", aw: "urlzuw", rst: "rsturl", r: [1500, 6000, 10] },
+    { t: "Unsere Mitarbeiterinnen haben noch nicht verbrauchten Urlaub aus " + GJ + ".", aw: "urlzuw", rst: "rsturl", r: [1500, 6000, 10] },
     { t: "Für die Lohnverrechnung im Dezember stellt uns das Steuerberatungsbüro erst im Jänner eine Rechnung.", short: "die Lohnverrechnung im Dezember", aw: "steuerber", rst: "rstber", r: [300, 1200, 10], inv: true },
     { t: "Ein Rechtsanwalt hat den Mietvertrag für unsere neue Filiale geprüft, die Honorarnote fehlt noch.", short: "die Prüfung des Mietvertrags", aw: "rechtsber", rst: "rstber", r: [500, 2000, 10], inv: true },
     { t: "Für die Beratung zur Umsatzsteuer im Onlineshop (Versand ins EU-Ausland) erwarten wir eine Rechnung der Steuerberaterin.", short: "die Umsatzsteuer-Beratung", aw: "steuerber", rst: "rstber", r: [400, 1800, 10], inv: true },
@@ -1404,9 +1405,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   ];
   const JA_RETRY = {};
   const jaDay = (rng, m) => 1 + Math.floor(rng() * 28);
-  const jaD = (d, m, y = 2026) => `${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.${y}`;
+  const jaD = (d, m, y = GJ) => `${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.${y}`;
   function jaPer(sm, n) {
-    let em = sm + n - 1, ey = 2026;
+    let em = sm + n - 1, ey = GJ;
     if (em > 12) { em -= 12; ey++; }
     return `${jaD(1, sm)} bis ${jaD(new Date(ey, em, 0).getDate(), em, ey)}`;
   }
@@ -1425,8 +1426,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function jaOld(rng) {
     for (;;) {
       const a = pickR(rng, JA_ASSETS), y = rndStep(rng, a.y) * 100, ak = y * a.nd;
-      const sy = 2025 - Math.floor(rng() * (a.nd - 1)), sm = 1 + Math.floor(rng() * 12);
-      const r = jaAfa(ak, a.nd, sy, sm, 2026);
+      const sy = (GJ - 1) - Math.floor(rng() * (a.nd - 1)), sm = 1 + Math.floor(rng() * 12);
+      const r = jaAfa(ak, a.nd, sy, sm, GJ);
       if (r.bw1 > y) return { a, y, ak, sy, sm, bw1: r.bw1 };
     }
   }
@@ -1437,7 +1438,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     do eb = Math.round(ab * (0.6 + rng() * 0.8) / 1000) * 1000; while (eb === ab || eb <= 0);
     const up = eb > ab, d = Math.abs(eb - ab);
     return { soll: [[up ? vorr : aw, d]], haben: [[up ? aw : vorr, d]],
-      text: `${label}: Anfangsbestand am 01.01.2026 ${money(ab)}, Endbestand (Bilanzansatz laut Inventur, bewertet mit gleitenden Durchschnittspreisen) am 31.12.2026 ${money(eb)}. ${hint} Buche die Bestandsveränderung.`,
+      text: `${label}: Anfangsbestand am 01.01.${GJ} ${money(ab)}, Endbestand (Bilanzansatz laut Inventur, bewertet mit gleitenden Durchschnittspreisen) am 31.12.${GJ} ${money(eb)}. ${hint} Buche die Bestandsveränderung.`,
       calc: `${P.fmt(eb)} − ${P.fmt(ab)} = ${up ? "+" : "−"} ${P.fmt(d)}. ${up ? "EB > AB: Lageraufbau. Der Vorrat steigt, der Verbrauch (Aufwand) wird vermindert." : "AB > EB: Lagerabbau. Der Verbrauch (Aufwand) steigt, der Vorrat wird vermindert."}` };
   }
 
@@ -1635,24 +1636,24 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const a = pickR(rng, JA_ASSETS), y = rndStep(rng, a.y) * 100, ak = y * a.nd;
         const m = 1 + Math.floor(rng() * 12), d = jaDay(rng, m), half = m >= 7, afa = half ? y / 2 : y;
         return { soll: [["afa", afa]], haben: [[a.acc, afa]],
-          text: `Am 31.12.2026 buchen wir die Abschreibung für ${a.ind}. Anschaffung und Inbetriebnahme am ${jaD(d, m)}, Anschaffungskosten ${money(ak)}, Nutzungsdauer ${a.nd} Jahre.`,
+          text: `Am 31.12.${GJ} buchen wir die Abschreibung für ${a.ind}. Anschaffung und Inbetriebnahme am ${jaD(d, m)}, Anschaffungskosten ${money(ak)}, Nutzungsdauer ${a.nd} Jahre.`,
           calc: `Jahres-AfA: ${P.fmt(ak)} ÷ ${a.nd} = ${P.fmt(y)}. ${half ? `Inbetriebnahme im zweiten Halbjahr: nur die halbe Jahres-AfA, also ${P.fmt(afa)}.` : `Inbetriebnahme im ersten Halbjahr: volle Jahres-AfA.`}` }; } },
     { tp: "ja_afa", k: "make", make: rng => {
         let a, y, ak, sy, m, r;
         do {
           a = pickR(rng, JA_ASSETS); y = rndStep(rng, a.y) * 100; ak = y * a.nd;
-          sy = 2026 - 1 - Math.floor(rng() * Math.min(a.nd, 8)); m = 1 + Math.floor(rng() * 12);
-          r = jaAfa(ak, a.nd, sy, m, 2026);
+          sy = GJ - 1 - Math.floor(rng() * Math.min(a.nd, 8)); m = 1 + Math.floor(rng() * 12);
+          r = jaAfa(ak, a.nd, sy, m, GJ);
         } while (r.afa <= 0);
         const last = r.afa < y;
         return { soll: [["afa", r.afa]], haben: [[a.acc, r.afa]],
-          text: `Am 31.12.2026 buchen wir die Abschreibung für ${a.def}. Angeschafft am ${jaD(jaDay(rng, m), m, sy)} um ${money(ak)}, Nutzungsdauer ${a.nd} Jahre. Buchwert am 01.01.2026: ${money(r.bw1)}.`,
+          text: `Am 31.12.${GJ} buchen wir die Abschreibung für ${a.def}. Angeschafft am ${jaD(jaDay(rng, m), m, sy)} um ${money(ak)}, Nutzungsdauer ${a.nd} Jahre. Buchwert am 01.01.${GJ}: ${money(r.bw1)}.`,
           calc: `Jahres-AfA: ${P.fmt(ak)} ÷ ${a.nd} = ${P.fmt(y)}. ${last ? `Im letzten Jahr wird nur noch der Restbuchwert von ${P.fmt(r.afa)} abgeschrieben (wegen der halben AfA im ersten Jahr).` : "Die Anlage wird das ganze Jahr genutzt: volle Jahres-AfA."}` }; } },
     { tp: "ja_afa", k: "make", make: rng => {
         const sets = [["gwgbga", "zwei Schaufensterpuppen, einen Standspiegel und einen Rollständer"], ["gwgbga", "Kleiderbügel-Displays, eine Sitzbank für die Umkleide und eine Dekovitrine"], ["gwgedv", "einen Etikettendrucker, ein Tablet und ein Kartenterminal"], ["gwgedv", "einen Bürodrucker und zwei Monitore"]];
         const [acc, items] = pickR(rng, sets), amt = rndStep(rng, [800, 3200, 10]) * 100;
         return { soll: [["gwgafa", amt]], haben: [[acc, amt]],
-          text: `Im Lauf des Jahres haben wir geringwertige Wirtschaftsgüter um insgesamt ${money(amt)} netto gekauft (${items}). Sie stehen auf Konto ${P.acc[acc][0]}. Buche am 31.12.2026 die Abschreibung.`,
+          text: `Im Lauf des Jahres haben wir geringwertige Wirtschaftsgüter um insgesamt ${money(amt)} netto gekauft (${items}). Sie stehen auf Konto ${P.acc[acc][0]}. Buche am 31.12.${GJ} die Abschreibung.`,
           calc: `Geringwertige Wirtschaftsgüter (Anschaffungskosten bis € 1.000,00 netto je Stück) werden im Jahr der Anschaffung zur Gänze abgeschrieben. Die Halbjahresregel gilt dafür nicht.` }; } },
     // Erhaltung oder Umbau/Erweiterung
     { tp: "ja_umbau", k: "vst", r: [300, 1500, 10], s: "instbga", h: "bank", t: a => `Die Klimaanlage im Verkaufsraum wird gewartet und ein defekter Ventilator getauscht. Wir überweisen: ${a}.`, note: "Erhaltungsaufwand: Die Anlage wird nur in ihrem Zustand erhalten, nicht verbessert. Deshalb wird der Betrag als Aufwand gebucht." },
@@ -1664,15 +1665,15 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "ja_umbau", k: "vst", r: [3000, 12000, 100], s: "bga", h: "bank", t: a => `Die Umkleidekabinen werden umgebaut und vergrößert, dazu kommt eine neue Beleuchtung. Wir überweisen: ${a}.`, b: { t: "re", p: "moebel", item: "Umbau und Vergrößerung Umkleidekabinen", q1: true }, note: "Herstellungsaufwand: Die Anlage wird wesentlich verändert und vergrößert. Der Betrag wird aktiviert." },
     { tp: "ja_umbau", k: "make", make: rng => {
         // wie im TRAUNER-Buch: AfA der bestehenden Anlage + Umbau ÷ Restnutzungsdauer
-        const geb = rng() < 0.5, nd = geb ? 40 : 10, sy = geb ? 2000 + Math.floor(rng() * 21) : 2018 + Math.floor(rng() * 7), sm = 1 + Math.floor(rng() * 12);
+        const geb = rng() < 0.5, nd = geb ? 40 : 10, sy = geb ? (GJ - 26) + Math.floor(rng() * 21) : (GJ - 8) + Math.floor(rng() * 7), sm = 1 + Math.floor(rng() * 12);
         const yO = (geb ? rndStep(rng, [6000, 15000, 250]) : rndStep(rng, [800, 2400, 20])) * 100, ak = yO * nd, um = 1 + Math.floor(rng() * 12);
-        const bisher = (sm >= 7 ? 0.5 : 1) + (2025 - sy) + (um >= 7 ? 0.5 : 0), rnd = nd - bisher;
+        const bisher = (sm >= 7 ? 0.5 : 1) + ((GJ - 1) - sy) + (um >= 7 ? 0.5 : 0), rnd = nd - bisher;
         const uy = rndStep(rng, geb ? [300, 3000, 20] : [100, 600, 10]) * 100, cost = Math.round(uy * rnd), uafa = um >= 7 ? uy / 2 : uy, total = yO + uafa;
-        if (cost >= jaAfa(ak, nd, sy, sm, 2026).bw1) return JA_RETRY;
+        if (cost >= jaAfa(ak, nd, sy, sm, GJ).bw1) return JA_RETRY;
         const acc = geb ? "gebaeude" : "bga", c = v => String(v).replace(".", ",");
         return { soll: [["afa", total]], haben: [[acc, total]],
-          text: `${geb ? "Unser Geschäftsgebäude" : "Unsere Ladeneinrichtung"} wurde am ${jaD(jaDay(rng, sm), sm, sy)} in Betrieb genommen (Anschaffungskosten ${money(ak)}, Nutzungsdauer ${nd} Jahre). Am ${jaD(jaDay(rng, um), um)} wird ${geb ? "der Umbau des Kellers zu einem Outlet-Verkaufsraum" : "eine Erweiterung um ein Wandregal-System"} in Betrieb genommen. Die Kosten von ${money(cost)} netto stehen bereits auf ${P.acc[acc][0]}. Buche die gesamte Abschreibung am 31.12.2026.`,
-          calc: `Bisherige Nutzungsdauer nach der Halbjahresregel: ${c(bisher)} Jahre (${sy}: ${sm >= 7 ? "½" : "1"}${um >= 7 ? ", 2026: ½" : ", 2026: 0, weil der Umbau im ersten Halbjahr in Betrieb geht"}). Restnutzungsdauer: ${nd} − ${c(bisher)} = ${c(rnd)} Jahre. AfA bestehende Anlage: ${P.fmt(ak)} ÷ ${nd} = ${P.fmt(yO)}. ${geb ? "Umbau" : "Erweiterung"}: ${P.fmt(cost)} ÷ ${c(rnd)} = ${P.fmt(uy)}${um >= 7 ? `, zweites Halbjahr: ÷ 2 = ${P.fmt(uafa)}` : ""}. AfA gesamt: ${P.fmt(total)}.` }; } },
+          text: `${geb ? "Unser Geschäftsgebäude" : "Unsere Ladeneinrichtung"} wurde am ${jaD(jaDay(rng, sm), sm, sy)} in Betrieb genommen (Anschaffungskosten ${money(ak)}, Nutzungsdauer ${nd} Jahre). Am ${jaD(jaDay(rng, um), um)} wird ${geb ? "der Umbau des Kellers zu einem Outlet-Verkaufsraum" : "eine Erweiterung um ein Wandregal-System"} in Betrieb genommen. Die Kosten von ${money(cost)} netto stehen bereits auf ${P.acc[acc][0]}. Buche die gesamte Abschreibung am 31.12.${GJ}.`,
+          calc: `Bisherige Nutzungsdauer nach der Halbjahresregel: ${c(bisher)} Jahre (${sy}: ${sm >= 7 ? "½" : "1"}${um >= 7 ? ", " + GJ + ": ½" : ", " + GJ + ": 0, weil der Umbau im ersten Halbjahr in Betrieb geht"}). Restnutzungsdauer: ${nd} − ${c(bisher)} = ${c(rnd)} Jahre. AfA bestehende Anlage: ${P.fmt(ak)} ÷ ${nd} = ${P.fmt(yO)}. ${geb ? "Umbau" : "Erweiterung"}: ${P.fmt(cost)} ÷ ${c(rnd)} = ${P.fmt(uy)}${um >= 7 ? `, zweites Halbjahr: ÷ 2 = ${P.fmt(uafa)}` : ""}. AfA gesamt: ${P.fmt(total)}.` }; } },
     // Ausscheiden von Anlagen
     { tp: "ja_abgang", k: "ust", r: [1500, 9000, 100], s: "bank", h: "anlerl", t: a => `Wir verkaufen unseren alten Lkw an einen Gebrauchtwagenhändler. Er überweist ${a}.`, note: "Der Verkaufserlös steht auf 4600. Der Buchwert des Lkw wird in einer eigenen Buchung über 7820 ausgebucht." },
     { tp: "ja_abgang", k: "ust", r: [500, 3000, 50], s: "ford", h: "anlerl", t: a => `Wir verkaufen die alte Verkaufstheke an die Boutique Seidenfaden OG auf Ziel: ${a}.`, note: "Der Verkaufserlös steht auf 4600. Der Buchwert der Anlage wird in einer eigenen Buchung über 7820 ausgebucht." },
@@ -1680,13 +1681,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "ja_abgang", k: "make", make: rng => {
         const r = jaOld(rng), sm = 1 + Math.floor(rng() * 12), half = sm <= 6, afa = Math.min(half ? r.y / 2 : r.y, r.bw1);
         return { soll: [["afa", afa]], haben: [[r.a.acc, afa]],
-          text: `Wir verkaufen am ${jaD(jaDay(rng, sm), sm)} ${r.a.def}. Buchwert am 01.01.2026: ${money(r.bw1)}, Jahres-AfA laut Anlagenverzeichnis: ${money(r.y)}. Buche die Abschreibung bis zum Ausscheiden.`,
+          text: `Wir verkaufen am ${jaD(jaDay(rng, sm), sm)} ${r.a.def}. Buchwert am 01.01.${GJ}: ${money(r.bw1)}, Jahres-AfA laut Anlagenverzeichnis: ${money(r.y)}. Buche die Abschreibung bis zum Ausscheiden.`,
           calc: `${half ? `Ausscheiden im ersten Halbjahr (höchstens sechs Monate genutzt): halbe Jahres-AfA, ${P.fmt(r.y)} ÷ 2 = ${P.fmt(afa)}.` : "Ausscheiden im zweiten Halbjahr (mehr als sechs Monate genutzt): volle Jahres-AfA."}` }; } },
     { tp: "ja_abgang", k: "make", make: rng => {
         const r = jaOld(rng), sm = 1 + Math.floor(rng() * 12), afa = Math.min(sm <= 6 ? r.y / 2 : r.y, r.bw1), bw = r.bw1 - afa;
         if (bw <= 0) return JA_RETRY;
         return { soll: [["bwabg", bw]], haben: [[r.a.acc, bw]],
-          text: `Wir verkaufen am ${jaD(jaDay(rng, sm), sm)} ${r.a.def}. Der Buchwert am 01.01.2026 war ${money(r.bw1)}, die AfA bis zum Ausscheiden von ${money(afa)} ist bereits gebucht. Der Verkaufserlös ist ebenfalls schon gebucht. Buche das Ausscheiden des Buchwerts.`,
+          text: `Wir verkaufen am ${jaD(jaDay(rng, sm), sm)} ${r.a.def}. Der Buchwert am 01.01.${GJ} war ${money(r.bw1)}, die AfA bis zum Ausscheiden von ${money(afa)} ist bereits gebucht. Der Verkaufserlös ist ebenfalls schon gebucht. Buche das Ausscheiden des Buchwerts.`,
           calc: `Buchwert beim Ausscheiden: ${P.fmt(r.bw1)} − ${P.fmt(afa)} = ${P.fmt(bw)}. Er wird vom Anlagenkonto auf 7820 Buchwert abgegangener Anlagen übertragen.` }; } },
     { tp: "ja_abgang", k: "make", make: rng => {
         const cases = [["Bei einem Einbruch am {d} {wird} {x} gestohlen.", ["edv"]], ["Durch einen Wasserrohrbruch am {d} {wird} {x} zerstört.", ["bga"]], ["{X} {hat} am {d} einen Totalschaden und {wird} verschrottet.", ["masch"]]];
@@ -1697,7 +1698,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const txt = tpl.replace("{d}", jaD(jaDay(rng, sm), sm)).replace("{x}", r.a.nom).replace("{X}", r.a.nom[0].toUpperCase() + r.a.nom.slice(1))
           .replace(/\{wird\}/g, r.a.pl ? "werden" : "wird").replace("{hat}", r.a.pl ? "haben" : "hat");
         return { soll: [["schaden", bw]], haben: [[r.a.acc, bw]],
-          text: `${txt} Der Buchwert nach der AfA bis zum Schadensfall beträgt ${money(bw)}. Buche am 31.12.2026 das Ausscheiden der Anlage.`,
+          text: `${txt} Der Buchwert nach der AfA bis zum Schadensfall beträgt ${money(bw)}. Buche am 31.12.${GJ} das Ausscheiden der Anlage.`,
           calc: `Bei einem Schadensfall wird der Restbuchwert über 7819 Sonstige Schadensfälle ausgebucht (nicht über 7820). Eine Versicherungsentschädigung ist eine eigene Buchung auf 4610.` }; } },
     { tp: "ja_abgang", k: "plain", r: [300, 2500, 10], s: "bank", h: "versentsch", t: a => `Die Versicherung überweist uns für den gestohlenen Laptop eine Entschädigung von ${a}.`, note: "Versicherungsentschädigungen sind nicht umsatzsteuerpflichtig." },
     { tp: "ja_abgang", k: "plain", r: [1000, 8000, 50], s: "bank", h: "versentsch", t: a => `Für die durch den Wasserrohrbruch zerstörten Umkleidekabinen überweist die Versicherung ${a}.`, note: "Versicherungsentschädigungen sind nicht umsatzsteuerpflichtig." },
@@ -1712,7 +1713,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const schw = (qs - qi) * avg, abw = low ? qi * (avg - tp) : 0, wm = schw + abw;
         if (!wm) return JA_RETRY;
         return { soll: [["vorrabschr", wm]], haben: [[m.aw, wm]],
-          text: `${m.name}: Sollbestand laut Lagerbuchführung ${qs} ${m.u} zum gleitenden Durchschnittspreis von ${money(avg)}. Laut Inventur sind am 31.12.2026 nur ${qi} ${m.u} vorhanden. Der Preis am Bilanzstichtag beträgt ${money(tp)} je ${m.u1}. Die Bestandsveränderung ist bereits gebucht. Buche die Wertminderung.`,
+          text: `${m.name}: Sollbestand laut Lagerbuchführung ${qs} ${m.u} zum gleitenden Durchschnittspreis von ${money(avg)}. Laut Inventur sind am 31.12.${GJ} nur ${qi} ${m.u} vorhanden. Der Preis am Bilanzstichtag beträgt ${money(tp)} je ${m.u1}. Die Bestandsveränderung ist bereits gebucht. Buche die Wertminderung.`,
           calc: `Schwund: ${qs - qi} × ${P.fmt(avg)} = ${P.fmt(schw)}. ${low ? `Abwertung: ${qi} × (${P.fmt(avg)} − ${P.fmt(tp)}) = ${P.fmt(abw)}, weil der Preis am Bilanzstichtag niedriger ist.` : "Keine Abwertung, weil der Preis am Bilanzstichtag höher ist als der Durchschnittspreis."} Wertminderung: ${P.fmt(wm)}. Sie wird vom Verbrauchskonto auf 7800 Abschreibung von Vorräten umgebucht.` }; } },
     { tp: "ja_vorrat", k: "make", make: rng => {
         // Zukaufspreis (auf 10 Cent) so wählen, dass der Durchschnittspreis auf den Cent aufgeht
@@ -1726,7 +1727,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         if (!diff) return JA_RETRY;
         const up = diff > 0;
         return { soll: [[up ? "hwvorrat" : "ware", Math.abs(diff)]], haben: [[up ? "ware" : "hwvorrat", Math.abs(diff)]],
-          text: `Artikel ${esc(g.item)}: Anfangsbestand am 01.01.2026 ${qa} Stück à ${money(p0)}. Am ${jaD(jaDay(rng, 3), 3)} kaufen wir ${qz} Stück à ${money(q)} zu. Bis zum Jahresende verkaufen wir ${sold} Stück, laut Inventur sind am 31.12. noch ${qe} Stück vorhanden (kein Schwund, der Preis am Bilanzstichtag ist höher). Bewerte den Endbestand mit dem gleitenden Durchschnittspreis und buche die Bestandsveränderung.`,
+          text: `Artikel ${esc(g.item)}: Anfangsbestand am 01.01.${GJ} ${qa} Stück à ${money(p0)}. Am ${jaD(jaDay(rng, 3), 3)} kaufen wir ${qz} Stück à ${money(q)} zu. Bis zum Jahresende verkaufen wir ${sold} Stück, laut Inventur sind am 31.12. noch ${qe} Stück vorhanden (kein Schwund, der Preis am Bilanzstichtag ist höher). Bewerte den Endbestand mit dem gleitenden Durchschnittspreis und buche die Bestandsveränderung.`,
           calc: `Durchschnittspreis nach dem Zukauf: (${qa} × ${P.fmt(p0)} + ${qz} × ${P.fmt(q)}) ÷ ${n} = ${P.fmt(avg)}. Endbestand: ${qe} × ${P.fmt(avg)} = ${P.fmt(eb)}. Anfangsbestand: ${P.fmt(ab)}. ${up ? `EB > AB: Lageraufbau um ${P.fmt(diff)}.` : `AB > EB: Lagerabbau um ${P.fmt(-diff)}.`}` }; } },
     // Bewertung von Forderungen
     { tp: "ja_ford", k: "make", make: rng => {
@@ -1751,22 +1752,22 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const k = jaKunde(rng), net = rndStep(rng, [20, 150, 1]) * 5000, b = net * 6 / 5, pct = rndStep(rng, [30, 80, 10]), wb = net * pct / 100;
         const quote = rng() < 0.5;
         return { soll: [["wbzuw", wb]], haben: [["ewb", wb]],
-          text: `Am 31.12.2026 ist unsere Forderung an ${k} von brutto ${money(b)} zweifelhaft, weil ein Insolvenzverfahren eröffnet wurde. ${quote ? `Wir rechnen mit einer Quote von ${100 - pct} %.` : `Wir rechnen mit einem Ausfall von ${pct} %.`} Bisher gibt es keine Einzelwertberichtigung. Bilde die Einzelwertberichtigung.`,
+          text: `Am 31.12.${GJ} ist unsere Forderung an ${k} von brutto ${money(b)} zweifelhaft, weil ein Insolvenzverfahren eröffnet wurde. ${quote ? `Wir rechnen mit einer Quote von ${100 - pct} %.` : `Wir rechnen mit einem Ausfall von ${pct} %.`} Bisher gibt es keine Einzelwertberichtigung. Bilde die Einzelwertberichtigung.`,
           calc: `${quote ? `Quote ${100 - pct} % bedeutet einen Ausfall von ${pct} %. ` : ""}Die Wertberichtigung wird vom Nettobetrag berechnet: ${P.fmt(b)} ÷ 1,2 = ${P.fmt(net)}; ${pct} % davon = ${P.fmt(wb)}. Die USt wird nicht korrigiert, weil der Ausfall noch nicht feststeht.` }; } },
     { tp: "ja_ford", k: "make", make: rng => {
         const neu = rndStep(rng, [50, 900, 1]) * 1000, alt = rndStep(rng, [50, 900, 1]) * 1000;
         if (neu === alt) return JA_RETRY;
         const up = neu > alt, d = Math.abs(neu - alt);
         return { soll: [[up ? "wbzuw" : "ewb", d]], haben: [[up ? "ewb" : "wbaufl", d]],
-          text: `Auf dem Konto 2080 Einzelwertberichtigungen stehen laut Saldenliste ${money(alt)}. Die Bewertung der zweifelhaften Forderungen am 31.12.2026 ergibt eine neue Einzelwertberichtigung von ${money(neu)}. Passe das Konto 2080 an.`,
+          text: `Auf dem Konto 2080 Einzelwertberichtigungen stehen laut Saldenliste ${money(alt)}. Die Bewertung der zweifelhaften Forderungen am 31.12.${GJ} ergibt eine neue Einzelwertberichtigung von ${money(neu)}. Passe das Konto 2080 an.`,
           calc: up ? `Betrag auf dem Konto < neue Wertberichtigung: Zuweisung der Differenz ${P.fmt(neu)} − ${P.fmt(alt)} = ${P.fmt(d)}.` : `Betrag auf dem Konto > neue Wertberichtigung: Auflösung der Differenz ${P.fmt(alt)} − ${P.fmt(neu)} = ${P.fmt(d)}.` }; } },
     // Rechnungsabgrenzungen (abgegrenzt wird immer der Nettobetrag)
     { tp: "ja_rap", k: "make", make: rng => {
         const o = pickR(rng, JA_ARA), sm = o.m[0] + Math.floor(rng() * (o.m[1] - o.m[0] + 1)), mon = rndStep(rng, o.r) * 100, net = mon * o.n, gross = net * (100 + o.rate) / 100;
         const next = sm + o.n - 1 - 12, amt = mon * next, d = 1 + Math.floor(rng() * 5);
         return { soll: [["ara", amt]], haben: [[o.acc, amt]],
-          text: `Am ${jaD(d, sm)} haben wir ${o.what} für ${o.n} Monate (${jaPer(sm, o.n)}) im Voraus per Bank bezahlt: ${money(gross)}${o.rate ? ` inkl. ${o.rate} % USt` : ""}. Die Zahlung ist bereits gebucht. Buche am 31.12.2026 die Rechnungsabgrenzung.`,
-          calc: `${o.rate ? `Abgegrenzt wird der Nettobetrag: ${P.fmt(gross)} ÷ 1,${o.rate === 10 ? "1" : "2"} = ${P.fmt(net)}. ` : "Keine Vorsteuer, daher wird der ganze Betrag abgegrenzt. "}Monatlich: ${P.fmt(net)} ÷ ${o.n} = ${P.fmt(mon)}. Auf 2027 ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${next} × ${P.fmt(mon)} = ${P.fmt(amt)} (eigene Vorauszahlung → aktive Rechnungsabgrenzung).` }; } },
+          text: `Am ${jaD(d, sm)} haben wir ${o.what} für ${o.n} Monate (${jaPer(sm, o.n)}) im Voraus per Bank bezahlt: ${money(gross)}${o.rate ? ` inkl. ${o.rate} % USt` : ""}. Die Zahlung ist bereits gebucht. Buche am 31.12.${GJ} die Rechnungsabgrenzung.`,
+          calc: `${o.rate ? `Abgegrenzt wird der Nettobetrag: ${P.fmt(gross)} ÷ 1,${o.rate === 10 ? "1" : "2"} = ${P.fmt(net)}. ` : "Keine Vorsteuer, daher wird der ganze Betrag abgegrenzt. "}Monatlich: ${P.fmt(net)} ÷ ${o.n} = ${P.fmt(mon)}. Auf ${GJ + 1} ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${next} × ${P.fmt(mon)} = ${P.fmt(amt)} (eigene Vorauszahlung → aktive Rechnungsabgrenzung).` }; } },
     { tp: "ja_rap", k: "make", make: rng => {
         const o = pickR(rng, JA_ARA), sm = o.m[0] + Math.floor(rng() * (o.m[1] - o.m[0] + 1)), mon = rndStep(rng, o.r) * 100, net = mon * o.n, tax = net * o.rate / 100, d = 1 + Math.floor(rng() * 5);
         const soll = [[o.acc, net]];
@@ -1779,8 +1780,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const next = sm + n - 1 - 12, amt = mon * next;
         if (next <= 0) return JA_RETRY;
         return { soll: [["mieterl", amt]], haben: [["pra", amt]],
-          text: `${t[0]} mietet einen Raum in unserem Geschäftslokal. Am ${jaD(1 + Math.floor(rng() * 5), sm)} geht die Miete für ${n} Monate (${jaPer(sm, n)}) im Voraus auf unserem Bankkonto ein: ${money(gross)} inkl. 20 % USt. Der Zahlungseingang ist bereits gebucht. Buche am 31.12.2026 die Rechnungsabgrenzung.`,
-          calc: `Nettoertrag: ${P.fmt(gross)} ÷ 1,2 = ${P.fmt(net)}. Monatlich: ${P.fmt(net)} ÷ ${n} = ${P.fmt(mon)}. Auf 2027 ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${P.fmt(amt)} (fremde Vorauszahlung → passive Rechnungsabgrenzung).` }; } },
+          text: `${t[0]} mietet einen Raum in unserem Geschäftslokal. Am ${jaD(1 + Math.floor(rng() * 5), sm)} geht die Miete für ${n} Monate (${jaPer(sm, n)}) im Voraus auf unserem Bankkonto ein: ${money(gross)} inkl. 20 % USt. Der Zahlungseingang ist bereits gebucht. Buche am 31.12.${GJ} die Rechnungsabgrenzung.`,
+          calc: `Nettoertrag: ${P.fmt(gross)} ÷ 1,2 = ${P.fmt(net)}. Monatlich: ${P.fmt(net)} ÷ ${n} = ${P.fmt(mon)}. Auf ${GJ + 1} ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${P.fmt(amt)} (fremde Vorauszahlung → passive Rechnungsabgrenzung).` }; } },
     { tp: "ja_rap", k: "make", make: rng => {
         const t = pickR(rng, JA_MIETER), n = pickR(rng, [3, 6]), sm = 7 + Math.floor(rng() * 6), mon = rndStep(rng, [30, 120, 1]) * 1000, net = mon * n, tax = net / 5;
         return { soll: [["bank", net + tax]], haben: [["mieterl", net], ["ust", tax]],
@@ -1789,36 +1790,36 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "ja_rap", k: "make", make: rng => {
         const o = pickR(rng, JA_ARA), amt = rndStep(rng, o.r) * 100 * (1 + Math.floor(rng() * (o.n === 3 ? 2 : 5)));
         return { soll: [[o.acc, amt]], haben: [["ara", amt]],
-          text: `Am 01.01.2027 lösen wir die aktive Rechnungsabgrenzung für ${o.short} von ${money(amt)} auf.`,
+          text: `Am 01.01.${GJ + 1} lösen wir die aktive Rechnungsabgrenzung für ${o.short} von ${money(amt)} auf.`,
           calc: `Der Buchungssatz vom 31.12. wird zu Beginn des neuen Jahres gestürzt. Der Aufwand wird dadurch im neuen Jahr wirksam.` }; } },
     { tp: "ja_rap", k: "make", make: rng => {
         const t = pickR(rng, JA_MIETER), amt = rndStep(rng, [30, 600, 1]) * 1000;
         return { soll: [["pra", amt]], haben: [["mieterl", amt]],
-          text: `Am 01.01.2027 lösen wir die passive Rechnungsabgrenzung für die im Voraus erhaltene Miete von ${t[1]} auf: ${money(amt)}.`,
+          text: `Am 01.01.${GJ + 1} lösen wir die passive Rechnungsabgrenzung für die im Voraus erhaltene Miete von ${t[1]} auf: ${money(amt)}.`,
           calc: `Der Buchungssatz vom 31.12. wird gestürzt. Der Mietertrag wird dadurch im neuen Jahr wirksam.` }; } },
     // Rückstellungen (immer netto, keine Vorsteuer bei der Bildung)
     { tp: "ja_rst", k: "make", make: rng => {
         const o = pickR(rng, JA_RST), amt = rndStep(rng, o.r) * 100, gross = o.inv && rng() < 0.35;
         return { soll: [[o.aw, amt]], haben: [[o.rst, amt]],
-          text: `Am 31.12.2026: ${o.t} Wir rechnen mit ${gross ? `${money(amt * 6 / 5)} inkl. 20 % USt` : money(amt)}. Bilde die Rückstellung.`,
-          calc: `${gross ? `Die Rückstellung wird nur für den Nettobetrag gebildet: ${P.fmt(amt * 6 / 5)} ÷ 1,2 = ${P.fmt(amt)}. Die Vorsteuer wird erst bei Rechnungseingang gebucht. ` : ""}Höhe oder Zeitpunkt der Zahlung sind noch unsicher, der Aufwand gehört aber zu 2026. Deshalb wird eine Rückstellung gebildet (Vorsichtsprinzip).` }; } },
+          text: `Am 31.12.${GJ}: ${o.t} Wir rechnen mit ${gross ? `${money(amt * 6 / 5)} inkl. 20 % USt` : money(amt)}. Bilde die Rückstellung.`,
+          calc: `${gross ? `Die Rückstellung wird nur für den Nettobetrag gebildet: ${P.fmt(amt * 6 / 5)} ÷ 1,2 = ${P.fmt(amt)}. Die Vorsteuer wird erst bei Rechnungseingang gebucht. ` : ""}Höhe oder Zeitpunkt der Zahlung sind noch unsicher, der Aufwand gehört aber zu ${GJ}. Deshalb wird eine Rückstellung gebildet (Vorsichtsprinzip).` }; } },
     { tp: "ja_rst", k: "make", make: rng => {
         const erl = rndStep(rng, [200, 900, 1]) * 10000, pct = pickR(rng, [2, 3, 4, 5]), amt = erl * pct / 100;
         return { soll: [["garzuw", amt]], haben: [["rstgar", amt]],
-          text: `Für Gewährleistungsansprüche aus Maßanfertigungen (Brautkleider, Trachten) bilden wir am 31.12.2026 erstmals eine Garantierückstellung. Erfahrungsgemäß fallen ${pct} % der Erlöse aus Maßanfertigungen für die Behebung von Mängeln an. Die Erlöse betragen ${money(erl)}.`,
+          text: `Für Gewährleistungsansprüche aus Maßanfertigungen (Brautkleider, Trachten) bilden wir am 31.12.${GJ} erstmals eine Garantierückstellung. Erfahrungsgemäß fallen ${pct} % der Erlöse aus Maßanfertigungen für die Behebung von Mängeln an. Die Erlöse betragen ${money(erl)}.`,
           calc: `${pct} % von ${P.fmt(erl)} = ${P.fmt(amt)}.` }; } },
     { tp: "ja_rst", k: "make", make: rng => {
         const erl = rndStep(rng, [200, 900, 1]) * 10000, pct = pickR(rng, [2, 3, 4, 5]), neu = erl * pct / 100, alt = rndStep(rng, [40, 400, 1]) * 1000;
         if (neu === alt) return JA_RETRY;
         const up = neu > alt, d = Math.abs(neu - alt);
         return { soll: [[up ? "garzuw" : "rstgar", d]], haben: [[up ? "rstgar" : "rstaufl", d]],
-          text: `Laut Saldenliste beträgt die Garantie- und Gewährleistungsrückstellung (3060) ${money(alt)}. Für Maßanfertigungen rechnen wir mit Mängelbehebungen von ${pct} % der Erlöse. Die Erlöse aus Maßanfertigungen betragen 2026 ${money(erl)}. Passe die Rückstellung am 31.12.2026 an.`,
+          text: `Laut Saldenliste beträgt die Garantie- und Gewährleistungsrückstellung (3060) ${money(alt)}. Für Maßanfertigungen rechnen wir mit Mängelbehebungen von ${pct} % der Erlöse. Die Erlöse aus Maßanfertigungen betragen ${GJ} ${money(erl)}. Passe die Rückstellung am 31.12.${GJ} an.`,
           calc: `Geschätzter Rückstellungsbetrag: ${pct} % von ${P.fmt(erl)} = ${P.fmt(neu)}. Rückstellung laut Saldenliste: ${P.fmt(alt)}. ${up ? `Zuweisung: ${P.fmt(d)}.` : `Verminderung der Rückstellung: ${P.fmt(d)} (Ertrag aus der Auflösung).`}` }; } },
     { tp: "ja_rst", k: "make", make: rng => {
         const o = pickR(rng, JA_RST.filter(x => x.inv)), rst = rndStep(rng, o.r) * 100;
         const v = pickR(rng, ["gleich", "niedrig", "hoch", "hoch"]), d = v === "gleich" ? 0 : Math.max(50, Math.round(rst / 100 * (0.05 + rng() * 0.2) / 10) * 10) * 100;
         const net = v === "niedrig" ? rst + d : v === "hoch" ? rst - d : rst, tax = net / 5;
-        const intro = `Im Vorjahr haben wir für ${o.short} eine Rückstellung von ${money(rst)} gebildet (${P.acc[o.rst][0]}). Am ${jaD(1 + Math.floor(rng() * 28), 3 + Math.floor(rng() * 4), 2027)} geht die Honorarnote ein: netto ${money(net)} + 20 % USt ${money(tax)} = ${money(net + tax)}.`;
+        const intro = `Im Vorjahr haben wir für ${o.short} eine Rückstellung von ${money(rst)} gebildet (${P.acc[o.rst][0]}). Am ${jaD(1 + Math.floor(rng() * 28), 3 + Math.floor(rng() * 4), (GJ + 1))} geht die Honorarnote ein: netto ${money(net)} + 20 % USt ${money(tax)} = ${money(net + tax)}.`;
         if (v === "hoch" && rng() < 0.5) return { soll: [[o.rst, d]], haben: [["rstaufl", d]],
           text: `${intro} Die Honorarnote ist bereits gebucht. Buche die Auflösung des verbleibenden Rests der Rückstellung.`,
           calc: `Die Rückstellung war zu hoch: ${P.fmt(rst)} − ${P.fmt(net)} = ${P.fmt(d)}. Dieser Rest wird über 4700 Erträge aus der Auflösung von Rückstellungen aufgelöst.` };
@@ -1833,7 +1834,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         if (!up && d >= old) return JA_RETRY;
         const neu = up ? old + d : old - d;
         return { soll: [[up ? "rechtsber" : "rstproz", d]], haben: [[up ? "rstproz" : "rstaufl", d]],
-          text: `Für einen Rechtsstreit mit einem Lieferanten wegen mangelhafter Stoffe besteht eine Rückstellung für Prozesskosten von ${money(old)}. Der Prozess läuft weiter. Am 31.12.2026 schätzt unsere Anwältin die Kosten auf ${money(neu)}. Passe die Rückstellung an.`,
+          text: `Für einen Rechtsstreit mit einem Lieferanten wegen mangelhafter Stoffe besteht eine Rückstellung für Prozesskosten von ${money(old)}. Der Prozess läuft weiter. Am 31.12.${GJ} schätzt unsere Anwältin die Kosten auf ${money(neu)}. Passe die Rückstellung an.`,
           calc: up ? `Die Rückstellung wird um ${P.fmt(d)} erhöht. Die Erhöhung ist Aufwand.` : `Die Rückstellung wird um ${P.fmt(d)} vermindert. Die Verminderung ist ein Ertrag aus der Auflösung von Rückstellungen.` }; } },
     { tp: "ja_rst", k: "make", make: rng => {
         const amt = rndStep(rng, [20, 80, 1]) * 10000;
@@ -1875,32 +1876,32 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         // Anschaffung im ersten, Inbetriebnahme im zweiten Halbjahr (wie im TRAUNER-Buch)
         const a = pickR(rng, JA_ASSETS), y = rndStep(rng, a.y) * 100, ak = y * a.nd, bd = 15 + Math.floor(rng() * 14), id = 1 + Math.floor(rng() * 20);
         return { soll: [["afa", y / 2]], haben: [[a.acc, y / 2]],
-          text: `Wir kaufen am ${jaD(bd, 6)} ${a.ind} um ${money(ak)} netto, Nutzungsdauer ${a.nd} Jahre. In Betrieb genommen ${a.pl ? "werden" : "wird"} ${a.nom} erst am ${jaD(id, 7)}. Buche die Abschreibung am 31.12.2026.`,
+          text: `Wir kaufen am ${jaD(bd, 6)} ${a.ind} um ${money(ak)} netto, Nutzungsdauer ${a.nd} Jahre. In Betrieb genommen ${a.pl ? "werden" : "wird"} ${a.nom} erst am ${jaD(id, 7)}. Buche die Abschreibung am 31.12.${GJ}.`,
           calc: `Jahres-AfA: ${P.fmt(ak)} ÷ ${a.nd} = ${P.fmt(y)}. Entscheidend ist das Datum der Inbetriebnahme, nicht der Kauf: Inbetriebnahme im zweiten Halbjahr, daher halbe AfA ${P.fmt(y / 2)}.` }; } },
     { tp: "ja_afa", k: "make", make: rng => {
-        const y = rndStep(rng, [6000, 15000, 250]) * 100, ak = y * 40, sy = 2000 + Math.floor(rng() * 25), m = 1 + Math.floor(rng() * 12);
+        const y = rndStep(rng, [6000, 15000, 250]) * 100, ak = y * 40, sy = (GJ - 26) + Math.floor(rng() * 25), m = 1 + Math.floor(rng() * 12);
         return { soll: [["afa", y]], haben: [["gebaeude", y]],
-          text: `Unser Geschäftsgebäude in der Annenstraße 21 wurde am ${jaD(jaDay(rng, m), m, sy)} um ${money(ak)} angeschafft und in Betrieb genommen. Die Nutzungsdauer beträgt 40 Jahre. Buche die Abschreibung am 31.12.2026.`,
-          calc: `Jahres-AfA: ${P.fmt(ak)} ÷ 40 = ${P.fmt(y)} (2,5 % pro Jahr). Das Gebäude wird 2026 das ganze Jahr genutzt: volle AfA.` }; } },
+          text: `Unser Geschäftsgebäude in der Annenstraße 21 wurde am ${jaD(jaDay(rng, m), m, sy)} um ${money(ak)} angeschafft und in Betrieb genommen. Die Nutzungsdauer beträgt 40 Jahre. Buche die Abschreibung am 31.12.${GJ}.`,
+          calc: `Jahres-AfA: ${P.fmt(ak)} ÷ 40 = ${P.fmt(y)} (2,5 % pro Jahr). Das Gebäude wird ${GJ} das ganze Jahr genutzt: volle AfA.` }; } },
     { tp: "ja_afa", k: "make", make: rng => {
         const y = rndStep(rng, [3000, 5500, 100]) * 100, ak = y * 8, m = 1 + Math.floor(rng() * 12), half = m >= 7, afa = half ? y / 2 : y;
         return { soll: [["afa", afa]], haben: [["pkw", afa]],
-          text: `Am ${jaD(jaDay(rng, m), m)} kaufen wir einen Firmen-Pkw (Kombi) und nehmen ihn sofort in Betrieb. Die Anschaffungskosten betragen ${money(ak)} inklusive NoVA und USt, weil es beim Pkw keinen Vorsteuerabzug gibt. Nutzungsdauer 8 Jahre. Buche die Abschreibung am 31.12.2026.`,
+          text: `Am ${jaD(jaDay(rng, m), m)} kaufen wir einen Firmen-Pkw (Kombi) und nehmen ihn sofort in Betrieb. Die Anschaffungskosten betragen ${money(ak)} inklusive NoVA und USt, weil es beim Pkw keinen Vorsteuerabzug gibt. Nutzungsdauer 8 Jahre. Buche die Abschreibung am 31.12.${GJ}.`,
           calc: `Beim Pkw sind die Bruttokosten die Anschaffungskosten. Jahres-AfA: ${P.fmt(ak)} ÷ 8 = ${P.fmt(y)}. ${half ? `Inbetriebnahme im zweiten Halbjahr: halbe AfA ${P.fmt(afa)}.` : "Inbetriebnahme im ersten Halbjahr: volle AfA."}` }; } },
     // Abgaben an den Staat nach dem TRAUNER-Kapitel „Abgaben – der Staat verdient mit“ (2026-10-29); v2 = erst ab Testcodes Version 2
     { tp: "steuern", v2: true, k: "make", make: rng => {
         const q = 1 + Math.floor(rng() * 4), g = rndStep(rng, [15000, 120000, 1]);
         return { soll: [["grundst", g]], haben: [["verbgem", g]], q,
-          text: `Wir erhalten vom Magistrat Graz die Vorschreibung der Grundsteuer für unser Geschäftsgebäude für das ${q}. Quartal 2026: ${money(g)}. Bezahlt wird erst später.`,
+          text: `Wir erhalten vom Magistrat Graz die Vorschreibung der Grundsteuer für unser Geschäftsgebäude für das ${q}. Quartal ${GJ}: ${money(g)}. Bezahlt wird erst später.`,
           calc: "Die Grundsteuer ist eine Betriebssteuer, also Aufwand (7100) ohne Umsatzsteuer. Mit der Vorschreibung entsteht eine Schuld gegenüber der Gemeinde (3610)." }; },
       mb: (rng, m) => abGemeinde(rng, m.q, [["Grundsteuer B, Objekt Annenstraße 21", 0, m.soll[0][1]]]) },
     { tp: "steuern", v2: true, notk: true, k: "plain", r: [150, 1500, 1], s: "verbgem", h: "bank", t: a => `Wir überweisen die bereits gebuchte Vorschreibung des Magistrats Graz (Grundsteuer und Gebühren): ${a}.`, b: { t: "bank", text: "Magistrat Graz, Abgabenvorschreibung Quartal" } },
     { tp: "steuern", v2: true, k: "make", make: rng => {
         const p = 3 + Math.floor(rng() * 10), z = rndStep(rng, [80000, 700000, 1]), l = rndStep(rng, [40000, 300000, 1]);
         return { soll: [["zahllast", z], ["verbfa", l]], haben: [["bank", z + l]], p,
-          text: `Am 15.${pad(p)}.2026 überweisen wir an das Finanzamt die USt-Zahllast für ${MONTHS[p - 3]} von ${money(z)} und die Lohnsteuer für ${MONTHS[p - 2]} von ${money(l)}.`,
+          text: `Am 15.${pad(p)}.${GJ} überweisen wir an das Finanzamt die USt-Zahllast für ${MONTHS[p - 3]} von ${money(z)} und die Lohnsteuer für ${MONTHS[p - 2]} von ${money(l)}.`,
           calc: `Umsatzsteuer und Lohnsteuer sind Durchlaufsteuern und wirken nicht auf den Erfolg. Die Zahllast ist bis zum 15. des zweitfolgenden Monats fällig, die Lohnsteuer bis zum 15. des Folgemonats. Überweisung gesamt: ${P.fmt(z + l)}.` }; },
-      mb: (rng, m) => bwBank(rng, new Date(2026, m.p - 1, 15), `Finanzamt Österreich, U ${pad(m.p - 2)}/2026 ${fmtNum(m.soll[0][1])}, L ${pad(m.p - 1)}/2026 ${fmtNum(m.soll[1][1])}`, m.haben[0][1], false) },
+      mb: (rng, m) => bwBank(rng, new Date(GJ, m.p - 1, 15), `Finanzamt Österreich, U ${pad(m.p - 2)}/${GJ} ${fmtNum(m.soll[0][1])}, L ${pad(m.p - 1)}/${GJ} ${fmtNum(m.soll[1][1])}`, m.haben[0][1], false) },
     { tp: "steuern", v2: true, k: "make", make: rng => {
         const k = rndStep(rng, [400, 3000, 5]) * 10000, g = Math.round(k * 35 / 1000);
         return { soll: [["grund", g]], haben: [["verbfa", g]], k,
@@ -1919,7 +1920,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const q = 1 + Math.floor(rng() * 4), gl = rndStep(rng, [180, 600, 1]) * 1000;
         const pv = Math.round(gl * 3 * 0.185), kv = Math.round(gl * 3 * 0.068), sv = Math.round(gl * 3 * 0.0153), uv = 3 * 1205, sum = pv + kv + sv + uv;
         return { soll: [["gsvg", sum]], haben: [["verbgsvg", sum]], q, parts: [pv, kv, uv, sv],
-          text: `Die SVS schreibt die Sozialversicherungsbeiträge der Inhaberin für das ${q}. Quartal 2026 vor: ${money(sum)}. Bezahlt wird später.`,
+          text: `Die SVS schreibt die Sozialversicherungsbeiträge der Inhaberin für das ${q}. Quartal ${GJ} vor: ${money(sum)}. Bezahlt wird später.`,
           calc: "Die Sozialversicherungsbeiträge der Selbständigen sind Aufwand (7740) ohne Umsatzsteuer. Mit der Vorschreibung entsteht eine Schuld gegenüber der SVS (3640)." }; },
       mb: (rng, m) => abSvs(rng, m.q, m.parts) },
     { tp: "beitraege", v2: true, notk: true, k: "plain", r: [800, 3500, 1], s: "verbgsvg", h: "bank", t: a => `Wir überweisen die bereits gebuchte Beitragsvorschreibung der SVS für das Quartal: ${a}.`, b: { t: "bank", text: "SVS, Beitragsvorschreibung Quartal" } },
@@ -1942,7 +1943,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           text: `Der Magistrat Graz bucht die vierteljährliche Vorschreibung für Wasser, Kanal und Müll vom Bankkonto ab: ${money(br)} inkl. 10 % USt.`,
           calc: `Gebühren der Gemeinde: ${P.fmt(br)} ÷ 1,1 = ${P.fmt(net)} netto auf 7190 Sonstige Abgaben, Vorsteuer 10 % ${P.fmt(tax)}.` }; },
       mb: (rng, m) => bwBank(rng, abDate(rng), "Magistrat Graz, Gebühren Wasser, Kanal, Müll inkl. 10 % USt", m.haben[0][1], false) },
-    { tp: "beitraege", v2: true, k: "plain", r: [80, 600, 1], s: "grundum", h: "bank", t: a => `Wir überweisen die Grundumlage für das laufende Jahr an die Wirtschaftskammer Steiermark: ${a}.`, note: "Die Grundumlage finanziert die Fachverbände der Wirtschaftskammer. Sie ist Aufwand (7785) ohne Umsatzsteuer.", b: { t: "bank", text: "Wirtschaftskammer Steiermark, Grundumlage 2026" } },
+    { tp: "beitraege", v2: true, k: "plain", r: [80, 600, 1], s: "grundum", h: "bank", t: a => `Wir überweisen die Grundumlage für das laufende Jahr an die Wirtschaftskammer Steiermark: ${a}.`, note: "Die Grundumlage finanziert die Fachverbände der Wirtschaftskammer. Sie ist Aufwand (7785) ohne Umsatzsteuer.", b: { t: "bank", text: "Wirtschaftskammer Steiermark, Grundumlage " + GJ } },
   ];
   CASES.forEach((c, i) => { c.uid = "b" + i; });
   let customCases = []; // aus der Datenbank, siehe unten
@@ -2066,7 +2067,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   // ---------- Belege ----------
   // Rechnungsmerkmale nach § 11 UStG: bis € 400,00 brutto Kleinbetragsrechnung, über € 10.000,00 brutto mit UID des Empfängers
   function renderBeleg(c, rng, v) {
-    const d = new Date(2026, Math.floor(rng() * 12), 1 + Math.floor(rng() * 27));
+    const d = new Date(GJ, Math.floor(rng() * 12), 1 + Math.floor(rng() * 27));
     const dLief = new Date(d.getTime() - Math.floor(rng() * 4) * 86400000);
     const nr = `${d.getFullYear()}-${pad(100 + Math.floor(rng() * 899), 3)}${Math.floor(rng() * 10)}`;
     const wm = `<span class="wm">Übungsbeleg</span>`;
@@ -2181,7 +2182,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     </div>`;
   }
   // ---------- Belege für Abgaben, Mahnungen und Abrechnungen ----------
-  const abDate = rng => new Date(2026, Math.floor(rng() * 12), 1 + Math.floor(rng() * 27));
+  const abDate = rng => new Date(GJ, Math.floor(rng() * 12), 1 + Math.floor(rng() * 27));
   // o: { issuer: [Name, Zeile], to: [Name, Straße, Ort], meta: [[Bezeichnung, Wert]], title, intro, head, rows (Zahlen = Cent), tot: [[Text, Cent, fett]], pay, note }
   function abDoc(o) {
     const to = o.to || [US.name, US.street, US.city];
@@ -2199,9 +2200,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       ${o.pay ? `<div class="pay">${esc(o.pay)}</div>` : ""}
     </div>`;
   }
-  const abQ = q => [`01.${pad(q * 3 - 2)}.2026 – ${q * 3 === 6 || q * 3 === 9 ? 30 : 31}.${pad(q * 3)}.2026`];
+  const abQ = q => [`01.${pad(q * 3 - 2)}.${GJ} – ${q * 3 === 6 || q * 3 === 9 ? 30 : 31}.${pad(q * 3)}.${GJ}`];
   function abGemeinde(rng, q, items) {
-    const d = new Date(2026, q * 3 - 3, 2 + Math.floor(rng() * 10)), due = `15.${pad(q * 3 - 1)}.2026`;
+    const d = new Date(GJ, q * 3 - 3, 2 + Math.floor(rng() * 10)), due = `15.${pad(q * 3 - 1)}.${GJ}`;
     const g10 = items.filter(x => x[1]).reduce((a, x) => a + x[2], 0), n10 = Math.round(g10 * 100 / 110), g0 = items.filter(x => !x[1]).reduce((a, x) => a + x[2], 0);
     const tot = [["Vorschreibung inkl. USt", g0 + g10, true]];
     if (g10) tot.push([`darin 10 % USt (netto ${fmtNum(n10)})`, g10 - n10]);
@@ -2220,15 +2221,15 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       tot: [["Festgesetzte Grunderwerbsteuer", g, true]], pay: `Der Betrag ist bis ${fmtDate(due)} zu entrichten.` });
   }
   function abSvs(rng, q, parts) {
-    const d = new Date(2026, q * 3 - 3, 5 + Math.floor(rng() * 15)), due = `${q * 3 === 6 || q * 3 === 9 ? 30 : 31}.${pad(q * 3)}.2026`, sum = parts.reduce((a, b) => a + b, 0);
+    const d = new Date(GJ, q * 3 - 3, 5 + Math.floor(rng() * 15)), due = `${q * 3 === 6 || q * 3 === 9 ? 30 : 31}.${pad(q * 3)}.${GJ}`, sum = parts.reduce((a, b) => a + b, 0);
     return abDoc({ issuer: ["Sozialversicherungsanstalt der Selbständigen (SVS)", "Landesstelle Steiermark · 8010 Graz"],
       to: [US.owner, US.street, US.city], meta: [["Versicherungs-Nr.", `${1000 + Math.floor(rng() * 8999)} ${pad(1 + Math.floor(rng() * 28))}0${Math.floor(rng() * 10)}78`], ["Datum", fmtDate(d)], ["Fällig am", due]],
-      title: `Beitragsvorschreibung ${q}. Quartal 2026`, intro: `Vorläufige Beiträge auf Grundlage des letzten Einkommensteuerbescheides (Gewerbebetrieb ${esc(US.name)}).`,
+      title: `Beitragsvorschreibung ${q}. Quartal ${GJ}`, intro: `Vorläufige Beiträge auf Grundlage des letzten Einkommensteuerbescheides (Gewerbebetrieb ${esc(US.name)}).`,
       head: ["Beitrag", "Betrag EUR"], rows: [["Pensionsversicherung", parts[0]], ["Krankenversicherung", parts[1]], ["Unfallversicherung", parts[2]], ["Selbständigenvorsorge", parts[3]]],
       tot: [["Vorschreibung gesamt", sum, true]], pay: `Bitte überweisen Sie den Betrag bis ${due}.` });
   }
   function abMahnung(rng, o) {
-    const d = abDate(rng), re = new Date(d.getTime() - (45 + Math.floor(rng() * 40)) * 86400000), nr = `RE-2026-${pad(100 + Math.floor(rng() * 899), 3)}${Math.floor(rng() * 10)}`;
+    const d = abDate(rng), re = new Date(d.getTime() - (45 + Math.floor(rng() * 40)) * 86400000), nr = `RE-${GJ}-${pad(100 + Math.floor(rng() * 899), 3)}${Math.floor(rng() * 10)}`;
     const open = rndStep(rng, [600, 6000, 1]) * 100 + Math.floor(rng() * 100), partner = pickR(rng, o.an ? PARTNERS.kunden : PARTNERS.waren);
     const rows = [], due = new Date(d.getTime() + 10 * 86400000);
     if (o.paid) {
@@ -3354,7 +3355,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const BW_TYPES_U = [["lk", "Lagerkartei"], ["fo", "Forderungen"], ["ra", "Abgrenzungen"], ["rs", "Rückstellungen"]];
   const BW_STEPS = {
     av: ["Jahres-AfA = Anschaffungskosten ÷ Nutzungsdauer (linear).", "Halbjahresregel: Entscheidend ist das Datum der Inbetriebnahme. Inbetriebnahme im zweiten Halbjahr = halbe AfA im ersten Jahr.", "Im letzten Jahr wird nur noch der Restbuchwert abgeschrieben.", "Scheidet eine Anlage im ersten Halbjahr aus, gibt es die halbe AfA, im zweiten Halbjahr die ganze. Der Restbuchwert wird über 7820 ausgebucht.", "Geringwertige Wirtschaftsgüter (bis € 1.000,00 netto) werden voll abgeschrieben (7030) und stehen gleichzeitig als Zugang und Abgang im Verzeichnis.", "Buchwert 31.12. = Buchwert 01.01. − laufende AfA. AfA kumuliert 31.12. = AfA kumuliert 01.01. + laufende AfA.", "Die Summe der laufenden AfA je Konto wird am 31.12. gebucht: 7010 / Anlagenkonto."],
-    an: ["Anschaffungskosten = Kaufpreis − Rabatt + Anschaffungsnebenkosten (z. B. Lieferung, Montage), netto. Beim Pkw gibt es keinen Vorsteuerabzug: Anschaffungskosten = brutto.", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im ersten Halbjahr = ganze AfA, im zweiten Halbjahr = halbe AfA (entscheidend ist die Inbetriebnahme, nicht der Kauf).", "Bestehende Anlage: Buchwert 01.01. = Anschaffungswert − bisherige AfA. Neuanschaffung: Buchwert 01.01. = 0.", "Kum. AfA 31.12. = bisherige AfA + AfA 2026, Buchwert 31.12. = Anschaffungswert − kum. AfA.", "Buchungen: Kauf (Anlagenkonto + Vorsteuer / 3300) und am 31.12. die gesamte AfA: 7010 / Anlagenkonto."],
+    an: ["Anschaffungskosten = Kaufpreis − Rabatt + Anschaffungsnebenkosten (z. B. Lieferung, Montage), netto. Beim Pkw gibt es keinen Vorsteuerabzug: Anschaffungskosten = brutto.", "AfA-Satz = 100 % ÷ Nutzungsdauer, Jahres-AfA = Anschaffungswert × AfA-Satz.", "Halbjahresregel: Inbetriebnahme im ersten Halbjahr = ganze AfA, im zweiten Halbjahr = halbe AfA (entscheidend ist die Inbetriebnahme, nicht der Kauf).", "Bestehende Anlage: Buchwert 01.01. = Anschaffungswert − bisherige AfA. Neuanschaffung: Buchwert 01.01. = 0.", "Kum. AfA 31.12. = bisherige AfA + AfA " + GJ + ", Buchwert 31.12. = Anschaffungswert − kum. AfA.", "Buchungen: Kauf (Anlagenkonto + Vorsteuer / 3300) und am 31.12. die gesamte AfA: 7010 / Anlagenkonto."],
     ag: ["Verkauf: Zahlungsmittel bzw. Kunde / 4600 Erlöse aus dem Abgang von Anlagen 20 % und 3500 Umsatzsteuer. Gebrauchter Pkw ohne Vorsteuerabzug beim Kauf: 4601 (0 %, ohne USt).", "Schadensfall: Versicherungsentschädigung auf 4610, ohne Umsatzsteuer. Bei schriftlicher Zusage zuerst 2300 Sonstige Forderungen, bei der Zahlung Bank / 2300.", "31.12.: Abschreibung bis zum Ausscheiden. Erstes Halbjahr = halbe AfA, zweites Halbjahr = ganze AfA, höchstens der Buchwert.", "Restbuchwert = Buchwert 01.01. − AfA im Jahr des Ausscheidens.", "Restbuchwert ausbuchen: 7820 Buchwert abgegangener Anlagen / Anlagenkonto. Bei einem Schadensfall: 7819 Sonstige Schadensfälle / Anlagenkonto."],
     um: ["Erhaltung (Reparatur, Wartung, Ausmalen, gleichwertiger Ersatz): sofort Aufwand in Klasse 7, z. B. 7201 Instandhaltung Gebäude.", "Umbau oder Erweiterung (Verwendungszweck geändert oder Substanz vermehrt): auf das bestehende Anlagenkonto aktivieren, z. B. 0300.", "Bisherige Nutzungsdauer nach der Halbjahresregel zählen: erstes Jahr ½ oder 1, im Jahr des Umbaus ½ bei Inbetriebnahme im zweiten Halbjahr.", "Restnutzungsdauer = gesamte Nutzungsdauer − bisherige Nutzungsdauer.", "AfA gesamt = AfA der bestehenden Anlage + Umbaukosten ÷ Restnutzungsdauer (halbe AfA bei Inbetriebnahme im zweiten Halbjahr)."],
     vt: ["Einnahmen und Ausgaben werden erst gezählt, wenn Geld fließt (Zufluss-Abfluss-Prinzip). Eine offene Rechnung kommt erst bei der Zahlung ins Buch.", "Belegnummern fortlaufend nach Datum: Kassa KA1, KA2, …, Bank BK1, BK2, …, sonstige Belege (Eigenbelege) SO1, SO2, …. Nicht eingetragen werden Fälle ohne Geldfluss (Rechnung auf Ziel, Bestellung, Angebot) und private Ausgaben der Inhaberin aus privatem Geld: Beleg „–“.", "Kassa bzw. Bank: Betrag brutto bei Einzahlung oder Auszahlung eintragen.", "Aufgliedern: Umsatzsteuer bzw. Vorsteuer in die Steuerspalte, den Nettobetrag in die passende Einnahmen- oder Ausgabenspalte.", "Pkw: kein Vorsteuerabzug, daher kommt der Bruttobetrag in die Spalte PKW. Versicherungen haben keine Umsatzsteuer.", "GWG bis € 1.000,00 netto sind sofort zur Gänze Ausgabe. Geldtransfers zwischen Kassa und Bank werden nicht aufgegliedert.", "Geldentnahmen und Geldeinlagen: nur als Auszahlung bzw. Einzahlung in Kassa oder Bank eintragen. Sie wirken nicht auf den Erfolg, daher keine Aufgliederung.", "Private Warenentnahme (Eigenverbrauch): kein Geldfluss, aber Betriebseinnahme. Einstandspreis netto in Eigenverbrauch, dazu 20 % USt. Eigenbeleg, also Beleg SO.", "Privatanteil Telefon: gleich bei der Zahlung Prozentsatz × Telefon netto als Betriebseinnahme, dazu 20 % USt. Die Rechnung selbst bleibt zur Gänze Ausgabe.", "Privatanteil Pkw: Pkw-Ausgaben × privater Anteil (Fahrtenbuch: private km ÷ gesamte km × 100) als Betriebseinnahme, ohne USt.", "Überschuss = Betriebseinnahmen netto − Betriebsausgaben netto."],
@@ -3411,8 +3412,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   function avOld(rng, a, minLeft = 1) {
     const y = rndStep(rng, a.y) * 100, ak = y * a.nd;
     for (;;) {
-      const sy = 2025 - Math.floor(rng() * Math.max(1, a.nd - 1 - minLeft)), sm = 1 + Math.floor(rng() * 12);
-      const r = jaAfa(ak, a.nd, sy, sm, 2026);
+      const sy = (GJ - 1) - Math.floor(rng() * Math.max(1, a.nd - 1 - minLeft)), sm = 1 + Math.floor(rng() * 12);
+      const r = jaAfa(ak, a.nd, sy, sm, GJ);
       if (r.bw1 > y * minLeft) {
         const inb = new Date(sy, sm - 1, jaDay(rng, sm)), buy = avAdd(inb, -Math.floor(rng() * 10));
         return { a, y, ak, sy, sm, inb, buy, bw1: r.bw1, kum1: ak - r.bw1 };
@@ -3434,7 +3435,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const id = `bw-a${gi}-${ii}`, inv = `${ii + 1}-0`;
         if (kind === "gwg") {
           const g = AV_GWG.filter(x => x[1] === acc), [name, , sup] = pickR(rng, g), ak = rndStep(rng, [150, 990, 10]) * 100;
-          const m = 1 + Math.floor(rng() * 11), buy = new Date(2026, m - 1, jaDay(rng, m));
+          const m = 1 + Math.floor(rng() * 11), buy = new Date(GJ, m - 1, jaDay(rng, m));
           items.push({ id, inv, kind, name, sup, ak, nd: pickR(rng, [3, 4, 5]), buy, inb: buy, out: buy, bw1: 0, kum1: 0, afa: ak, bw31: 0, kum31: null });
           sols.push(`${name}: geringwertiges Wirtschaftsgut (bis € 1.000,00 netto). Es wird im Jahr der Anschaffung zur Gänze abgeschrieben (${P.fmt(ak)}) und scheint gleichzeitig als Zugang und Abgang auf. Buchwert 31.12.: € 0,00.`);
           return;
@@ -3443,8 +3444,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         if (kind === "neu") {
           const y = rndStep(rng, a.y) * 100, ak = y * a.nd;
           let buy, inb;
-          if (rng() < 0.4) { buy = new Date(2026, 5, 18 + Math.floor(rng() * 12)); inb = new Date(2026, 6, 1 + Math.floor(rng() * 14)); }
-          else { const m = 1 + Math.floor(rng() * 12); buy = new Date(2026, m - 1, jaDay(rng, m)); inb = avAdd(buy, Math.floor(rng() * 8)); if (inb.getFullYear() > 2026) inb = buy; }
+          if (rng() < 0.4) { buy = new Date(GJ, 5, 18 + Math.floor(rng() * 12)); inb = new Date(GJ, 6, 1 + Math.floor(rng() * 14)); }
+          else { const m = 1 + Math.floor(rng() * 12); buy = new Date(GJ, m - 1, jaDay(rng, m)); inb = avAdd(buy, Math.floor(rng() * 8)); if (inb.getFullYear() > GJ) inb = buy; }
           const half = inb.getMonth() >= 6, afa = half ? y / 2 : y;
           items.push({ id, inv, kind, name: a.n, sup: a.sup, ak, nd: a.nd, buy, inb, bw1: 0, kum1: 0, afa, bw31: ak - afa, kum31: afa });
           const cross = buy.getMonth() < 6 && half;
@@ -3453,14 +3454,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         }
         let o;
         if (kind === "ende") {
-          const y = rndStep(rng, a.y) * 100, ak = y * a.nd, sy = 2026 - a.nd, sm = 7 + Math.floor(rng() * 6), inb = new Date(sy, sm - 1, jaDay(rng, sm));
-          const r = jaAfa(ak, a.nd, sy, sm, 2026);
+          const y = rndStep(rng, a.y) * 100, ak = y * a.nd, sy = GJ - a.nd, sm = 7 + Math.floor(rng() * 6), inb = new Date(sy, sm - 1, jaDay(rng, sm));
+          const r = jaAfa(ak, a.nd, sy, sm, GJ);
           o = { a, y, ak, sy, sm, inb, buy: avAdd(inb, -Math.floor(rng() * 6)), bw1: r.bw1, kum1: ak - r.bw1 };
         } else o = avOld(rng, a, kind === "abgang" ? 2 : 1);
         const it = { id, inv, kind, name: a.n, sup: a.sup, ak: o.ak, nd: a.nd, buy: o.buy, inb: o.inb, bw1: o.bw1, kum1: o.kum1 };
         if (kind === "abgang") {
           const em = 1 + Math.floor(rng() * 12);
-          it.out = new Date(2026, em - 1, jaDay(rng, em));
+          it.out = new Date(GJ, em - 1, jaDay(rng, em));
           it.afa = Math.min(em <= 6 ? o.y / 2 : o.y, o.bw1); it.rbw = o.bw1 - it.afa; it.bw31 = 0; it.kum31 = null;
           sols.push(`${a.n}: Jahres-AfA ${P.fmt(o.ak)} ÷ ${a.nd} = ${P.fmt(o.y)}. Ausscheiden am ${avDate(it.out)} (${em <= 6 ? "erstes Halbjahr: halbe AfA" : "zweites Halbjahr: ganze AfA"}) → AfA ${P.fmt(it.afa)}. Restbuchwert ${P.fmt(o.bw1)} − ${P.fmt(it.afa)} = ${P.fmt(it.rbw)}, er wird über 7820 ausgebucht. Buchwert 31.12.: € 0,00.`);
         } else {
@@ -3481,10 +3482,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       });
       g.sum = g.items.reduce((s, it) => s + it.afa, 0);
       fields.push({ id: `bw-a${gi}-sum`, amt: g.sum });
-      books.push({ id: `bw-b${gi}`, label: `31.12.2026: Abschreibung ${P.acc[g.acc][0]} ${P.acc[g.acc][1]}`, soll: [[g.gwg ? "gwgafa" : "afa", g.sum]], haben: [[g.acc, g.sum]] });
+      books.push({ id: `bw-b${gi}`, label: `31.12.${GJ}: Abschreibung ${P.acc[g.acc][0]} ${P.acc[g.acc][1]}`, soll: [[g.gwg ? "gwgafa" : "afa", g.sum]], haben: [[g.acc, g.sum]] });
     });
-    groups.forEach(g => g.items.filter(it => it.rbw).forEach(it => books.push({ id: it.id + "-bk", label: `31.12.2026: Ausscheiden ${it.name} (Restbuchwert)`, soll: [["bwabg", it.rbw]], haben: [[g.acc, it.rbw]] })));
-    return { type: "av", title: "Führe das Anlagenverzeichnis für 2026", groups, fields, choices: [], books, sols };
+    groups.forEach(g => g.items.filter(it => it.rbw).forEach(it => books.push({ id: it.id + "-bk", label: `31.12.${GJ}: Ausscheiden ${it.name} (Restbuchwert)`, soll: [["bwabg", it.rbw]], haben: [[g.acc, it.rbw]] })));
+    return { type: "av", title: "Führe das Anlagenverzeichnis für " + GJ, groups, fields, choices: [], books, sols };
   }
   function bwRenderAv() {
     const two = (a, b) => `<div class="av-2"><span>${a}</span><span>${b}</span></div>`;
@@ -3500,8 +3501,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <thead><tr><th>Inv.-Nr.</th><th>Bezeichnung<br>Lieferant</th><th>Anschaffung<br>Inbetriebnahme<br>Abgang</th><th>ND</th><th class="num">AHK</th><th class="num">Buchwert<br>AfA kum. 01.01.</th><th class="num">lfd. AfA${g.items.some(it => it.rbw !== undefined) ? "<br>Abgang RBW" : ""}</th><th class="num">Buchwert<br>AfA kum. 31.12.</th></tr></thead>
         <tbody>${rows}</tbody><tfoot><tr><td colspan="6">Summe laufende Abschreibung</td><td class="num">${bwInp(`bw-a${gi}-sum`, "Summe laufende AfA " + P.acc[g.acc][0])}</td><td></td></tr></tfoot></table></div></div>`;
     }).join("");
-    return `<div class="ab-sec"><div class="av-title"><b>Modehaus Maier e.U.</b><span>Anlagenverzeichnis 01.01.2026 bis 31.12.2026</span></div><p class="note">Lineare Abschreibung, Halbjahresregel nach dem Datum der Inbetriebnahme. Ergänze die leeren Felder, bilde die Summe der laufenden Abschreibung je Konto und verbuche die Abschreibungen am 31.12.${bw.groups.some(g => g.items.some(it => it.rbw)) ? " Der Verkaufserlös der ausgeschiedenen Anlage ist bereits gebucht." : ""}</p></div>
-      ${tables}<h2 class="bw-h">Buchungssätze am 31.12.2026</h2>${bwBooksHtml()}`;
+    return `<div class="ab-sec"><div class="av-title"><b>Modehaus Maier e.U.</b><span>Anlagenverzeichnis 01.01.${GJ} bis 31.12.${GJ}</span></div><p class="note">Lineare Abschreibung, Halbjahresregel nach dem Datum der Inbetriebnahme. Ergänze die leeren Felder, bilde die Summe der laufenden Abschreibung je Konto und verbuche die Abschreibungen am 31.12.${bw.groups.some(g => g.items.some(it => it.rbw)) ? " Der Verkaufserlös der ausgeschiedenen Anlage ist bereits gebucht." : ""}</p></div>
+      ${tables}<h2 class="bw-h">Buchungssätze am 31.12.${GJ}</h2>${bwBooksHtml()}`;
   }
 
   // ---------- Belege in der Bewertung ----------
@@ -3553,7 +3554,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return `<div class="doc"><span class="wm">Übungsbeleg</span>
       <div class="firm">${esc(BW_INSURER[0])}</div><div class="small">${esc(BW_INSURER[1])} · ${esc(BW_INSURER[2])}</div>
       <div class="addr-row"><div>${esc(US.name)}<br>${esc(US.street)}<br>${esc(US.city)}</div>
-        <div class="meta"><span>Schaden-Nr.</span><span class="mono">S-${2026}-${10000 + Math.floor(rng() * 89999)}</span><span>Datum</span><span class="mono">${fmtDate(date)}</span></div></div>
+        <div class="meta"><span>Schaden-Nr.</span><span class="mono">S-${GJ}-${10000 + Math.floor(rng() * 89999)}</span><span>Datum</span><span class="mono">${fmtDate(date)}</span></div></div>
       <div class="doc-title">${esc(subject)}</div>
       <div style="display:grid;gap:8px;font-size:0.92rem">${body}</div>
       <div class="pay">Mit freundlichen Grüßen<br>Schadenabteilung</div>
@@ -3580,13 +3581,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       const [name, sup] = pool.pop(), nd = pickR(rng, G.nd), o = avOld(rng, { n: name, acc, nd, y: G.y }, 1);
       const afa = Math.min(o.y, o.bw1), r = { id: `bw-n${i}`, old: true, name, sup, nd, ak: o.ak, buy: o.buy, inb: o.inb, bw1: o.bw1, afa, kum: o.kum1 + afa, bw31: o.bw1 - afa };
       rows.push(r);
-      sols.push(`Nr. ${i + 1} ${name}: Anschaffungswert ${P.fmt(o.ak)} × ${anPctTxt(nd)} = Jahres-AfA ${P.fmt(o.y)}. Bisher abgeschrieben (Halbjahresregel im ersten Jahr) ${P.fmt(o.kum1)}, Buchwert 01.01.2026 ${P.fmt(o.bw1)}. AfA 2026 ${P.fmt(afa)}${afa < o.y ? " (nur noch der Restbuchwert)" : ""}, kumulierte AfA ${P.fmt(r.kum)}, Buchwert 31.12. ${P.fmt(r.bw31)}.`);
+      sols.push(`Nr. ${i + 1} ${name}: Anschaffungswert ${P.fmt(o.ak)} × ${anPctTxt(nd)} = Jahres-AfA ${P.fmt(o.y)}. Bisher abgeschrieben (Halbjahresregel im ersten Jahr) ${P.fmt(o.kum1)}, Buchwert 01.01.${GJ} ${P.fmt(o.bw1)}. AfA ${GJ} ${P.fmt(afa)}${afa < o.y ? " (nur noch der Restbuchwert)" : ""}, kumulierte AfA ${P.fmt(r.kum)}, Buchwert 31.12. ${P.fmt(r.bw31)}.`);
     }
     const texts = [];
     for (let j = 0; j < nNew; j++) {
       const i = nOld + j, [name, sup] = pool.pop() || G.items[0], nd = pickR(rng, G.nd), id = `bw-n${i}`;
-      const m = 1 + Math.floor(rng() * 11), buy = new Date(2026, m - 1, jaDay(rng, m));
-      const inb = rng() < 0.35 && m === 6 ? new Date(2026, 6, 1 + Math.floor(rng() * 10)) : avAdd(buy, Math.floor(rng() * 6));
+      const m = 1 + Math.floor(rng() * 11), buy = new Date(GJ, m - 1, jaDay(rng, m));
+      const inb = rng() < 0.35 && m === 6 ? new Date(GJ, 6, 1 + Math.floor(rng() * 10)) : avAdd(buy, Math.floor(rng() * 6));
       let y, ak, lines, net, tax, extra = "", calc;
       if (acc === "pkw") {
         do { y = rndStep(rng, G.y) * 100; ak = y * nd; } while (ak % 6 !== 0);
@@ -3623,28 +3624,28 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       fields.push({ id: r.id + "-bw1", amt: r.bw1, zeroOk: true, blank: !r.old }, { id: r.id + "-afa", amt: r.afa }, { id: r.id + "-kum", amt: r.kum }, { id: r.id + "-bw31", amt: r.bw31 });
     });
     const sum = rows.reduce((s, r) => s + r.afa, 0);
-    books.push({ id: "bw-n-afa", label: `31.12.2026: Abschreibung ${P.acc[acc][0]} ${P.acc[acc][1]}`, soll: [["afa", sum]], haben: [[acc, sum]] });
+    books.push({ id: "bw-n-afa", label: `31.12.${GJ}: Abschreibung ${P.acc[acc][0]} ${P.acc[acc][1]}`, soll: [["afa", sum]], haben: [[acc, sum]] });
     return { type: "an", title: "Ergänze das Anlagenverzeichnis", acc, G, rows, texts, fields, choices: [], books, sols };
   }
   function bwRenderAn() {
     const g = bw.G, nOld = bw.rows.filter(r => r.old).length, inp = (id, lbl, cls = "") => `<input id="${id}" class="${cls}" inputmode="${cls === "an-txt" || cls === "an-date" ? "text" : "decimal"}" aria-label="${esc(lbl)}">`;
     const rows = bw.rows.map((r, i) => {
       if (r.old) return `<tr><td class="mono">${i + 1}</td><td>${esc(r.name)}<span class="av-sup">${esc(r.sup)}</span></td><td class="av-d">${avDate(r.buy)}<br>${avDate(r.inb)}</td><td class="av-d">${r.nd}<br>${anPctTxt(r.nd)}</td><td class="num">${fmtNum(r.ak)}</td>
-        <td class="num">${inp(r.id + "-bw1", `Nr. ${i + 1} Buchwert 1.1.`)}</td><td class="num">${inp(r.id + "-afa", `Nr. ${i + 1} AfA 2026`)}</td><td class="num">${inp(r.id + "-kum", `Nr. ${i + 1} kumulierte AfA`)}</td><td class="num">${inp(r.id + "-bw31", `Nr. ${i + 1} Buchwert 31.12.`)}</td></tr>`;
+        <td class="num">${inp(r.id + "-bw1", `Nr. ${i + 1} Buchwert 1.1.`)}</td><td class="num">${inp(r.id + "-afa", `Nr. ${i + 1} AfA ${GJ}`)}</td><td class="num">${inp(r.id + "-kum", `Nr. ${i + 1} kumulierte AfA`)}</td><td class="num">${inp(r.id + "-bw31", `Nr. ${i + 1} Buchwert 31.12.`)}</td></tr>`;
       return `<tr class="an-new"><td class="mono">${i + 1}</td><td><div class="av-2" style="justify-items:stretch">${inp(r.id + "-name", `Nr. ${i + 1} Bezeichnung`, "an-txt")}${inp(r.id + "-sup", `Nr. ${i + 1} Lieferant`, "an-txt")}</div></td>
         <td><div class="av-2">${inp(r.id + "-buy", `Nr. ${i + 1} Anschaffungsdatum`, "an-date")}${inp(r.id + "-inb", `Nr. ${i + 1} Inbetriebnahme`, "an-date")}</div></td>
         <td><div class="av-2">${inp(r.id + "-nd", `Nr. ${i + 1} Nutzungsdauer`, "an-sm")}${inp(r.id + "-pct", `Nr. ${i + 1} AfA-Satz in Prozent`, "an-sm")}</div></td>
-        <td class="num">${inp(r.id + "-ak", `Nr. ${i + 1} Anschaffungswert`)}</td><td class="num">${inp(r.id + "-bw1", `Nr. ${i + 1} Buchwert 1.1.`)}</td><td class="num">${inp(r.id + "-afa", `Nr. ${i + 1} AfA 2026`)}</td><td class="num">${inp(r.id + "-kum", `Nr. ${i + 1} kumulierte AfA`)}</td><td class="num">${inp(r.id + "-bw31", `Nr. ${i + 1} Buchwert 31.12.`)}</td></tr>`;
+        <td class="num">${inp(r.id + "-ak", `Nr. ${i + 1} Anschaffungswert`)}</td><td class="num">${inp(r.id + "-bw1", `Nr. ${i + 1} Buchwert 1.1.`)}</td><td class="num">${inp(r.id + "-afa", `Nr. ${i + 1} AfA ${GJ}`)}</td><td class="num">${inp(r.id + "-kum", `Nr. ${i + 1} kumulierte AfA`)}</td><td class="num">${inp(r.id + "-bw31", `Nr. ${i + 1} Buchwert 31.12.`)}</td></tr>`;
     }).join("");
     const docs = bw.rows.filter(r => r.doc).map(r => `<div class="beleg-wrap">${r.doc}</div>`).join("");
     return `<div class="ab-sec bw-case"><h2>${P.acc[bw.acc][0]} ${esc(P.acc[bw.acc][1])}</h2>
         <p>${esc(bw.texts.join(" "))}</p>
         <p><b>Die Neuanschaffung${bw.texts.length > 1 ? "en sind" : " ist"} in das Anlagenverzeichnis einzutragen. ${nOld > 1 ? g.whatPl.replace(/^./, c => c.toUpperCase()) + " sind" : g.what.replace(/^./, c => c.toUpperCase()) + " ist"} im Anlagenverzeichnis zu vervollständigen.</b></p>
         ${docs}</div>
-      <div class="ab-sec"><div class="av-title"><b>Anlagenverzeichnis ${esc(US.name)}</b><span>${P.acc[bw.acc][0]} ${esc(P.acc[bw.acc][1])} · 2026</span></div>
+      <div class="ab-sec"><div class="av-title"><b>Anlagenverzeichnis ${esc(US.name)}</b><span>${P.acc[bw.acc][0]} ${esc(P.acc[bw.acc][1])} · ${GJ}</span></div>
         <p class="note">Bezeichnung und Lieferant werden nicht automatisch geprüft. Datumsangaben im Format TT.MM.JJJJ, beim Buchwert 01.01. einer Neuanschaffung trägst du 0 ein oder lässt das Feld leer.</p>
         <div class="ab-scroll"><table class="av-table an-table">
-        <thead><tr><th>Nr</th><th>Bezeichnung<br>Lieferant</th><th>Ansch. Dat.<br>Inbetriebn.</th><th>ND<br>AfA %</th><th class="num">Anschaffungs&shy;wert</th><th class="num">Buchwert 1.1.2026</th><th class="num">AfA 2026</th><th class="num">Kum. AfA per 31.12.2026</th><th class="num">Buchwert 31.12.2026</th></tr></thead>
+        <thead><tr><th>Nr</th><th>Bezeichnung<br>Lieferant</th><th>Ansch. Dat.<br>Inbetriebn.</th><th>ND<br>AfA %</th><th class="num">Anschaffungs&shy;wert</th><th class="num">Buchwert 1.1.${GJ}</th><th class="num">AfA ${GJ}</th><th class="num">Kum. AfA per 31.12.${GJ}</th><th class="num">Buchwert 31.12.${GJ}</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
         <label class="field-label" for="bw-neben" style="margin-top:6px">Nebenrechnungen (für dich, wird nicht geprüft)</label>
         <textarea id="bw-neben" rows="4" class="an-neben" placeholder="z. B. 35.000,00 × 12,5 % = 4.375,00 …"></textarea>
@@ -3660,7 +3661,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const VT_AUS = [["hw", "HW/ Material"], ["bm", "Büro\u00ADmaterial"], ["miete", "Miete"], ["pkw", "PKW"], ["tel", "Telefon"], ["str", "Strom"], ["ver", "Versiche\u00ADrung"], ["werb", "Werbung"], ["rein", "Reinigung"], ["lit", "Fach\u00ADliteratur"], ["gwg", "GWG"]];
   const EA_WAREN = [...PARTNERS.waren, ["Modegroßhandel Lend GmbH", "Lendplatz 12", "8020 Graz", "ATU 64410273"], ["Strickwaren Puntigam KG", "Triester Straße 180", "8055 Graz", "ATU 69920451"]];
   const EA_GWG = [["Tablet für die Präsentation der Online-Kollektion", 38000, 62000, "edv"], ["Schaufensterpuppe", 29000, 54000, "deko"], ["Standspiegel mit Holzrahmen", 24000, 48000, "deko"], ["Kartenterminal", 19000, 34000, "edv"], ["Etikettendrucker", 21000, 46000, "edv"], ["Rollständer für Kleider", 16000, 32000, "deko"]];
-  const eaDate = (m, d) => new Date(2026, m, d);
+  const eaDate = (m, d) => new Date(GJ, m, d);
   const eaD = dt => fmtDate(dt).slice(0, 6);
   // Bruttobetrag zu einem runden Nettobetrag in Euro
   const eaNet = (rng, a, b, s = 1) => rndStep(rng, [a, b, s]) * 100;
@@ -3899,7 +3900,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     sols.push(`Kassa: Anfangsbestand ${fmtNum(kAB)} + Einzahlungen ${fmtNum(sum.kE)} − Auszahlungen ${fmtNum(sum.kA)} = ${fmtNum(kEnd)}. Bank: ${fmtNum(bAB)} + ${fmtNum(sum.bE)} − ${fmtNum(sum.bA)} = ${fmtNum(bEnd)}.`);
     if (pm) sols.push("Geldentnahmen und Geldeinlagen verändern nur Kassa bzw. Bank. Eigenverbrauch und Privatanteile sind Betriebseinnahmen ohne Geldfluss.");
     sols.push(`Betriebseinnahmen netto ${fmtNum(ein)} − Betriebsausgaben netto ${fmtNum(ausN)} = ${ein - ausN >= 0 ? "Überschuss" : "Verlust"} ${fmtNum(Math.abs(ein - ausN))}. USt und VSt sind durchlaufende Posten und zählen nicht zum Ergebnis.`);
-    return { type: "vt", pm, title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} 2026`, m, rows, kAB, bAB, cols, nIn: cIn.length, nAus: cAus.length, fields, choices: [], books: [], sols };
+    return { type: "vt", pm, title: `Führe das Kassa- und Bankbuch für ${MONTHS[m]} ${GJ}`, m, rows, kAB, bAB, cols, nIn: cIn.length, nAus: cAus.length, fields, choices: [], books: [], sols };
   }
   function bwRenderVt() {
     const inp = (id, lbl) => `<input id="${id}" inputmode="decimal" aria-label="${esc(lbl)}">`, plain = l => l.replace(/\u00AD/g, "");
@@ -3910,9 +3911,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const rows = bw.rows.map(r => `<tr><td class="vt-text"><span class="vt-meta">${r.nr} · ${eaD(r.dt)}</span>${esc(r.short)}</td><td class="vt-bel"><input id="vt-${r.nr}-bel" class="vt-belin" inputmode="text" aria-label="Zeile ${r.nr} Beleg" placeholder="KA1, BK1"></td>${bw.cols.map(([k, l]) => cell(k, inp(`vt-${r.nr}-${k}`, `Zeile ${r.nr} ${plain(l)}`))).join("")}</tr>`).join("");
     const ab = bw.cols.map(([k]) => cell(k, k === "kE" ? `<span class="vt-given">${fmtNum(bw.kAB)}</span>` : k === "bE" ? `<span class="vt-given">${fmtNum(bw.bAB)}</span>` : "")).join("");
     return `<div class="ab-sec"><h2>${esc(US.name)} · Einnahmen-Ausgaben-Rechnung</h2>
-        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Vergib in der Spalte „Beleg“ die Belegnummer: Kassabelege KA1, KA2, …, Bankbelege BK1, BK2, … (fortlaufend nach Datum, Geldtransfer zwischen Kassa und Bank z. B. KA3/BK2). Gehört ein Fall nicht ins Kassa-/Bankbuch, schreib „–“ und lass die Zeile leer. Anfangsbestand am 01.${pad(bw.m + 1)}.2026: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.${bw.pm ? " Fälle ohne Kassa- oder Bankbeleg, die trotzdem eingetragen werden (Eigenverbrauch, Privatanteil), bekommen einen Eigenbeleg: sonstige Belege SO1, SO2, …." : ""}</p></div>
+        <p class="note">Trag jeden Geschäftsfall in das Kassa- bzw. Bankbuch ein (brutto) und gliedere ihn netto auf. Felder, in die nichts gehört, bleiben leer. Vergib in der Spalte „Beleg“ die Belegnummer: Kassabelege KA1, KA2, …, Bankbelege BK1, BK2, … (fortlaufend nach Datum, Geldtransfer zwischen Kassa und Bank z. B. KA3/BK2). Gehört ein Fall nicht ins Kassa-/Bankbuch, schreib „–“ und lass die Zeile leer. Anfangsbestand am 01.${pad(bw.m + 1)}.${GJ}: Kassa € ${fmtNum(bw.kAB)}, Bank € ${fmtNum(bw.bAB)}.${bw.pm ? " Fälle ohne Kassa- oder Bankbeleg, die trotzdem eingetragen werden (Eigenverbrauch, Privatanteil), bekommen einen Eigenbeleg: sonstige Belege SO1, SO2, …." : ""}</p></div>
       <div class="ab-sec"><h2>Geschäftsfälle</h2><div class="ea-cases">${cases}</div></div>
-      <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} 2026</span></div>
+      <div class="ab-sec"><div class="av-title"><b>Kassa-/Bankbuch mit Verteilungstabelle</b><span>${MONTHS[bw.m]} ${GJ}</span></div>
         <div class="ab-scroll"><table class="vt-table">
           <thead><tr class="vt-h1"><th rowspan="2" class="vt-text">Nr. · Datum<br>Text</th><th rowspan="2" class="vt-bel">Beleg</th><th colspan="2" class="g">Kassa (brutto)</th><th colspan="2" class="g">Bank (brutto)</th><th colspan="2" class="g">Steuer</th>${bw.nIn ? `<th colspan="${bw.nIn}" class="g">Einnahmen (netto)</th>` : ""}<th colspan="${bw.nAus}" class="g">Ausgaben (netto)</th></tr>
             <tr class="vt-h2">${bw.cols.map(([k, l]) => `<th class="${grp(k)}">${l}</th>`).join("")}</tr></thead>
@@ -3964,7 +3965,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     }
     const sum = k => rows.reduce((a, r) => a + r[k], 0);
     [["br", "gross"], ["vst", "tax"], ["net", "net"], ["abz", "abz"], ["zus", "zus"]].forEach(([f, k]) => fields.push({ id: `web-s-${f}`, amt: sum(k), zeroOk: true, blank: !sum(k) }));
-    return { type: "web", title: `Führe das Wareneingangsbuch für ${MONTHS[m]} 2026`, m, rows, fields, choices: [], books: [], sols };
+    return { type: "web", title: `Führe das Wareneingangsbuch für ${MONTHS[m]} ${GJ}`, m, rows, fields, choices: [], books: [], sols };
   }
   function bwRenderWeb() {
     const inp = (id, lbl, cls = "") => `<input id="${id}" class="${cls}" inputmode="${cls ? "text" : "decimal"}" aria-label="${esc(lbl)}">`;
@@ -3976,7 +3977,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     return `<div class="ab-sec"><h2>${esc(US.name)} · Wareneingangsbuch</h2>
         <p class="note">Trag alle Eingangsrechnungen für Handelswaren in das Wareneingangsbuch ein. Lieferant und Bezeichnung der Ware werden nicht automatisch geprüft. Datum im Format TT.MM.JJJJ. Leere Felder bei Abzügen und Zusatzkosten zählen als 0. Ist eine Rechnung noch nicht bezahlt, bleibt „Bezahlt am“ leer.</p></div>
       <div class="ab-sec"><h2>Eingangsrechnungen</h2><div class="ea-cases">${cases}</div></div>
-      <div class="ab-sec"><div class="av-title"><b>Wareneingangsbuch</b><span>${MONTHS[bw.m]} 2026</span></div>
+      <div class="ab-sec"><div class="av-title"><b>Wareneingangsbuch</b><span>${MONTHS[bw.m]} ${GJ}</span></div>
         <div class="ab-scroll"><table class="av-table an-table web-table">
           <thead><tr><th rowspan="2">Nr.</th><th rowspan="2">Liefer&shy;datum</th><th rowspan="2">Beleg</th><th rowspan="2">Lieferant</th><th rowspan="2">Bezeichnung Ware</th><th rowspan="2" class="num">Brutto&shy;betrag</th><th colspan="2" class="c">Vorsteuer</th><th rowspan="2" class="num">Netto&shy;betrag</th><th colspan="2" class="c">Brutto</th><th rowspan="2">Bezahlt am</th></tr>
             <tr><th>%</th><th class="num">EUR</th><th class="num">Abzüge</th><th class="num">Zusatz&shy;kosten</th></tr></thead>
@@ -4016,11 +4017,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       else if (k === "schaden") { dmg = pickR(rng, AG_DAMAGE); cand = AV_ITEMS.filter(a => dmg.acc.includes(a.acc)); }
       else cand = AV_ITEMS.filter(a => ["bga", "masch", "edv", "lkw"].includes(a.acc));
       cand = cand.filter(a => !used.has(a.n)); const a = pickR(rng, cand.length ? cand : AV_ITEMS.filter(x => x.acc === "bga")); used.add(a.n);
-      const o = avOld(rng, a, 2), em = 1 + Math.floor(rng() * 12), dOut = new Date(2026, em - 1, jaDay(rng, em));
+      const o = avOld(rng, a, 2), em = 1 + Math.floor(rng() * 12), dOut = new Date(GJ, em - 1, jaDay(rng, em));
       const afa = Math.min(em <= 6 ? o.y / 2 : o.y, o.bw1), rbw = o.bw1 - afa, acc = a.acc, id = j => `bw-b${i}${j}`, cid = "bw-g" + i;
       const giveBw = rng() < 0.5, x = a.n.replace(/ \(.*\)$/, "");
       const kv = [["Anlage", `${P.acc[acc][0]} ${P.acc[acc][1]}`], ["Inbetriebnahme", avDate(o.inb)], ["Anschaffungskosten", P.fmt(o.ak)], ["Nutzungsdauer", avYears(a.nd)]];
-      if (giveBw) kv.push(["Buchwert 01.01.2026", P.fmt(o.bw1)]);
+      if (giveBw) kv.push(["Buchwert 01.01." + GJ, P.fmt(o.bw1)]);
       let text, inv = null, doc = null;
       const late = afa < (em <= 6 ? o.y / 2 : o.y);
       if (k === "verkauf" || k === "pkw") {
@@ -4049,7 +4050,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         text = dmg.t.replace("{d}", avDate(dOut)).replace("{x}", x).replace("{X}", x);
         if (ins) {
           const two = rng() < 0.6, d1 = avAdd(dOut, 10 + Math.floor(rng() * 20)), d2 = avAdd(d1, 10 + Math.floor(rng() * 15));
-          const dd1 = d1.getFullYear() > 2026 ? new Date(2026, 11, 15) : d1, dd2 = d2.getFullYear() > 2026 ? new Date(2026, 11, 28) : d2;
+          const dd1 = d1.getFullYear() > GJ ? new Date(GJ, 11, 15) : d1, dd2 = d2.getFullYear() > GJ ? new Date(GJ, 11, 28) : d2;
           const withDoc = rng() < 0.6;
           if (two && withDoc) {
             text += ` Am ${avDate(dd1)} kommt das Schreiben der Versicherung (Beleg). Am ${avDate(dd2)} überweist sie den Betrag auf unser Bankkonto.`;
@@ -4071,11 +4072,11 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         } else text += pickR(rng, [" Die Versicherung zahlt keine Entschädigung.", " Die Anlage war nicht versichert.", " Die Versicherung lehnt die Zahlung ab, weil der Schaden grob fahrlässig verursacht wurde."]);
         sols.push(`Fall ${i + 1}: Schadensfall. ${ins ? "Die Entschädigung ist ein Ertrag auf 4610, ohne Umsatzsteuer." : "Ohne Entschädigung entfällt diese Buchung."} Der Restbuchwert kommt auf 7819 Sonstige Schadensfälle.`);
       }
-      books.push({ id: id("y"), case: i, label: "31.12.2026: Abschreibung bis zum Ausscheiden", soll: [["afa", afa]], haben: [[acc, afa]] },
-        { id: id("z"), case: i, label: "31.12.2026: Ausbuchen des Restbuchwerts", soll: [[k === "schaden" ? "schaden" : "bwabg", rbw]], haben: [[acc, rbw]] });
+      books.push({ id: id("y"), case: i, label: "31.12." + GJ + ": Abschreibung bis zum Ausscheiden", soll: [["afa", afa]], haben: [[acc, afa]] },
+        { id: id("z"), case: i, label: "31.12." + GJ + ": Ausbuchen des Restbuchwerts", soll: [[k === "schaden" ? "schaden" : "bwabg", rbw]], haben: [[acc, rbw]] });
       const inputs = [];
-      if (!giveBw) { inputs.push({ id: cid + "-bw1", label: "Buchwert 01.01.2026" }); fields.push({ id: cid + "-bw1", amt: o.bw1 }); }
-      inputs.push({ id: cid + "-afa", label: "Abschreibung 2026" }, { id: cid + "-rbw", label: "Restbuchwert bei Abgang" });
+      if (!giveBw) { inputs.push({ id: cid + "-bw1", label: "Buchwert 01.01." + GJ }); fields.push({ id: cid + "-bw1", amt: o.bw1 }); }
+      inputs.push({ id: cid + "-afa", label: "Abschreibung " + GJ }, { id: cid + "-rbw", label: "Restbuchwert bei Abgang" });
       fields.push({ id: cid + "-afa", amt: afa }, { id: cid + "-rbw", amt: rbw });
       sols[sols.length - 1] += ` Jahres-AfA ${P.fmt(o.ak)} ÷ ${a.nd} = ${P.fmt(o.y)}.${giveBw ? "" : ` Buchwert 01.01.: ${P.fmt(o.ak)} − bisherige AfA ${P.fmt(o.kum1)} = ${P.fmt(o.bw1)}.`} Ausscheiden im ${em <= 6 ? "ersten Halbjahr: halbe AfA" : "zweiten Halbjahr: ganze AfA"}${late ? ", höchstens aber der Restbuchwert" : ""} = ${P.fmt(afa)}. Restbuchwert: ${P.fmt(o.bw1)} − ${P.fmt(afa)} = ${P.fmt(rbw)}.`;
       cases.push({ text, kv, kvTitle: "Auszug aus dem Anlagenverzeichnis", inv, doc, inputs });
@@ -4128,7 +4129,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const big = pickR(rng, ["umb", "mix"]), kinds = { 2: ["erh", rng() < 0.6 ? big : "erw"], 3: ["erh", big, pickR(rng, ["erh", "erw"])], 4: ["erh", big, "erw", "erh"] }[n].sort(() => rng() - 0.5);
     const cases = [], books = [], fields = [], sols = [], erh = UM_ERH.slice().sort(() => rng() - 0.5);
     kinds.forEach((k, i) => {
-      const id = j => `bw-b${i}${j}`, cid = "bw-u" + i, m = 1 + Math.floor(rng() * 12), dR = new Date(2026, m - 1, jaDay(rng, m));
+      const id = j => `bw-b${i}${j}`, cid = "bw-u" + i, m = 1 + Math.floor(rng() * 12), dR = new Date(GJ, m - 1, jaDay(rng, m));
       if (k === "erh") {
         const e = erh.pop(), net = rndStep(rng, e.r) * 100, tax = net / 5, [how, pay] = pickR(rng, UM_PAY);
         if (rng() < 0.6) cases.push({ text: `Am ${avDate(dR)} erhalten wir diese Rechnung. ${pay === "bank" ? "Wir bezahlen sofort per Banküberweisung." : "Wir bezahlen sie erst später."}`,
@@ -4142,13 +4143,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       const geb = k !== "erw", nd = geb ? 40 : 10;
       let sy, sm, yO, ak, um, dI, dRe, bisher, rnd, uy, cost, uafa, total, bw1;
       do {
-        sy = geb ? 2000 + Math.floor(rng() * 21) : 2018 + Math.floor(rng() * 7); sm = 1 + Math.floor(rng() * 12);
+        sy = geb ? (GJ - 26) + Math.floor(rng() * 21) : (GJ - 8) + Math.floor(rng() * 7); sm = 1 + Math.floor(rng() * 12);
         yO = geb ? rndStep(rng, [6000, 15000, 250]) * 100 : rndStep(rng, [800, 2400, 20]) * 100; ak = yO * nd;
-        um = 1 + Math.floor(rng() * 12); dI = new Date(2026, um - 1, jaDay(rng, um)); dRe = avAdd(dI, -Math.floor(rng() * 20));
-        bisher = (sm >= 7 ? 0.5 : 1) + (2025 - sy) + (um >= 7 ? 0.5 : 0); rnd = nd - bisher;
+        um = 1 + Math.floor(rng() * 12); dI = new Date(GJ, um - 1, jaDay(rng, um)); dRe = avAdd(dI, -Math.floor(rng() * 20));
+        bisher = (sm >= 7 ? 0.5 : 1) + ((GJ - 1) - sy) + (um >= 7 ? 0.5 : 0); rnd = nd - bisher;
         uy = rndStep(rng, geb ? [300, 3000, 20] : [100, 600, 10]) * 100; cost = Math.round(uy * rnd); uafa = um >= 7 ? uy / 2 : uy; total = yO + uafa;
-        bw1 = jaAfa(ak, nd, sy, sm, 2026).bw1;
-      } while (cost >= bw1 || dRe.getFullYear() < 2026);
+        bw1 = jaAfa(ak, nd, sy, sm, GJ).bw1;
+      } while (cost >= bw1 || dRe.getFullYear() < GJ);
       const gw = pickR(rng, UM_GEB), acc = geb ? "gebaeude" : "bga", what = geb ? gw[0].replace(/^./, c => c.toUpperCase()) : pickR(rng, UM_BGA), sup = geb ? "Baumeister Zwinker GmbH" : "Ladenbau Steiner GmbH";
       const inv = [[what, cost]], soll = [[acc, cost]];
       let ren = 0;
@@ -4162,12 +4163,12 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       cases.push({ text: useDoc ? `Am ${avDate(dRe)} erhalten wir diese Rechnung. ${geb ? "Der Umbau" : "Die Erweiterung"} wird am ${avDate(dI)} in Betrieb genommen.` : `Am ${avDate(dRe)} stellt uns die ${sup} folgende Rechnung, zahlbar in 30 Tagen. ${geb ? "Der Umbau" : "Die Erweiterung"} wird am ${avDate(dI)} in Betrieb genommen.`,
         inv: useDoc ? null : inv,
         doc: useDoc ? bwInvoice({ rng, issuer: bwFirm(rng, sup), recipient: bwUs(), date: dRe, deliv: avAdd(dRe, -40 - Math.floor(rng() * 60)), deliv2: avAdd(dRe, -2), lines: inv.filter(l => !/^(\+|Summe|Rechnungsbetrag)/.test(l[0])).map(l => [1, l[0], l[1], l[1]]), net, R: 20, tax, pay: "Zahlbar innerhalb von 30 Tagen ohne Abzug." }) : null,
-        kvTitle: "Auszug aus dem Anlagenverzeichnis", kv: [["Anlage", `${P.acc[acc][0]} ${name}`], ["Inbetriebnahme", jaD(jaDay(rng, sm), sm, sy)], ["Anschaffungskosten", P.fmt(ak)], ["Nutzungsdauer", avYears(nd)], ["Buchwert 01.01.2026", P.fmt(bw1)]],
-        inputs: [{ id: cid + "-bish", label: "Bisherige Nutzungsdauer (Jahre)" }, { id: cid + "-rnd", label: "Restnutzungsdauer (Jahre)" }, { id: cid + "-uafa", label: `AfA 2026 für ${geb ? "den Umbau" : "die Erweiterung"}` }, { id: cid + "-ges", label: `AfA 2026 gesamt (${P.acc[acc][0]})` }] });
+        kvTitle: "Auszug aus dem Anlagenverzeichnis", kv: [["Anlage", `${P.acc[acc][0]} ${name}`], ["Inbetriebnahme", jaD(jaDay(rng, sm), sm, sy)], ["Anschaffungskosten", P.fmt(ak)], ["Nutzungsdauer", avYears(nd)], ["Buchwert 01.01." + GJ, P.fmt(bw1)]],
+        inputs: [{ id: cid + "-bish", label: "Bisherige Nutzungsdauer (Jahre)" }, { id: cid + "-rnd", label: "Restnutzungsdauer (Jahre)" }, { id: cid + "-uafa", label: `AfA ${GJ} für ${geb ? "den Umbau" : "die Erweiterung"}` }, { id: cid + "-ges", label: `AfA ${GJ} gesamt (${P.acc[acc][0]})` }] });
       fields.push({ id: cid + "-bish", amt: bisher * 100, qty: true }, { id: cid + "-rnd", amt: rnd * 100, qty: true }, { id: cid + "-uafa", amt: uafa }, { id: cid + "-ges", amt: total });
       books.push({ id: id("a"), case: i, label: `${avDate(dRe)}: Rechnung`, soll, haben: [["verb", net + tax]] },
-        { id: id("b"), case: i, label: "31.12.2026: Abschreibung", soll: [["afa", total]], haben: [[acc, total]] });
-      const yrs = `${sy}: ${sm >= 7 ? "½" : "1"} Jahr, ${sy + 1 <= 2025 ? `${sy + 1}${sy + 1 < 2025 ? `–2025` : ""}: ${2025 - sy} ${2025 - sy === 1 ? "Jahr" : "Jahre"}, ` : ""}2026: ${um >= 7 ? "½ Jahr" : "0 (Umbau im ersten Halbjahr)"}`;
+        { id: id("b"), case: i, label: "31.12." + GJ + ": Abschreibung", soll: [["afa", total]], haben: [[acc, total]] });
+      const yrs = `${sy}: ${sm >= 7 ? "½" : "1"} Jahr, ${sy + 1 <= (GJ - 1) ? `${sy + 1}${sy + 1 < (GJ - 1) ? `–${GJ - 1}` : ""}: ${(GJ - 1) - sy} ${(GJ - 1) - sy === 1 ? "Jahr" : "Jahre"}, ` : ""}${GJ}: ${um >= 7 ? "½ Jahr" : "0 (Umbau im ersten Halbjahr)"}`;
       sols.push(`Fall ${i + 1}: ${k === "mix" ? `Die Rechnung enthält beides: ${inv[0][0]} ist ein Umbau und wird aktiviert (${P.acc[acc][0]}), ${inv[1][0]} ist Erhaltung und sofort Aufwand (7201).` : `${geb ? gw[1] : "Erweiterung"}: Die Anlage wird ${geb && gw[1] === "Umbau" ? "in ihrem Verwendungszweck verändert" : "in ihrer Substanz vermehrt"}, daher wird aktiviert (${P.acc[acc][0]}).`} Bisherige ND (${yrs}) = ${avYears(bisher)}, Restnutzungsdauer ${nd} − ${String(bisher).replace(".", ",")} = ${avYears(rnd)}. AfA bestehende Anlage ${P.fmt(ak)} ÷ ${nd} = ${P.fmt(yO)}, ${geb ? "Umbau" : "Erweiterung"} ${P.fmt(cost)} ÷ ${String(rnd).replace(".", ",")} = ${P.fmt(uy)}${um >= 7 ? ` ÷ 2 (zweites Halbjahr) = ${P.fmt(uafa)}` : " (erstes Halbjahr: ganze AfA)"}. AfA gesamt ${P.fmt(total)}.`);
     });
     return { type: "um", title: "Erhaltung oder Umbau? Verbuche die Rechnungen", cases, fields, choices: [], books, sols };
@@ -4215,7 +4216,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       const schw = (qty - qi) * avg, abw = low ? qi * (avg - tp) : 0, bil = qi * Math.min(avg, tp), diff = bil - ab.val, wm = schw + abw;
       if (!diff) continue;
       const days = rows.map(() => 1 + Math.floor(rng() * 360)).sort((x, y) => x - y);
-      rows.forEach((r, i) => { const d = new Date(2026, 0, days[i]); r.date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.`; });
+      rows.forEach((r, i) => { const d = new Date(GJ, 0, days[i]); r.date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.`; });
       const fields = [];
       rows.forEach((r, i) => {
         const id = "bw-l" + i;
@@ -4224,8 +4225,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       });
       const we = rows.filter(r => r.k === "A").reduce((s, r) => s + r.w, 0), zug = rows.filter(r => r.k === "Z").reduce((s, r) => s + r.w, 0);
       fields.push({ id: "bw-l-we", amt: we }, { id: "bw-l-soll", amt: val }, { id: "bw-l-schw", amt: schw, zeroOk: true }, { id: "bw-l-abw", amt: abw, zeroOk: true }, { id: "bw-l-bil", amt: bil });
-      const dd = Math.abs(diff), books = [{ id: "bw-b0", label: "UB 1 am 31.12.2026: Bestandsveränderung", soll: [[diff > 0 ? art.vorr : art.aw, dd]], haben: [[diff > 0 ? art.aw : art.vorr, dd]] }];
-      if (wm) books.push({ id: "bw-b1", label: "UB 2 am 31.12.2026: Wertminderung (Schwund und Abwertung)", soll: [["vorrabschr", wm]], haben: [[art.aw, wm]] });
+      const dd = Math.abs(diff), books = [{ id: "bw-b0", label: "UB 1 am 31.12." + GJ + ": Bestandsveränderung", soll: [[diff > 0 ? art.vorr : art.aw, dd]], haben: [[diff > 0 ? art.aw : art.vorr, dd]] }];
+      if (wm) books.push({ id: "bw-b1", label: "UB 2 am 31.12." + GJ + ": Wertminderung (Schwund und Abwertung)", soll: [["vorrabschr", wm]], haben: [[art.aw, wm]] });
       return { type: "lk", title: "Führe die Lagerbuchführung mit gleitendem Durchschnittspreis", art, ab, rows, fields, choices: [], books, we, zug, sollQ: qty, soll: val, avg, qi, tp, low, schw, abw, bil, diff, wm };
     }
     return bwMakeLk(rng);
@@ -4241,7 +4242,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const ware = a.vorr === "hwvorrat";
     return `<div class="ab-sec"><h2>Lagerbuchführung: ${esc(a.name)}</h2><p class="note">Alle Preise sind Einstandspreise netto je ${esc(a.u === "Stk" ? "Stück" : a.u)}. Die Zukäufe wurden während des Jahres auf ${aw} ${esc(P.acc[a.aw][1])} gebucht. Rechne mit zwei Nachkommastellen.</p>
         <div class="ab-scroll"><table class="lk-table">${head}<tbody>${abRow}${rows}</tbody></table></div></div>
-      <div class="ab-sec"><h2>Inventur am 31.12.2026</h2>
+      <div class="ab-sec"><h2>Inventur am 31.12.${GJ}</h2>
         <div class="bw-kv" style="max-width:560px"><span>Istbestand laut Inventur</span><span>${bw.qi} ${esc(a.u)}</span><span>Preis am Bilanzstichtag</span><span>${P.fmt(bw.tp)} je ${esc(a.u === "Stk" ? "Stück" : a.u)}</span></div>
         <div class="bw-in" style="max-width:560px">
           <label for="bw-l-we">${ware ? "Wareneinsatz" : "Verbrauch"} (Summe der ${ware ? "Verkäufe" : "Entnahmen"})</label>${bwInp("bw-l-we", "Verbrauch")}
@@ -4250,7 +4251,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           <label for="bw-l-abw">Abwertung</label>${bwInp("bw-l-abw", "Abwertung")}
           <label for="bw-l-bil"><b>Bilanzansatz</b></label>${bwInp("bw-l-bil", "Bilanzansatz")}
         </div><span class="ab-msg" id="bw-msg"></span></div>
-      <h2 class="bw-h">Umbuchungen am 31.12.2026</h2><p class="note">Die Zukäufe stehen auf ${aw} ${esc(P.acc[a.aw][1])}, der Anfangsbestand auf ${vo} ${esc(P.acc[a.vorr][1])}.</p>${bwBooksHtml()}`;
+      <h2 class="bw-h">Umbuchungen am 31.12.${GJ}</h2><p class="note">Die Zukäufe stehen auf ${aw} ${esc(P.acc[a.aw][1])}, der Anfangsbestand auf ${vo} ${esc(P.acc[a.vorr][1])}.</p>${bwBooksHtml()}`;
   }
   function bwSolLk() {
     const a = bw.art, up = bw.diff > 0, d = Math.abs(bw.diff), vo = a.vorr, aw = a.aw, u = a.u === "Stk" ? "Stk" : a.u;
@@ -4273,7 +4274,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     kinds.forEach((k, i) => {
       const id = "bw-f" + i, net = rndStep(rng, [20, 160, 1]) * 5000, b = net * 6 / 5;
       let info, loss = 0, tax = 0;
-      if (k === "ok") info = pickR(rng, ["Zahlt verlässlich, die Rechnung ist Mitte Jänner fällig.", "Keine Auffälligkeiten.", "Hat eine Mahnung erhalten, eine Teilzahlung ist bereits angekündigt.", "Stammkundin, zahlt immer pünktlich.", "Hat um zwei Wochen Zahlungsaufschub gebeten, die Bonität ist gut.", "Die Zahlung ist bereits am 03.01.2027 eingegangen.", "Hat die Ware reklamiert, die Reklamation ist aber erledigt."]);
+      if (k === "ok") info = pickR(rng, ["Zahlt verlässlich, die Rechnung ist Mitte Jänner fällig.", "Keine Auffälligkeiten.", "Hat eine Mahnung erhalten, eine Teilzahlung ist bereits angekündigt.", "Stammkundin, zahlt immer pünktlich.", "Hat um zwei Wochen Zahlungsaufschub gebeten, die Bonität ist gut.", "Die Zahlung ist bereits am 03.01." + (GJ + 1) + " eingegangen.", "Hat die Ware reklamiert, die Reklamation ist aber erledigt."]);
       else if (k === "un") { info = pickR(rng, ["Das Insolvenzverfahren wurde mangels kostendeckenden Vermögens nicht eröffnet.", "Die Exekution ist erfolglos geblieben.", "Das Geschäft wurde aufgegeben, die Inhaberin ist unbekannt verzogen.", "Das Insolvenzverfahren wurde mit einer Quote von 0 % abgeschlossen.", "Die Forderung ist verjährt, der Kunde beruft sich auf die Verjährung."]); loss = net; tax = b - net; }
       else {
         const pct = rndStep(rng, [3, 8, 1]) * 10;
@@ -4308,13 +4309,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         <label for="${it.id}-loss">Abschreibung bzw. EWB (netto)</label>${bwInp(it.id + "-loss", it.name + " Abschreibung oder EWB")}
         <label for="${it.id}-tax">USt-Korrektur</label>${bwInp(it.id + "-tax", it.name + " USt-Korrektur")}
       </div></div>`).join("");
-    return `<div class="ab-sec"><h2>Offene Forderungen des Modehaus Maier e.U. am 31.12.2026</h2><p class="note">Alle Forderungen enthalten 20 % USt. Leere Felder zählen als 0.</p></div>
+    return `<div class="ab-sec"><h2>Offene Forderungen des Modehaus Maier e.U. am 31.12.${GJ}</h2><p class="note">Alle Forderungen enthalten 20 % USt. Leere Felder zählen als 0.</p></div>
       <div class="bw-cards">${cards}</div>
       <div class="ab-sec"><h2>Einzelwertberichtigung</h2><div class="bw-in" style="border-top:none;padding-top:0;max-width:560px">
         <label for="bw-f-ewb">Neue Einzelwertberichtigung gesamt</label>${bwInp("bw-f-ewb", "Neue Einzelwertberichtigung")}
         <span>Konto 2080 laut Saldenliste</span><span class="mono" style="text-align:right">${fmtNum(bw.alt)}</span>
       </div></div>
-      <h2 class="bw-h">Buchungssätze am 31.12.2026</h2>${bwBooksHtml()}`;
+      <h2 class="bw-h">Buchungssätze am 31.12.${GJ}</h2>${bwBooksHtml()}`;
   }
 
   // ---------- Rechnungsabgrenzungen ----------
@@ -4341,23 +4342,23 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         if (useDoc) {
           const payee = { versich: BW_INSURER[0], lkwvers: BW_INSURER[0], pkwvers: BW_INSURER[0], miete: "Immo Graz GmbH", werbung: "Pixelgarten Online-Marketing OG", literatur: "Modeverlag Wien GmbH", instedv: "Kassensysteme Huber OG", instbga: "Klima Wimmer GmbH", internet: "Webstudio Pixel OG", zinsaufw: "Zinsen Kredit Nr. 4471-22" }[acc] || "Zahlungsempfänger";
           text = `Am ${d} überweisen wir ${o.what} für ${nn} Monate (${jaPer(sm, nn)}) im Voraus vom Bankkonto${rate ? `, der Betrag enthält ${rate} % USt` : ", ohne USt"}. Den Betrag findest du auf dem Kontoauszug.`;
-          doc = bwBank(rng, new Date(2026, sm - 1, day), `${acc === "zinsaufw" ? "" : "Überweisung "}${payee}, ${o.short.replace(/^(die|das|der) /, "")} ${jaPer(sm, nn)}`, net + tax, false);
+          doc = bwBank(rng, new Date(GJ, sm - 1, day), `${acc === "zinsaufw" ? "" : "Überweisung "}${payee}, ${o.short.replace(/^(die|das|der) /, "")} ${jaPer(sm, nn)}`, net + tax, false);
         }
         zs = [[acc, net]]; if (tax) zs.push(["vst", tax]); zh = [["bank", net + tax]];
         books.push({ id: `bw-b${i}a`, case: i, label: `${d}: Zahlung`, soll: zs, haben: zh },
-          { id: `bw-b${i}b`, case: i, label: "31.12.2026: Abgrenzung", soll: [["ara", amt]], haben: [[acc, amt]] },
-          { id: `bw-b${i}c`, case: i, label: "01.01.2027: Auflösung", soll: [[acc, amt]], haben: [["ara", amt]] });
-        sols.push(`Fall ${i + 1}: eigene Vorauszahlung (Aufwand). ${rate ? `Netto ${P.fmt(net)}, ` : ""}monatlich ${P.fmt(mon)}, ${next} ${next === 1 ? "Monat" : "Monate"} betreffen 2027: ${P.fmt(amt)} → aktive Rechnungsabgrenzung.`);
+          { id: `bw-b${i}b`, case: i, label: "31.12." + GJ + ": Abgrenzung", soll: [["ara", amt]], haben: [[acc, amt]] },
+          { id: `bw-b${i}c`, case: i, label: "01.01." + (GJ + 1) + ": Auflösung", soll: [[acc, amt]], haben: [["ara", amt]] });
+        sols.push(`Fall ${i + 1}: eigene Vorauszahlung (Aufwand). ${rate ? `Netto ${P.fmt(net)}, ` : ""}monatlich ${P.fmt(mon)}, ${next} ${next === 1 ? "Monat" : "Monate"} betreffen ${GJ + 1}: ${P.fmt(amt)} → aktive Rechnungsabgrenzung.`);
       } else {
         text = `${o[0]} mietet einen Raum in unserem Geschäftslokal. Am ${d} geht die Miete für ${nn} Monate (${jaPer(sm, nn)}) im Voraus auf unserem Bankkonto ein: ${P.fmt(net + tax)} inkl. 20 % USt.`;
         if (useDoc) {
           text = `${o[0]} mietet einen Raum in unserem Geschäftslokal. Am ${d} geht die Miete für ${nn} Monate (${jaPer(sm, nn)}) im Voraus auf unserem Bankkonto ein, inklusive 20 % USt (siehe Kontoauszug).`;
-          doc = bwBank(rng, new Date(2026, sm - 1, day), `Gutschrift ${o[0].replace(/^(Die|Das|Der) /, "")}, Miete ${jaPer(sm, nn)}`, net + tax, true);
+          doc = bwBank(rng, new Date(GJ, sm - 1, day), `Gutschrift ${o[0].replace(/^(Die|Das|Der) /, "")}, Miete ${jaPer(sm, nn)}`, net + tax, true);
         }
         books.push({ id: `bw-b${i}a`, case: i, label: `${d}: Zahlungseingang`, soll: [["bank", net + tax]], haben: [["mieterl", net], ["ust", tax]] },
-          { id: `bw-b${i}b`, case: i, label: "31.12.2026: Abgrenzung", soll: [["mieterl", amt]], haben: [["pra", amt]] },
-          { id: `bw-b${i}c`, case: i, label: "01.01.2027: Auflösung", soll: [["pra", amt]], haben: [["mieterl", amt]] });
-        sols.push(`Fall ${i + 1}: fremde Vorauszahlung (Ertrag). Netto ${P.fmt(net)}, monatlich ${P.fmt(mon)}, ${next} ${next === 1 ? "Monat" : "Monate"} betreffen 2027: ${P.fmt(amt)} → passive Rechnungsabgrenzung.`);
+          { id: `bw-b${i}b`, case: i, label: "31.12." + GJ + ": Abgrenzung", soll: [["mieterl", amt]], haben: [["pra", amt]] },
+          { id: `bw-b${i}c`, case: i, label: "01.01." + (GJ + 1) + ": Auflösung", soll: [["pra", amt]], haben: [["mieterl", amt]] });
+        sols.push(`Fall ${i + 1}: fremde Vorauszahlung (Ertrag). Netto ${P.fmt(net)}, monatlich ${P.fmt(mon)}, ${next} ${next === 1 ? "Monat" : "Monate"} betreffen ${GJ + 1}: ${P.fmt(amt)} → passive Rechnungsabgrenzung.`);
       }
       cases.push({ text, amt, doc, id: "bw-r" + i });
     });
@@ -4378,13 +4379,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const o = berOpts.pop() || JA_RST[0], rst = rndStep(rng, o.r) * 100;
         const v = pickR(rng, ["gleich", "niedrig", "hoch"]), d = v === "gleich" ? 0 : Math.max(50, Math.round(rst / 100 * (0.05 + rng() * 0.2) / 10) * 10) * 100;
         const dd = 1 + Math.floor(rng() * 28), dm = 3 + Math.floor(rng() * 4);
-        const net = v === "niedrig" ? rst + d : v === "hoch" ? rst - d : rst, tax = net / 5, dt = jaD(dd, dm, 2027);
+        const net = v === "niedrig" ? rst + d : v === "hoch" ? rst - d : rst, tax = net / 5, dt = jaD(dd, dm, (GJ + 1));
         if (rng() < 0.5) {
-          const law = o.aw === "rechtsber", iss = law ? "Mag. Eva Recht, Rechtsanwältin, 8020 Graz" : "Steuerberatung Klug & Partner GmbH, 8020 Graz", date = new Date(2026, dm - 1 + 12, dd);
-          cases.push({ text: `31.12.2026: ${o.t} Wir schätzen die Kosten auf ${P.fmt(rst)}. Am ${dt} geht diese Honorarnote ein.`,
-            doc: bwInvoice({ rng, issuer: bwFirm(rng, iss), recipient: bwUs(), date, deliv: /Dezember/.test(o.short) ? new Date(2026, 11, 1) : avAdd(date, -3), deliv2: /Dezember/.test(o.short) ? new Date(2026, 11, 31) : null, title: "Honorarnote", lines: [[1, "Honorar für " + o.short, net, net]], net, R: 20, tax, pay: "Zahlbar innerhalb von 14 Tagen ohne Abzug." }) });
-        } else cases.push({ text: `31.12.2026: ${o.t} Wir schätzen die Kosten auf ${P.fmt(rst)}. Am ${dt} geht die Honorarnote ein: netto ${P.fmt(net)} + 20 % USt ${P.fmt(tax)} = ${P.fmt(net + tax)}, zahlbar in 14 Tagen.` });
-        books.push({ id: id("a"), case: i, label: "31.12.2026: Bildung der Rückstellung", soll: [[o.aw, rst]], haben: [[o.rst, rst]] });
+          const law = o.aw === "rechtsber", iss = law ? "Mag. Eva Recht, Rechtsanwältin, 8020 Graz" : "Steuerberatung Klug & Partner GmbH, 8020 Graz", date = new Date(GJ, dm - 1 + 12, dd);
+          cases.push({ text: `31.12.${GJ}: ${o.t} Wir schätzen die Kosten auf ${P.fmt(rst)}. Am ${dt} geht diese Honorarnote ein.`,
+            doc: bwInvoice({ rng, issuer: bwFirm(rng, iss), recipient: bwUs(), date, deliv: /Dezember/.test(o.short) ? new Date(GJ, 11, 1) : avAdd(date, -3), deliv2: /Dezember/.test(o.short) ? new Date(GJ, 11, 31) : null, title: "Honorarnote", lines: [[1, "Honorar für " + o.short, net, net]], net, R: 20, tax, pay: "Zahlbar innerhalb von 14 Tagen ohne Abzug." }) });
+        } else cases.push({ text: `31.12.${GJ}: ${o.t} Wir schätzen die Kosten auf ${P.fmt(rst)}. Am ${dt} geht die Honorarnote ein: netto ${P.fmt(net)} + 20 % USt ${P.fmt(tax)} = ${P.fmt(net + tax)}, zahlbar in 14 Tagen.` });
+        books.push({ id: id("a"), case: i, label: "31.12." + GJ + ": Bildung der Rückstellung", soll: [[o.aw, rst]], haben: [[o.rst, rst]] });
         const soll = [[o.rst, v === "hoch" ? net : rst]];
         if (v === "niedrig") soll.push(["vorper", d]);
         soll.push(["vst", tax]);
@@ -4394,22 +4395,22 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       } else if (g === "proz") {
         const old = rndStep(rng, [15, 60, 1]) * 10000, won = rng() < 0.35, dd = rndStep(rng, [5, 25, 1]) * 10000, up = rng() < 0.5;
         const neu = won ? 0 : up ? old + dd : Math.max(old - dd, 50000), diff = Math.abs(neu - old);
-        cases.push({ text: `31.12.2026: ${pickR(rng, ["Eine Kundin klagt uns wegen eines beim Ändern beschädigten Brautkleids.", "Ein Lieferant klagt uns, weil wir eine mangelhafte Stofflieferung nicht bezahlt haben.", "Ein Kunde klagt uns, weil er auf unserem nassen Boden ausgerutscht ist.", "Ein ehemaliger Mitarbeiter klagt uns wegen einer angeblich zu niedrigen Abfertigung."])} Wir rechnen mit Prozesskosten von ${P.fmt(old)}. ${won ? "Im Herbst 2027 gewinnen wir den Prozess, die Gegenseite trägt alle Kosten." : `Der Prozess läuft weiter. Am 31.12.2027 schätzt unsere Anwältin die Kosten auf ${P.fmt(neu)}.`}` });
-        books.push({ id: id("a"), case: i, label: "31.12.2026: Bildung der Rückstellung", soll: [["rechtsber", old]], haben: [["rstproz", old]] });
-        if (won) books.push({ id: id("b"), case: i, label: "Herbst 2027: Prozess gewonnen", soll: [["rstproz", old]], haben: [["rstaufl", old]] });
-        else books.push({ id: id("b"), case: i, label: "31.12.2027: Anpassung der Rückstellung", soll: [[neu > old ? "rechtsber" : "rstproz", diff]], haben: [[neu > old ? "rstproz" : "rstaufl", diff]] });
+        cases.push({ text: `31.12.${GJ}: ${pickR(rng, ["Eine Kundin klagt uns wegen eines beim Ändern beschädigten Brautkleids.", "Ein Lieferant klagt uns, weil wir eine mangelhafte Stofflieferung nicht bezahlt haben.", "Ein Kunde klagt uns, weil er auf unserem nassen Boden ausgerutscht ist.", "Ein ehemaliger Mitarbeiter klagt uns wegen einer angeblich zu niedrigen Abfertigung."])} Wir rechnen mit Prozesskosten von ${P.fmt(old)}. ${won ? "Im Herbst " + (GJ + 1) + " gewinnen wir den Prozess, die Gegenseite trägt alle Kosten." : `Der Prozess läuft weiter. Am 31.12.${GJ + 1} schätzt unsere Anwältin die Kosten auf ${P.fmt(neu)}.`}` });
+        books.push({ id: id("a"), case: i, label: "31.12." + GJ + ": Bildung der Rückstellung", soll: [["rechtsber", old]], haben: [["rstproz", old]] });
+        if (won) books.push({ id: id("b"), case: i, label: "Herbst " + (GJ + 1) + ": Prozess gewonnen", soll: [["rstproz", old]], haben: [["rstaufl", old]] });
+        else books.push({ id: id("b"), case: i, label: "31.12." + (GJ + 1) + ": Anpassung der Rückstellung", soll: [[neu > old ? "rechtsber" : "rstproz", diff]], haben: [[neu > old ? "rstproz" : "rstaufl", diff]] });
         sols.push(`Fall ${i + 1}: ${won ? "Es fällt kein Aufwand an, die ganze Rückstellung wird aufgelöst." : neu > old ? `Erhöhung um ${P.fmt(diff)} (Aufwand).` : `Verminderung um ${P.fmt(diff)} (Ertrag aus der Auflösung).`}`);
       } else if (g === "gar") {
         const erl = rndStep(rng, [200, 900, 1]) * 10000, pct = pickR(rng, [2, 3, 4, 5]), neu = erl * pct / 100;
         let alt = rndStep(rng, [40, 400, 1]) * 1000; if (alt === neu) alt += 10000;
         const up = neu > alt, diff = Math.abs(neu - alt);
-        cases.push({ text: `Laut Saldenliste beträgt die Garantie- und Gewährleistungsrückstellung ${P.fmt(alt)}. Für ${pickR(rng, ["Maßanfertigungen (Brautkleider, Trachten)", "maßgeschneiderte Hotel-Uniformen", "Änderungen in unserer Schneiderei", "maßgefertigte Bühnenkostüme"])} fallen erfahrungsgemäß ${pct} % der Erlöse für Mängelbehebungen an. Die Erlöse aus Maßanfertigungen betragen 2026 ${P.fmt(erl)}.` });
-        books.push({ id: id("a"), case: i, label: "31.12.2026: Anpassung der Garantierückstellung", soll: [[up ? "garzuw" : "rstgar", diff]], haben: [[up ? "rstgar" : "rstaufl", diff]] });
+        cases.push({ text: `Laut Saldenliste beträgt die Garantie- und Gewährleistungsrückstellung ${P.fmt(alt)}. Für ${pickR(rng, ["Maßanfertigungen (Brautkleider, Trachten)", "maßgeschneiderte Hotel-Uniformen", "Änderungen in unserer Schneiderei", "maßgefertigte Bühnenkostüme"])} fallen erfahrungsgemäß ${pct} % der Erlöse für Mängelbehebungen an. Die Erlöse aus Maßanfertigungen betragen ${GJ} ${P.fmt(erl)}.` });
+        books.push({ id: id("a"), case: i, label: "31.12." + GJ + ": Anpassung der Garantierückstellung", soll: [[up ? "garzuw" : "rstgar", diff]], haben: [[up ? "rstgar" : "rstaufl", diff]] });
         sols.push(`Fall ${i + 1}: ${pct} % von ${P.fmt(erl)} = ${P.fmt(neu)}; laut Saldenliste ${P.fmt(alt)} → ${up ? `Zuweisung ${P.fmt(diff)}` : `Verminderung ${P.fmt(diff)}`}.`);
       } else {
         const amt = rndStep(rng, [1500, 6000, 10]) * 100;
-        cases.push({ text: `31.12.2026: Unsere Mitarbeiterinnen haben noch nicht verbrauchten Urlaub aus 2026. Der Wert der offenen Urlaubstage beträgt ${P.fmt(amt)}.` });
-        books.push({ id: id("a"), case: i, label: "31.12.2026: Bildung der Urlaubsrückstellung", soll: [["urlzuw", amt]], haben: [["rsturl", amt]] });
+        cases.push({ text: `31.12.${GJ}: Unsere Mitarbeiterinnen haben noch nicht verbrauchten Urlaub aus ${GJ}. Der Wert der offenen Urlaubstage beträgt ${P.fmt(amt)}.` });
+        books.push({ id: id("a"), case: i, label: "31.12." + GJ + ": Bildung der Urlaubsrückstellung", soll: [["urlzuw", amt]], haben: [["rsturl", amt]] });
         sols.push(`Fall ${i + 1}: Urlaubsrückstellung ${P.fmt(amt)}.`);
       }
     });
@@ -4763,7 +4764,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     zi.rep = "Kalkulatorische Zinsen"; zi.why = `Fremdkapitalzinsen lt. GuV ${P.fmt(zi.auf)} + Eigenkapitalzinsen ${P.fmt(ek)} × ${krP(zs)} = ${P.fmt(zi.plus)}.`;
     krNeutral(rng, rows, { kompakt: 1, normal: 2, gross: 3 }[bwSize]);
     rows.filter(r => r.note).forEach(r => info.push(`Das Konto ${r.kto} enthält: ${r.note}.`));
-    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", head: `${US.name} · Kostenrechnung 2026`, sub: "Saldenliste 31.12.2026, Werte in EUR", intro: "Erstelle die Kostenüberleitung für das Jahr 2026." });
+    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", head: `${US.name} · Kostenrechnung ${GJ}`, sub: "Saldenliste 31.12." + GJ + ", Werte in EUR", intro: "Erstelle die Kostenüberleitung für das Jahr " + GJ + "." });
   }
 
   // ---------- BÜB für einen Monat oder ein Quartal (Abgrenzungen laut Buch) ----------
@@ -4848,7 +4849,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     }
     rows.filter(r => r.note).forEach(r => info.push(`Das Konto ${r.kto} enthält: ${r.note}.`));
     const lang = mo ? mon : `${mon} (${KR_MON[qi * 3]} bis ${KR_MON[qi * 3 + 2]})`;
-    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", firm, head: `${firm} · Kostenrechnung ${lang} 2026`, sub: `Saldenliste ${lang} 2026, Werte in EUR`, intro: `Erstelle die Kostenüberleitung ${fuerP} 2026. Die Saldenliste enthält nur die Buchungen dieses Zeitraums.` });
+    return krBueFinish(rows, info, sols, { type: "bue", title: "Erstelle den Betriebsüberleitungsbogen", firm, head: `${firm} · Kostenrechnung ${lang} ${GJ}`, sub: `Saldenliste ${lang} ${GJ}, Werte in EUR`, intro: `Erstelle die Kostenüberleitung ${fuerP} ${GJ}. Die Saldenliste enthält nur die Buchungen dieses Zeitraums.` });
   }
   function krRenderBue() {
     const inp = (id, l) => `<input id="${id}" inputmode="decimal" aria-label="${esc(l)}">`;
@@ -5345,7 +5346,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       qs.push([`Ein Kunde bekommt auf eine Bestellung mit Listenpreis ${P.fmt(lp)} einen Rabatt und bezahlt ${P.fmt(zp)}. Wie viel Prozent Rabatt hat er erhalten?`, "wr-rs-p", "%", false]);
       sols.push(`Rabatt ${P.fmt(lp - zp)} ÷ ${P.fmt(lp)} × 100 = ${r} %.`);
       const day = rndStep(rng, [3, 20, 1]), late = rng() < 0.5, pay = day + (late ? rndStep(rng, [11, 25, 1]) : rndStep(rng, [2, 10, 1])), amt = rndStep(rng, [300, 3000, 1]) * 100, s = S();
-      const d = x => { const dt = new Date(2026, 9, x); return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.2026`; };
+      const d = x => { const dt = new Date(GJ, 9, x); return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.${GJ}`; };
       const due = late ? amt : amt - Math.round(amt * s / 100);
       fields.push({ id: "wr-rs-pay", amt: due, tol: 0 });
       choices.push({ id: "wr-rs-sk", v: late ? "n" : "j" });
@@ -5662,9 +5663,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     $("bw-pick-size").textContent = "· " + { kompakt: "Kompakt", normal: "Normal", gross: "Umfangreich" }[bwSize];
     $("bw-title").textContent = bw.title;
     $("bw-body").innerHTML = KR_RENDER[bw.type] ? KR_RENDER[bw.type]() : KR_MAKE[bw.type] ? krRenderParts() : bw.type === "av" ? bwRenderAv() : bw.type === "an" || bw.type === "eav" ? bwRenderAn() : bw.type === "vt" ? bwRenderVt() : bw.type === "web" ? bwRenderWeb() : bw.type === "lk" ? bwRenderLk() : bw.type === "fo" ? bwRenderFo()
-      : bw.type === "ag" ? bwRenderCases("Geschäftsjahr = Kalenderjahr 2026, lineare Abschreibung mit Halbjahresregel. Verbuche bei jedem Fall alle Schritte: den Verkauf bzw. die Versicherungsentschädigung während des Jahres, am 31.12. die Abschreibung bis zum Ausscheiden und das Ausbuchen des Restbuchwerts.")
-      : bw.type === "um" ? bwRenderCases("Entscheide bei jeder Rechnung: Erhaltung (sofort Aufwand) oder Umbau/Erweiterung (aktivieren)? Bei einem Umbau rechnest du am 31.12.2026 die Abschreibung mit der Restnutzungsdauer und verbuchst sie.")
-      : bw.type === "ra" ? bwRenderCases("Geschäftsjahr = Kalenderjahr. Buche jeden Fall zum Zahlungszeitpunkt, am 31.12.2026 (Abgrenzung) und am 01.01.2027 (Auflösung). Abgegrenzt wird immer der Nettobetrag.")
+      : bw.type === "ag" ? bwRenderCases("Geschäftsjahr = Kalenderjahr " + GJ + ", lineare Abschreibung mit Halbjahresregel. Verbuche bei jedem Fall alle Schritte: den Verkauf bzw. die Versicherungsentschädigung während des Jahres, am 31.12. die Abschreibung bis zum Ausscheiden und das Ausbuchen des Restbuchwerts.")
+      : bw.type === "um" ? bwRenderCases("Entscheide bei jeder Rechnung: Erhaltung (sofort Aufwand) oder Umbau/Erweiterung (aktivieren)? Bei einem Umbau rechnest du am 31.12." + GJ + " die Abschreibung mit der Restnutzungsdauer und verbuchst sie.")
+      : bw.type === "ra" ? bwRenderCases("Geschäftsjahr = Kalenderjahr. Buche jeden Fall zum Zahlungszeitpunkt, am 31.12." + GJ + " (Abgrenzung) und am 01.01." + (GJ + 1) + " (Auflösung). Abgegrenzt wird immer der Nettobetrag.")
       : bwRenderCases("Buche alle Schritte der Rückstellungen. Rückstellungen werden immer netto gebildet, die Vorsteuer wird erst bei Rechnungseingang gebucht.");
     $("bewertung").classList.toggle("bw-wide", ["vt", "web", "bue", "bum", "bab", "db", "pp"].includes(bw.type));
     $("bw-steps").innerHTML = BW_STEPS[bw.type].map(s => `<li>${esc(s)}</li>`).join("");
@@ -5944,7 +5945,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     LEX.push(
       { id: "pv-lohn", g: 10, title: "Lohn- und Gehaltsabrechnung",
         text: "Vom Bruttobezug werden der Sozialversicherungsbeitrag des Dienstnehmers (SV-DNA) und die Lohnsteuer abgezogen. Was übrig bleibt, wird überwiesen. Die Werte (Prozentsätze, Tarif, Absetzbeträge) ändern sich jedes Jahr.",
-        rules: ["SV-DNA laufend = Brutto × SV-Satz. Bei geringem Einkommen ist der Arbeitslosenversicherungsbeitrag niedriger, daher gibt es vier Stufen.", "Bemessungsgrundlage Lohnsteuer = Brutto − SV-DNA − steuerfreie Überstundenzuschläge − Freibetrag laut Bescheid − Pendlerpauschale − Service-Entgelt (im November).", "Überstunden: Stundensatz (Gehalt ÷ Teiler laut Kollektivvertrag) × Stunden + Zuschlag 50 % bzw. 100 %. Steuerfrei (Werte 2026): 50-%-Zuschläge für die ersten 15 Überstunden bis € 170,00; Zuschläge für Sonn-, Feiertags- und Nachtarbeit (100 %) bis € 400,00, bei überwiegender Nachtarbeit bis € 600,00.", "Lohnsteuer laut Effektiv-Tarif: Bemessungsgrundlage × Steuersatz − Abzug (enthält den Verkehrsabsetzbetrag, mit AVAB/AEAB höher) − Familienbonus Plus − Pendlereuro. Ein negatives Ergebnis bedeutet € 0,00 Lohnsteuer.", "Zahlt der Arbeitgeber ein Jahresticket, wird 1/12 des Ticketpreises vom monatlichen Pendlerpauschale abgezogen. Der Pendlereuro bleibt ungekürzt.", "Auszahlung = Brutto − SV-DNA − Lohnsteuer − Service-Entgelt − Akontozahlung."], go: [["pv", "la"], ["pv", "lu"]] },
+        rules: ["SV-DNA laufend = Brutto × SV-Satz. Bei geringem Einkommen ist der Arbeitslosenversicherungsbeitrag niedriger, daher gibt es vier Stufen.", "Bemessungsgrundlage Lohnsteuer = Brutto − SV-DNA − steuerfreie Überstundenzuschläge − Freibetrag laut Bescheid − Pendlerpauschale − Service-Entgelt (im November).", "Überstunden: Stundensatz (Gehalt ÷ Teiler laut Kollektivvertrag) × Stunden + Zuschlag 50 % bzw. 100 %. Steuerfrei (Werte " + GJ + "): 50-%-Zuschläge für die ersten 15 Überstunden bis € 170,00; Zuschläge für Sonn-, Feiertags- und Nachtarbeit (100 %) bis € 400,00, bei überwiegender Nachtarbeit bis € 600,00.", "Lohnsteuer laut Effektiv-Tarif: Bemessungsgrundlage × Steuersatz − Abzug (enthält den Verkehrsabsetzbetrag, mit AVAB/AEAB höher) − Familienbonus Plus − Pendlereuro. Ein negatives Ergebnis bedeutet € 0,00 Lohnsteuer.", "Zahlt der Arbeitgeber ein Jahresticket, wird 1/12 des Ticketpreises vom monatlichen Pendlerpauschale abgezogen. Der Pendlereuro bleibt ungekürzt.", "Auszahlung = Brutto − SV-DNA − Lohnsteuer − Service-Entgelt − Akontozahlung."], go: [["pv", "la"], ["pv", "lu"]] },
       { id: "wr-zahlen", g: 9, title: "Zahlen und Beträge schreiben",
         text: "Auf Rechnungen, Überweisungen und Quittungen müssen Beträge eindeutig lesbar sein. In Ziffern trennt man die Tausender, in Worten schreibt man die Zahl in einem Wort.",
         rules: ["Eurobeträge in Ziffern: Tausenderpunkt, Komma vor den Cent, immer zwei Kommastellen: € 12.345,60.", "Maßeinheiten: Tausender mit Leerzeichen trennen, Leerzeichen vor der Einheit: 12 500 m, 3,5 kg.", "In Worten: Zahlen unter einer Million in einem Wort: „zwölftausenddreihundertfünfundvierzig Euro und sechzig Cent“.", "Bei zweistelligen Zahlen kommt zuerst der Einer: 45 = fünfundvierzig."], go: [["wr", "zs"]] },
