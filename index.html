@@ -1167,6 +1167,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       vorrbuero:["1390", "Vorrat Büromaterial", "aktiv", 1],
       hwvorrat: ["1600", "Handelswarenvorrat", "aktiv", 1],
       ford:     ["2000", "Lieferforderungen", "aktiv", 2],
+      fordd:    ["20999", "Diverse Kunden", "aktiv", 2],
       ewb:      ["2080", "Einzelwertberichtigungen zu Lieferforderungen Inland", "korr", 2],
       sonstford:["2300", "Sonstige Forderungen", "aktiv", 2],
       vst:      ["2500", "Vorsteuer", "aktiv", 2],
@@ -1183,6 +1184,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rstgar:   ["3060", "Rückstellungen für Gewährleistungs- und Schadenersatzverpflichtungen (Garantierückstellungen)", "passiv", 3],
       darlehen: ["3150", "Darlehen von einer Bank", "passiv", 3],
       verb:     ["3300", "Lieferverbindlichkeiten", "passiv", 3],
+      verbd:    ["33999", "Diverse Lieferanten", "passiv", 3],
       ust:      ["3500", "Umsatzsteuer", "passiv", 3],
       zahllast: ["3520", "USt-Zahllast", "passiv", 3],
       verbfa:   ["3540", "Verbindlichkeiten Finanzamt", "passiv", 3],
@@ -2439,7 +2441,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
 
   // ---------- Bewertung ----------
+  // 20999 Diverse Kunden und 33999 Diverse Lieferanten gelten gleich wie 2000 bzw. 3300 (Patrick: Schüler/innen wählen, was ihnen lieber ist)
+  const ACC_ALIAS = { fordd: "ford", verbd: "verb" };
   function grade(task, entries) {
+    ["soll", "haben"].forEach(side => entries[side].forEach(r => { if (ACC_ALIAS[r.acc]) r.acc = ACC_ALIAS[r.acc]; }));
     let hits = 0, wrong = 0;
     const res = {};
     ["soll", "haben"].forEach(side => {
@@ -5847,7 +5852,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       go: [["ea", "eav"]] },
     { id: "einkauf", g: 0, tp: "einkauf", title: "Einkauf von Handelswaren",
       text: "Handelswaren kaufen wir ein, um sie unverändert weiterzuverkaufen, im Modehaus also Kleidung und Accessoires. Der Einkauf wird sofort als Aufwand auf <b>5010 Handelswareneinsatz</b> gebucht.",
-      rules: ["5010 Handelswareneinsatz (netto) und 2500 Vorsteuer im Soll.", "Im Haben steht, wie bezahlt wird: 2700 Kassa (bar), 2800 Bank (Überweisung) oder 3300 Lieferverbindlichkeiten (auf Ziel, also auf Rechnung).", "„Auf Ziel“ heißt: Wir bezahlen später. Bezahlt wird dann mit 3300 / 2800."] },
+      rules: ["5010 Handelswareneinsatz (netto) und 2500 Vorsteuer im Soll.", "Im Haben steht, wie bezahlt wird: 2700 Kassa (bar), 2800 Bank (Überweisung) oder 3300 Lieferverbindlichkeiten bzw. 33999 Diverse Lieferanten (auf Ziel, also auf Rechnung).", "„Auf Ziel“ heißt: Wir bezahlen später. Bezahlt wird dann mit 3300 / 2800."] },
     { id: "material", g: 0, tp: "material", title: "Materialeinkäufe",
       text: "Material, das im Betrieb verbraucht wird, kommt sofort auf ein Verbrauchskonto: Nähgarn und Knöpfe für die Änderungsschneiderei sind Hilfsstoffe, dazu kommen Verpackungs-, Reinigungs- und Büromaterial.",
       rules: ["Hilfsstoffe → 5300, Verpackungsmaterial → 5340, Reinigungsmaterial → 5450, Heizöl → 5600, Büromaterial → 7600.", "Netto auf das Verbrauchskonto, dazu 2500 Vorsteuer.", "Am Jahresende wird der Lagerbestand über die Bestandsveränderung berücksichtigt (siehe „Vorräte: Bestandsveränderung“)."] },
@@ -5856,7 +5861,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rules: ["Aufwandskonto netto + 2500 Vorsteuer im Soll, Zahlungsmittel oder 3300 im Haben.", "Versicherungen (7700), Gebühren und Beiträge sind umsatzsteuerfrei, also ohne Vorsteuer.", "Fachzeitschriften (7630) haben nur 10 % USt."] },
     { id: "verkauf", g: 0, tp: "verkauf", title: "Verkauf von Handelswaren und Dienstleistungen",
       text: "Beim Verkauf entsteht ein Ertrag auf <b>4000 Handelswarenerlöse</b>. Zusätzlich verrechnen wir 20 % Umsatzsteuer, die wir dem Finanzamt schulden.",
-      rules: ["Im Soll steht der Bruttobetrag: 2700 Kassa, 2800 Bank oder 2000 Lieferforderungen (Verkauf auf Ziel).", "Im Haben: 4000 Handelswarenerlöse (netto) und 3500 Umsatzsteuer.", "Dienstleistungen wie Änderungen oder Reparaturen → 4030 Erlöse Reparaturen."] },
+      rules: ["Im Soll steht der Bruttobetrag: 2700 Kassa, 2800 Bank oder 2000 Lieferforderungen bzw. 20999 Diverse Kunden (Verkauf auf Ziel).", "Im Haben: 4000 Handelswarenerlöse (netto) und 3500 Umsatzsteuer.", "Dienstleistungen wie Änderungen oder Reparaturen → 4030 Erlöse Reparaturen."] },
     { id: "ertraege", g: 0, tp: "ertraege", title: "Sonstige betriebliche Erträge",
       text: "Nicht jeder Ertrag kommt aus dem Warenverkauf: Wir vermieten zum Beispiel einen Raum oder bekommen Provisionen für vermittelte Aufträge.",
       rules: ["Mieterträge → 4810, Provisionserträge → 4820, jeweils mit 20 % Umsatzsteuer.", "Ist der Betrag noch offen und stammt er nicht aus einem Warenverkauf, buchen wir 2300 Sonstige Forderungen statt 2000."] },
