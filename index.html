@@ -1147,6 +1147,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     acc: {
       software: ["0120", "Datenverarbeitungsprogramme", "aktiv", 0],
       grund:    ["0200", "Unbebaute Grundstücke", "aktiv", 0],
+      bebgrund: ["0210", "Bebaute Grundstücke (betrieblicher Grundwert)", "aktiv", 0],
       gebaeude: ["0300", "Betriebs- und Geschäftsgebäude", "aktiv", 0],
       masch:    ["0400", "Maschinen", "aktiv", 0],
       edv:      ["0620", "Büromaschinen, EDV-Anlagen", "aktiv", 0],
@@ -1178,6 +1179,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       verb:     ["3300", "Lieferverbindlichkeiten", "passiv", 3],
       ust:      ["3500", "Umsatzsteuer", "passiv", 3],
       zahllast: ["3520", "USt-Zahllast", "passiv", 3],
+      verbfa:   ["3540", "Verbindlichkeiten Finanzamt", "passiv", 3],
+      verbgem:  ["3610", "Verbindlichkeiten Gemeinde (Stadtkassa)", "passiv", 3],
+      verbgsvg: ["3640", "Verbindlichkeiten GSVG", "passiv", 3],
       pra:      ["3900", "Passive Rechnungsabgrenzung (PRA)", "passiv", 3],
       erloese:  ["4000", "Handelswarenerlöse 20 %", "ertrag", 4],
       erlrep:   ["4030", "Erlöse Reparaturen 20 %", "ertrag", 4],
@@ -1204,6 +1208,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       afa:      ["7010", "Abschreibung von Sachanlagen (AfA)", "aufwand", 7],
       gwgafa:   ["7030", "Abschreibung geringwertiger Wirtschaftsgüter", "aufwand", 7],
       grundst:  ["7100", "Grundsteuer", "aufwand", 7],
+      sonstabg: ["7190", "Sonstige Abgaben", "aufwand", 7],
       instand:  ["7200", "Instandhaltung durch Dritte", "aufwand", 7],
       instgeb:  ["7201", "Instandhaltung Gebäude", "aufwand", 7],
       instbga:  ["7202", "Instandhaltung Betriebs- und Geschäftsausstattung", "aufwand", 7],
@@ -1217,6 +1222,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       pkwbetr:  ["7320", "Pkw- und Kombi-Betriebsaufwand", "aufwand", 7],
       pkwvers:  ["7325", "Versicherungsaufwand Pkw und Kombi", "aufwand", 7],
       lkwbetr:  ["7330", "Lkw-Betriebsaufwand", "aufwand", 7],
+      kfzlkw:   ["7332", "Kraftfahrzeugsteuer Lkw", "aufwand", 7],
       lkwvers:  ["7335", "Versicherungsaufwand Lkw", "aufwand", 7],
       telefon:  ["7380", "Telefongebühren", "aufwand", 7],
       internet: ["7381", "Internetgebühren", "aufwand", 7],
@@ -1308,6 +1314,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     tank:   [["Tankstelle Plabutsch", "Wiener Straße 210", "8010 Graz", "ATU 64470192"]],
     werkstatt: [["Kfz-Werkstatt Gruber & Söhne", "Industriezeile 47", "8020 Graz", "ATU 60837152"]],
     heizoel: [["Brennstoffe Pühringer GmbH", "Lagerhausstraße 3", "8301 Laßnitzhöhe", "ATU 61120378"]],
+    paket:  [["Paketdienst Flink GmbH", "Puchstraße 85", "8020 Graz", "ATU 68120457"]],
   };
   const BANK = { name: "Übungsbank Graz AG", bic: "UEBGAT2G" };
 
@@ -1451,7 +1458,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "material", k: "vst", r: [80, 600, 10], s: "verpack", h: "kassa", t: a => `Wir kaufen Versandkartons für den Onlineshop bar: ${a}.`, b: { t: "re", p: "buero", item: "Versandkarton 40 × 30 cm", u: [80, 190] } },
     { tp: "material", k: "vst", r: [800, 3000, 50], s: "heizoel", h: "verb", t: a => `Wir kaufen Heizöl für das Geschäftslokal auf Ziel: ${a}.`, b: { t: "re", p: "heizoel", item: "Heizöl extra leicht (Liter)", u: [95, 125] } },
     // Sonstige Aufwände
-    { tp: "aufwand", k: "vst", r: [800, 3500, 50], s: "miete", h: "bank", t: a => `Die Monatsmiete für das Geschäftslokal wird vom Bankkonto abgebucht: ${a}.` },
+    { tp: "aufwand", k: "vst", r: [800, 3500, 50], s: "miete", h: "bank", t: a => `Die Monatsmiete für das Geschäftslokal wird vom Bankkonto abgebucht: ${a}.`, bNew: true, b: { t: "bank", text: "Hausverwaltung Annenhof, Miete Geschäftslokal inkl. 20 % USt" } },
     { tp: "aufwand", k: "vst", r: [200, 3000, 50], s: "werbung", h: "bank", t: a => `Wir bezahlen ein Inserat in einem Modemagazin per Banküberweisung: ${a}.`, b: { t: "re", p: "werbung", item: "Inserat ½ Seite, Herbstausgabe", q1: true } },
     { tp: "aufwand", k: "vst", r: [150, 1500, 10], s: "werbung", h: "verb", t: a => `Eine Agentur stellt uns eine Social-Media-Kampagne für die neue Kollektion in Rechnung: ${a}.`, b: { t: "re", p: "werbung", item: "Social-Media-Kampagne „Herbst“, 4 Wochen", q1: true } },
     { tp: "aufwand", k: "vst", r: [200, 1500, 10], s: "werbung", h: "verb", t: a => `Eine Dekorateurin gestaltet unsere Schaufenster für die Weihnachtszeit neu: ${a}.`, b: { t: "re", p: "deko", item: "Schaufenstergestaltung Weihnachten", q1: true } },
@@ -1470,14 +1477,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "verkauf", g: true, k: "ust", r: [500, 12000, 50], s: "ford", h: "erloese", t: (a, w) => `Wir verkaufen ${w.pl} an eine Firmenkundin auf Ziel: ${a}.`, b: { t: "re", p: "kunden" } },
     { tp: "verkauf", g: true, k: "ust", r: [50, 380, 10], s: "kassa", h: "erloese", t: (a, w) => `Eine Kundin kauft im Geschäft ${w.pl} und bezahlt bar: ${a}.`, b: { t: "re", p: "kunden" } },
     { tp: "verkauf", g: true, k: "ust", r: [300, 6000, 50], s: "bank", h: "erloese", t: (a, w) => `Ein Firmenkunde kauft ${w.pl} und bezahlt sofort per Überweisung: ${a}.`, b: { t: "re", p: "kunden" } },
-    { tp: "verkauf", g: true, k: "ust", r: [60, 400, 10], s: "bank", h: "erloese", t: (a, w) => `Über unseren Onlineshop bestellt eine Kundin ${w.pl}. Sie bezahlt per Vorauskasse auf unser Bankkonto: ${a}.` },
+    { tp: "verkauf", g: true, k: "ust", r: [60, 400, 10], s: "bank", h: "erloese", t: (a, w) => `Über unseren Onlineshop bestellt eine Kundin ${w.pl}. Sie bezahlt per Vorauskasse auf unser Bankkonto: ${a}.`, bNew: true, b: { t: "bank", text: "Gutschrift Onlineshop-Bestellung (Vorauskasse), inkl. 20 % USt" } },
     { tp: "verkauf", k: "ust", r: [1500, 8000, 100], s: "ford", h: "erloese", t: a => `Ein Hotel bestellt Uniformen für das Servicepersonal auf Ziel: ${a}.`, b: { t: "re", p: "kunden", item: "Servicejacke mit Logostickerei", u: [4500, 8500] } },
     { tp: "verkauf", k: "ust", r: [20, 150, 1], s: "kassa", h: "erlrep", t: a => `Unsere Änderungsschneiderei kürzt eine Hose und tauscht einen Reißverschluss. Die Kundin bezahlt bar: ${a}.`, b: { t: "re", p: "kunden", item: "Änderung: Hose kürzen, Reißverschluss tauschen", q1: true } },
     { tp: "verkauf", k: "ust", r: [30, 250, 5], s: "kassa", h: "erlrep", t: a => `Wir passen ein Hochzeitskleid an und kürzen die Ärmel eines Sakkos. Der Kunde bezahlt bar: ${a}.`, b: { t: "re", p: "kunden", item: "Änderungen: Kleid anpassen, Ärmel kürzen", q1: true } },
     // Sonstige betriebliche Erträge
-    { tp: "ertraege", k: "ust", r: [200, 2500, 10], s: "bank", h: "provertr", t: a => `Wir vermitteln einer Brautmodenfirma einen Großauftrag und erhalten dafür eine Provision auf unser Bankkonto: ${a}.` },
+    { tp: "ertraege", k: "ust", r: [200, 2500, 10], s: "bank", h: "provertr", t: a => `Wir vermitteln einer Brautmodenfirma einen Großauftrag und erhalten dafür eine Provision auf unser Bankkonto: ${a}.`, bNew: true, b: { t: "bank", text: "Gutschrift Brautmoden Weißer Traum e.U., Vermittlungsprovision inkl. 20 % USt" } },
     { tp: "ertraege", k: "ust", r: [200, 2500, 10], s: "sonstford", h: "provertr", t: a => `Wir stellen einem Geschäftspartner eine Vermittlungsprovision in Rechnung, der Betrag ist noch offen: ${a}.`, b: { t: "re", p: "kunden", item: "Vermittlungsprovision lt. Vereinbarung", q1: true } },
-    { tp: "ertraege", k: "ust", r: [100, 900, 10], s: "kassa", h: "provertr", t: a => `Eine Schmuckdesignerin verkauft ihre Stücke in unserem Geschäft. Wir erhalten dafür bar eine Provision: ${a}.` },
+    { tp: "ertraege", k: "ust", r: [100, 900, 10], s: "kassa", h: "provertr", t: a => `Eine Schmuckdesignerin verkauft ihre Stücke in unserem Geschäft. Wir erhalten dafür bar eine Provision: ${a}.`, bNew: true, b: { t: "kb", text: "Provision Schmuckverkauf, inkl. 20 % USt" } },
     // Warenrücksendungen
     { tp: "ruecksend", g: true, k: "revv", r: [100, 2000, 10], s: "verb", h: "ware", t: (a, w) => `Wir schicken ${w.pl} mit Webfehlern an den Lieferanten zurück und erhalten eine Gutschrift: ${a}.`, b: { t: "gs", p: "waren", pre: "Rücksendung " } },
     { tp: "ruecksend", g: true, k: "revv", r: [100, 1500, 10], s: "verb", h: "ware", t: (a, w) => `Der Lieferant hat uns ${w.pl} in falschen Farben geliefert. Wir senden sie zurück und erhalten eine Gutschrift: ${a}.`, b: { t: "gs", p: "waren", pre: "Rücksendung " } },
@@ -1489,13 +1496,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "privat", k: "plain", r: [500, 4000, 50], s: "privat", h: "bank", t: a => `Die Inhaberin bezahlt ihre private Urlaubsreise von ${a} vom betrieblichen Bankkonto.`, b: { t: "bank", text: "Reisebüro, Pauschalreise" } },
     { tp: "privat", k: "plain", r: [1000, 20000, 500], s: "bank", h: "privat", t: a => `Die Inhaberin zahlt ${a} aus ihrem Privatvermögen auf das betriebliche Bankkonto ein.`, b: { t: "bank", text: "Einzahlung Inhaberin aus Privatvermögen" } },
     { tp: "privat", k: "plain", r: [200, 3000, 50], s: "kassa", h: "privat", t: a => `Die Inhaberin legt ${a} aus ihrem Privatvermögen bar in die Geschäftskassa ein.`, b: { t: "kb", text: "Bareinlage Inhaberin" } },
-    { tp: "privat", g: true, k: "ust", r: [50, 400, 10], s: "privat", h: "eigenv", t: (a, w) => `Die Inhaberin entnimmt ${w.pl} aus dem Sortiment für private Zwecke, Einstandspreis ${a}.` },
+    { tp: "privat", g: true, k: "ust", r: [50, 400, 10], s: "privat", h: "eigenv", t: (a, w) => `Die Inhaberin entnimmt ${w.pl} aus dem Sortiment für private Zwecke, Einstandspreis ${a}.`, bNew: true, b: { t: "eigen" } },
     // Bezugs- und Versandspesen
     { tp: "spesen", k: "vst", r: [40, 400, 5], s: "ware", h: "bank", t: a => `Eine Spedition liefert uns die neue Herbstkollektion und stellt die Transportkosten in Rechnung, die wir überweisen: ${a}.`, b: { t: "re", p: "spedition", item: "Transport Wareneingang Wels–Linz", q1: true } },
     { tp: "spesen", k: "vst", r: [30, 250, 5], s: "ware", h: "kassa", t: a => `Für die Lieferung von Trachtenmode aus Schladming bezahlen wir dem Frächter bar: ${a}.`, b: { t: "re", p: "spedition", item: "Transport Schladming–Linz", q1: true } },
     { tp: "spesen", k: "vst", r: [40, 400, 5], s: "ausgfr", h: "verb", t: a => `Eine Spedition stellt uns die Zustellung von Kleidung an eine Boutique in Rechnung: ${a}.`, b: { t: "re", p: "spedition", item: "Zustellung an Boutique Wels", q1: true } },
     { tp: "spesen", k: "vst", r: [60, 500, 5], s: "ausgfr", h: "bank", t: a => `Wir liefern Uniformen an ein Hotel. Die Transportkosten der Spedition überweisen wir: ${a}.`, b: { t: "re", p: "spedition", item: "Zustellung an Hotel Hinterstoder", q1: true } },
-    { tp: "spesen", k: "vst", r: [10, 150, 1], s: "paket", h: "kassa", t: a => `Wir schicken Online-Bestellungen als Pakete an Kundinnen und bezahlen den Paketdienst bar: ${a}.` },
+    { tp: "spesen", k: "vst", r: [10, 150, 1], s: "paket", h: "kassa", t: a => `Wir schicken Online-Bestellungen als Pakete an Kundinnen und bezahlen den Paketdienst bar: ${a}.`, bNew: true, b: { t: "re", p: "paket", item: "Paketversand Inland", q1: true } },
     // Rabatte
     { tp: "rabatte", g: true, k: "vst", rab: [5, 10, 15], r: [500, 8000, 100], s: "ware", h: "verb", t: (a, w) => `Wir kaufen ${w.pl} auf Ziel und bekommen einen Sofortrabatt: ${a}.`, b: { t: "re", p: "waren" } },
     { tp: "rabatte", g: true, k: "vst", rab: [10, 20], r: [1000, 9000, 100], s: "ware", h: "bank", t: (a, w) => `Auf einer Modemesse kaufen wir ${w.pl} mit Messerabatt und bezahlen per Überweisung: ${a}.`, b: { t: "re", p: "waren" } },
@@ -1556,41 +1563,47 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         const prov = Math.round(sum * pct / 100);
         return { soll: [["bank", sum - prov], ["kartprov", prov]], haben: [["kkford", sum]],
           text: `Das Kreditkartenunternehmen überweist uns die Kartenumsätze der Woche von ${money(sum)} abzüglich ${pct.toLocaleString("de-DE")} % Provision.`,
-          calc: `Provision: ${pct.toLocaleString("de-DE")} % von ${P.fmt(sum)} = ${P.fmt(prov)}. Gutschrift: ${P.fmt(sum - prov)}. Die Provision ist eine Finanzdienstleistung ohne Umsatzsteuer.` }; } },
+          calc: `Provision: ${pct.toLocaleString("de-DE")} % von ${P.fmt(sum)} = ${P.fmt(prov)}. Gutschrift: ${P.fmt(sum - prov)}. Die Provision ist eine Finanzdienstleistung ohne Umsatzsteuer.` }; },
+      mb: (rng, m) => abKarten(rng, "Kreditkarten", m) },
     { tp: "karten", k: "make", make: (rng) => {
         const sum = rndStep(rng, [300, 4000, 10]) * 100, pct = pickR(rng, [0.5, 0.8, 1]);
         const prov = Math.round(sum * pct / 100);
         return { soll: [["bank", sum - prov], ["kartprov", prov]], haben: [["debford", sum]],
           text: `Die Bank schreibt uns die Debitkarten-Umsätze der letzten Tage von ${money(sum)} abzüglich ${pct.toLocaleString("de-DE")} % Entgelt gut.`,
-          calc: `Entgelt: ${pct.toLocaleString("de-DE")} % von ${P.fmt(sum)} = ${P.fmt(prov)}. Gutschrift: ${P.fmt(sum - prov)}. Das Entgelt ist eine Finanzdienstleistung ohne Umsatzsteuer.` }; } },
+          calc: `Entgelt: ${pct.toLocaleString("de-DE")} % von ${P.fmt(sum)} = ${P.fmt(prov)}. Gutschrift: ${P.fmt(sum - prov)}. Das Entgelt ist eine Finanzdienstleistung ohne Umsatzsteuer.` }; },
+      mb: (rng, m) => abKarten(rng, "Debitkarten", m) },
     // Skonto
     { tp: "skonto", k: "skek", r: [600, 9000, 60], s: "verb", h: "bank", t: (a, sk) => `Wir begleichen eine Lieferantenrechnung für Waren über ${a} per Banküberweisung und ziehen ${sk} % Skonto ab.`, b: { t: "bank" } },
     { tp: "skonto", k: "skek", r: [1200, 12000, 60], s: "verb", h: "bank", t: (a, sk) => `Wir bezahlen die Rechnung für die Herbstkollektion über ${a} innerhalb der Skontofrist per Bank und ziehen ${sk} % Skonto ab.`, b: { t: "bank" } },
-    { tp: "skonto", k: "skek", r: [120, 1200, 12], s: "verb", h: "kassa", t: (a, sk) => `Wir bezahlen eine Lieferantenrechnung für Waren über ${a} bar und ziehen ${sk} % Skonto ab.` },
+    { tp: "skonto", k: "skek", r: [120, 1200, 12], s: "verb", h: "kassa", t: (a, sk) => `Wir bezahlen eine Lieferantenrechnung für Waren über ${a} bar und ziehen ${sk} % Skonto ab.`, bNew: true, b: { t: "kb" } },
     { tp: "skonto", k: "skvk", r: [600, 9000, 60], s: "bank", h: "ford", t: (a, sk) => `Eine Boutique begleicht unsere Rechnung über ${a} per Überweisung und zieht ${sk} % Skonto ab.`, b: { t: "bank" } },
     { tp: "skonto", k: "skvk", r: [1200, 9000, 60], s: "bank", h: "ford", t: (a, sk) => `Das Hotel Alpenblick bezahlt die Rechnung für die Uniformen über ${a} innerhalb von 10 Tagen und zieht ${sk} % Skonto ab.`, b: { t: "bank" } },
-    { tp: "skonto", k: "skvk", r: [120, 1200, 12], s: "kassa", h: "ford", t: (a, sk) => `Eine Firmenkundin bezahlt unsere Rechnung über ${a} bar und zieht ${sk} % Skonto ab.` },
+    { tp: "skonto", k: "skvk", r: [120, 1200, 12], s: "kassa", h: "ford", t: (a, sk) => `Eine Firmenkundin bezahlt unsere Rechnung über ${a} bar und zieht ${sk} % Skonto ab.`, bNew: true, b: { t: "kb" } },
     // Zahlungsverzug
     { tp: "verzug", k: "make", make: (rng) => {
         const z = rndStep(rng, [8, 120, 1]) * 100, m = rndStep(rng, [5, 25, 5]) * 100;
         return { soll: [["verzaufw", z], ["mahnsp", m]], haben: [["verb", z + m]],
           text: `Wir haben eine Lieferantenrechnung zu spät bezahlt. Der Lieferant verrechnet uns Verzugszinsen von ${money(z)} und Mahnspesen von ${money(m)}.`,
-          calc: "Verzugszinsen und Mahnspesen sind Schadenersatz und unterliegen nicht der Umsatzsteuer." }; } },
+          calc: "Verzugszinsen und Mahnspesen sind Schadenersatz und unterliegen nicht der Umsatzsteuer." }; },
+      mb: (rng, m) => abMahnung(rng, { an: false, z: m.soll[0][1], m: m.soll[1][1] }) },
     { tp: "verzug", k: "make", make: (rng) => {
         const z = rndStep(rng, [8, 120, 1]) * 100;
         return { soll: [["verzaufw", z]], haben: [["verb", z]],
           text: `Der Textilgroßhändler verrechnet uns für eine verspätete Zahlung Verzugszinsen von ${money(z)}.`,
-          calc: "Verzugszinsen sind Schadenersatz und unterliegen nicht der Umsatzsteuer." }; } },
+          calc: "Verzugszinsen sind Schadenersatz und unterliegen nicht der Umsatzsteuer." }; },
+      mb: (rng, m) => abMahnung(rng, { an: false, z: m.soll[0][1], m: 0, paid: true }) },
     { tp: "verzug", k: "make", make: (rng) => {
         const z = rndStep(rng, [8, 120, 1]) * 100, m = rndStep(rng, [5, 25, 5]) * 100;
         return { soll: [["ford", z + m]], haben: [["verzertr", z], ["mahnverg", m]],
           text: `Eine Boutique zahlt nicht rechtzeitig. Wir verrechnen ihr Verzugszinsen von ${money(z)} und Mahnspesen von ${money(m)}.`,
-          calc: "Verzugszinsen und Mahnspesen sind Schadenersatz und unterliegen nicht der Umsatzsteuer." }; } },
+          calc: "Verzugszinsen und Mahnspesen sind Schadenersatz und unterliegen nicht der Umsatzsteuer. Die Rechnung selbst ist schon gebucht, gebucht werden nur Zinsen und Spesen." }; },
+      mb: (rng, m) => abMahnung(rng, { an: true, z: m.haben[0][1], m: m.haben[1][1] }) },
     { tp: "verzug", k: "make", make: (rng) => {
         const m = rndStep(rng, [5, 25, 5]) * 100;
         return { soll: [["ford", m]], haben: [["mahnverg", m]],
           text: `Wir schicken einer säumigen Firmenkundin die zweite Mahnung und verrechnen ihr Mahnspesen von ${money(m)}.`,
-          calc: "Mahnspesen sind Schadenersatz und unterliegen nicht der Umsatzsteuer." }; } },
+          calc: "Mahnspesen sind Schadenersatz und unterliegen nicht der Umsatzsteuer. Die Rechnung selbst ist schon gebucht, gebucht werden nur die Spesen." }; },
+      mb: (rng, m) => abMahnung(rng, { an: true, z: 0, m: m.haben[0][1] }) },
     // Steuern
     { tp: "steuern", k: "plain", r: [100, 900, 1], s: "grundst", h: "bank", t: a => `Wir überweisen die Grundsteuer für das Betriebsgrundstück an die Gemeinde: ${a}.`, b: { t: "bank", text: "Grundsteuer Quartal, Magistrat Graz" } },
     { tp: "steuern", k: "plain", r: [500, 6000, 1], s: "zahllast", h: "bank", t: a => `Wir überweisen die USt-Zahllast für den Vormonat an das Finanzamt: ${a}.`, b: { t: "bank", text: "Finanzamt Österreich, Umsatzsteuer Vormonat" } },
@@ -1599,7 +1612,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     // Beiträge und Gebühren
     { tp: "beitraege", k: "plain", r: [50, 600, 1], s: "kammer", h: "bank", t: a => `Die Wirtschaftskammer bucht die Kammerumlage ab: ${a}.`, b: { t: "bank", text: "Wirtschaftskammer, Kammerumlage" } },
     { tp: "beitraege", k: "plain", r: [500, 3000, 1], s: "gsvg", h: "bank", t: a => `Die Sozialversicherung der Selbständigen bucht die GSVG-Beiträge der Inhaberin für das Quartal ab: ${a}.`, b: { t: "bank", text: "SVS, Beiträge Quartal" } },
-    { tp: "beitraege", k: "vst", rate: 10, r: [50, 500, 1], s: "entsorg", h: "bank", t: a => `Die Gemeinde bucht die Müllgebühren für das Geschäftslokal ab: ${a}.` },
+    { tp: "beitraege", k: "vst", rate: 10, r: [50, 500, 1], s: "sonstabg", h: "bank", t: a => `Der Magistrat Graz bucht die Müllgebühren für das Geschäftslokal ab: ${a}.`, note: "Gebühren der Gemeinde für Wasser, Kanal und Müll kommen auf 7190 Sonstige Abgaben, mit 10 % Vorsteuer.", bNew: true, b: { t: "bank", text: "Magistrat Graz, Müllabfuhr Quartal inkl. 10 % USt" } },
     // Personal
     { tp: "personal", k: "plain", r: [3000, 15000, 100], s: "gehalt", h: "bank", t: a => `Die Gehälter der Verkäuferinnen und Verkäufer in Höhe von ${a} werden per Bank überwiesen.`, b: { t: "bank", text: "Gehälter Verkaufspersonal" } },
     { tp: "personal", k: "plain", r: [1500, 4000, 50], s: "gehalt", h: "bank", t: a => `Das Gehalt der Filialleiterin von ${a} wird überwiesen.`, b: { t: "bank", text: "Gehalt Filialleitung" } },
@@ -1834,13 +1847,13 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     { tp: "einkauf", g: true, k: "vst", r: [200, 3000, 50], s: "ware", h: "bank", t: (a, w) => `Für unseren Onlineshop kaufen wir ${w.pl} nach und überweisen sofort: ${a}.`, b: { t: "re", p: "waren" } },
     { tp: "einkauf", g: true, k: "vst", r: [800, 8000, 100], s: "ware", h: "verb", t: (a, w) => `Auf der Modemesse in Salzburg ordern wir ${w.pl} für die kommende Saison. Die Lieferung kommt mit Rechnung auf Ziel: ${a}.`, b: { t: "re", p: "waren" } },
     { tp: "einkauf", g: true, k: "vst", r: [80, 400, 10], s: "ware", h: "kassa", t: (a, w) => `Eine Kundin wünscht ein Modell in einer Größe, die wir nicht lagernd haben. Wir kaufen ${w.pl} beim Großhändler und bezahlen bar: ${a}.`, b: { t: "re", p: "waren" } },
-    { tp: "ertraege", k: "ust", r: [300, 1200, 10], s: "bank", h: "mieterl", t: a => `Das Fotostudio Lichtblick überweist die Monatsmiete für den Raum in unserem Geschäft: ${a}.` },
-    { tp: "ertraege", k: "ust", r: [150, 1500, 10], s: "bank", h: "provertr", t: a => `Ein Schuhhersteller zahlt uns eine Provision, weil wir seine Schuhe in unserem Geschäft präsentieren: ${a}.` },
-    { tp: "ertraege", k: "ust", r: [200, 900, 10], s: "kassa", h: "mieterl", t: a => `Eine junge Designerin mietet für einen Abend unsere Verkaufsfläche für eine Modenschau und bezahlt bar: ${a}.` },
-    { tp: "ertraege", k: "ust", r: [300, 2500, 10], s: "sonstford", h: "provertr", t: a => `Wir vermitteln dem Hotel Alpenblick einen Hersteller für Uniformen. Die Provision stellen wir in Rechnung, sie ist noch offen: ${a}.` },
+    { tp: "ertraege", k: "ust", r: [300, 1200, 10], s: "bank", h: "mieterl", t: a => `Das Fotostudio Lichtblick überweist die Monatsmiete für den Raum in unserem Geschäft: ${a}.`, bNew: true, b: { t: "bank", text: "Gutschrift Fotostudio Lichtblick, Miete Verkaufsraum inkl. 20 % USt" } },
+    { tp: "ertraege", k: "ust", r: [150, 1500, 10], s: "bank", h: "provertr", t: a => `Ein Schuhhersteller zahlt uns eine Provision, weil wir seine Schuhe in unserem Geschäft präsentieren: ${a}.`, bNew: true, b: { t: "bank", text: "Gutschrift Schuhmanufaktur Hartl KG, Präsentationsprovision inkl. 20 % USt" } },
+    { tp: "ertraege", k: "ust", r: [200, 900, 10], s: "kassa", h: "mieterl", t: a => `Eine junge Designerin mietet für einen Abend unsere Verkaufsfläche für eine Modenschau und bezahlt bar: ${a}.`, bNew: true, b: { t: "kb", text: "Raummiete Modenschau, inkl. 20 % USt" } },
+    { tp: "ertraege", k: "ust", r: [300, 2500, 10], s: "sonstford", h: "provertr", t: a => `Wir vermitteln dem Hotel Alpenblick einen Hersteller für Uniformen. Die Provision stellen wir in Rechnung, sie ist noch offen: ${a}.`, bNew: true, b: { t: "re", p: "kunden", item: "Vermittlungsprovision Uniformhersteller", q1: true } },
     { tp: "beitraege", k: "plain", r: [100, 900, 1], s: "kammer", h: "bank", t: a => `Wir überweisen die Kammerumlage für das Halbjahr an die Wirtschaftskammer: ${a}.`, b: { t: "bank", text: "Wirtschaftskammer, Kammerumlage Halbjahr" } },
     { tp: "beitraege", k: "plain", r: [200, 2500, 1], s: "gsvg", h: "bank", t: a => `Die SVS schreibt eine Nachzahlung der Beiträge der Inhaberin für das Vorjahr vor. Wir überweisen: ${a}.`, b: { t: "bank", text: "SVS, Beitragsnachzahlung Vorjahr" } },
-    { tp: "beitraege", k: "vst", rate: 10, r: [80, 600, 1], s: "entsorg", h: "verb", t: a => `Die Stadt Graz schickt die Rechnung für die Müllabfuhr des Quartals, zahlbar in 14 Tagen: ${a}.` },
+    { tp: "beitraege", k: "vst", rate: 10, r: [80, 600, 1], s: "sonstabg", h: "verbgem", t: a => `Der Magistrat Graz schreibt die Gebühr für die Müllabfuhr des Quartals vor, zahlbar in 14 Tagen: ${a}.`, note: "Gebühren der Gemeinde → 7190 Sonstige Abgaben mit 10 % Vorsteuer, die Schuld gegenüber der Gemeinde → 3610." },
     { tp: "bar", k: "plain", r: [80, 900, 10], s: "kassa", h: "ford", t: a => `Das Hotel Alpenblick bezahlt eine offene Rechnung für Uniformänderungen über ${a} bar.`, b: { t: "kb", text: "Barzahlung Hotel Alpenblick GmbH" } },
     { tp: "bar", k: "plain", r: [50, 700, 10], s: "kassa", h: "ford", t: a => `Die Boutique Seidenfaden OG gleicht ihre offene Rechnung über ${a} bar aus.`, b: { t: "kb", text: "Barzahlung Boutique Seidenfaden OG" } },
     { tp: "bar", k: "plain", r: [50, 600, 10], s: "verb", h: "kassa", t: a => `Beim Abholen von Ware bezahlen wir eine offene Rechnung der Danubia Textilgroßhandel GmbH über ${a} bar.`, b: { t: "kb", text: "Barzahlung Danubia Textilgroßhandel GmbH" } },
@@ -1868,6 +1881,61 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         return { soll: [["afa", afa]], haben: [["pkw", afa]],
           text: `Am ${jaD(jaDay(rng, m), m)} kaufen wir einen Firmen-Pkw (Kombi) und nehmen ihn sofort in Betrieb. Die Anschaffungskosten betragen ${money(ak)} inklusive NoVA und USt, weil es beim Pkw keinen Vorsteuerabzug gibt. Nutzungsdauer 8 Jahre. Buche die Abschreibung am 31.12.2026.`,
           calc: `Beim Pkw sind die Bruttokosten die Anschaffungskosten. Jahres-AfA: ${P.fmt(ak)} ÷ 8 = ${P.fmt(y)}. ${half ? `Inbetriebnahme im zweiten Halbjahr: halbe AfA ${P.fmt(afa)}.` : "Inbetriebnahme im ersten Halbjahr: volle AfA."}` }; } },
+    // Abgaben an den Staat nach dem TRAUNER-Kapitel „Abgaben – der Staat verdient mit“ (2026-10-29); v2 = erst ab Testcodes Version 2
+    { tp: "steuern", v2: true, k: "make", make: rng => {
+        const q = 1 + Math.floor(rng() * 4), g = rndStep(rng, [15000, 120000, 1]);
+        return { soll: [["grundst", g]], haben: [["verbgem", g]], q,
+          text: `Wir erhalten vom Magistrat Graz die Vorschreibung der Grundsteuer für unser Geschäftsgebäude für das ${q}. Quartal 2026: ${money(g)}. Bezahlt wird erst später.`,
+          calc: "Die Grundsteuer ist eine Betriebssteuer, also Aufwand (7100) ohne Umsatzsteuer. Mit der Vorschreibung entsteht eine Schuld gegenüber der Gemeinde (3610)." }; },
+      mb: (rng, m) => abGemeinde(rng, m.q, [["Grundsteuer B, Objekt Annenstraße 21", 0, m.soll[0][1]]]) },
+    { tp: "steuern", v2: true, notk: true, k: "plain", r: [150, 1500, 1], s: "verbgem", h: "bank", t: a => `Wir überweisen die bereits gebuchte Vorschreibung des Magistrats Graz (Grundsteuer und Gebühren): ${a}.`, b: { t: "bank", text: "Magistrat Graz, Abgabenvorschreibung Quartal" } },
+    { tp: "steuern", v2: true, k: "make", make: rng => {
+        const p = 3 + Math.floor(rng() * 10), z = rndStep(rng, [80000, 700000, 1]), l = rndStep(rng, [40000, 300000, 1]);
+        return { soll: [["zahllast", z], ["verbfa", l]], haben: [["bank", z + l]], p,
+          text: `Am 15.${pad(p)}.2026 überweisen wir an das Finanzamt die USt-Zahllast für ${MONTHS[p - 3]} von ${money(z)} und die Lohnsteuer für ${MONTHS[p - 2]} von ${money(l)}.`,
+          calc: `Umsatzsteuer und Lohnsteuer sind Durchlaufsteuern und wirken nicht auf den Erfolg. Die Zahllast ist bis zum 15. des zweitfolgenden Monats fällig, die Lohnsteuer bis zum 15. des Folgemonats. Überweisung gesamt: ${P.fmt(z + l)}.` }; },
+      mb: (rng, m) => bwBank(rng, new Date(2026, m.p - 1, 15), `Finanzamt Österreich, U ${pad(m.p - 2)}/2026 ${fmtNum(m.soll[0][1])}, L ${pad(m.p - 1)}/2026 ${fmtNum(m.soll[1][1])}`, m.haben[0][1], false) },
+    { tp: "steuern", v2: true, k: "make", make: rng => {
+        const k = rndStep(rng, [400, 3000, 5]) * 10000, g = Math.round(k * 35 / 1000);
+        return { soll: [["grund", g]], haben: [["verbfa", g]], k,
+          text: `Wir haben neben unserem Lager ein unbebautes Grundstück um ${money(k)} gekauft, der Kauf ist bereits gebucht. Jetzt schreibt uns das Finanzamt die Grunderwerbsteuer von 3,5 % vor.`,
+          calc: `Grunderwerbsteuer: 3,5 % von ${P.fmt(k)} = ${P.fmt(g)}. Sie ist eine aktivierungspflichtige Steuer: Sie erhöht die Anschaffungskosten des Grundstücks (0200) und ist kein Aufwand. Verwechsle sie nicht mit der Grundsteuer.` }; },
+      mb: (rng, m) => abGrESt(rng, m.k, m.soll[0][1]) },
+    { tp: "steuern", v2: true, notk: true, k: "plain", r: [500, 6000, 1], s: "verbfa", h: "bank", t: a => `Wir überweisen die bereits gebuchte Grunderwerbsteuer für das neue Grundstück an das Finanzamt: ${a}.`, b: { t: "bank", text: "Finanzamt Österreich, Grunderwerbsteuer" } },
+    { tp: "steuern", v2: true, k: "plain", r: [60, 400, 1], s: "kfzlkw", h: "bank", t: a => `Wir überweisen die Kraftfahrzeugsteuer für unseren Lkw (7,5 t) für das Quartal an das Finanzamt: ${a}.`, note: "Die Kraftfahrzeugsteuer für den Lkw ist eine Betriebssteuer (Aufwand) ohne Umsatzsteuer.", b: { t: "bank", text: "Finanzamt Österreich, Kraftfahrzeugsteuer Lkw Quartal" } },
+    { tp: "steuern", v2: true, k: "make", make: rng => {
+        const b = rndStep(rng, [20000, 90000, 1]), pv = rndStep(rng, [6000, 30000, 1]);
+        return { soll: [["grundst", b], ["privst", pv]], haben: [["bank", b + pv]],
+          text: `Wir überweisen vom Geschäftskonto die Grundsteuer an den Magistrat Graz: ${money(b)} für das Geschäftsgebäude und ${money(pv)} für das private Wohnhaus der Inhaberin.`,
+          calc: "Die Grundsteuer für das Geschäftsgebäude ist Aufwand (7100). Die Grundsteuer für das Privathaus ist eine Privatsteuer und wird auf 9610 gebucht, sie wirkt nicht auf den Erfolg." }; },
+      mb: (rng, m) => bwBank(rng, abDate(rng), `Magistrat Graz, Grundsteuer Annenstraße 21 ${fmtNum(m.soll[0][1])}, Grundsteuer Wohnhaus A. Maier ${fmtNum(m.soll[1][1])}`, m.haben[0][1], false) },
+    { tp: "beitraege", v2: true, k: "make", make: rng => {
+        const q = 1 + Math.floor(rng() * 4), gl = rndStep(rng, [180, 600, 1]) * 1000;
+        const pv = Math.round(gl * 3 * 0.185), kv = Math.round(gl * 3 * 0.068), sv = Math.round(gl * 3 * 0.0153), uv = 3 * 1205, sum = pv + kv + sv + uv;
+        return { soll: [["gsvg", sum]], haben: [["verbgsvg", sum]], q, parts: [pv, kv, uv, sv],
+          text: `Die SVS schreibt die Sozialversicherungsbeiträge der Inhaberin für das ${q}. Quartal 2026 vor: ${money(sum)}. Bezahlt wird später.`,
+          calc: "Die Sozialversicherungsbeiträge der Selbständigen sind Aufwand (7740) ohne Umsatzsteuer. Mit der Vorschreibung entsteht eine Schuld gegenüber der SVS (3640)." }; },
+      mb: (rng, m) => abSvs(rng, m.q, m.parts) },
+    { tp: "beitraege", v2: true, notk: true, k: "plain", r: [800, 3500, 1], s: "verbgsvg", h: "bank", t: a => `Wir überweisen die bereits gebuchte Beitragsvorschreibung der SVS für das Quartal: ${a}.`, b: { t: "bank", text: "SVS, Beitragsvorschreibung Quartal" } },
+    { tp: "beitraege", v2: true, k: "make", make: rng => {
+        const q = 1 + Math.floor(rng() * 4), v = rndStep(rng, [300, 3000, 1]) * 1000, ku = Math.round(v * 0.0029);
+        return { soll: [["kammer", ku]], haben: [["verbfa", ku]],
+          text: `Unsere Vorsteuern im ${q}. Quartal betragen ${money(v)}. Berechne die Kammerumlage 1 (0,29 % der Vorsteuern) und buche sie zum Quartalsende.`,
+          calc: `Kammerumlage 1: ${P.fmt(v)} × 0,29 % = ${P.fmt(ku)}. Sie wird mit der Umsatzsteuer an das Finanzamt abgeführt, daher Schuld auf 3540. Die Kammerumlage ist Aufwand (7780) ohne Umsatzsteuer.` }; } },
+    { tp: "beitraege", v2: true, k: "make", make: rng => {
+        const q = 1 + Math.floor(rng() * 4), g = rndStep(rng, [15000, 70000, 1]);
+        const it = [["Wasserbezugsgebühr Akonto", rndStep(rng, [5000, 15000, 1])], ["Zählermiete", rndStep(rng, [300, 600, 1])], ["Kanalbenützungsgebühr Akonto", rndStep(rng, [12000, 30000, 1])], ["Abfallgebühr", rndStep(rng, [8000, 22000, 1])]];
+        const br = it.reduce((a, x) => a + x[1], 0), net = Math.round(br * 100 / 110), tax = br - net;
+        return { soll: [["grundst", g], ["sonstabg", net], ["vst", tax]], haben: [["verbgem", g + br]], q, g, it,
+          text: `Der Magistrat Graz schreibt uns für das ${q}. Quartal vor: Grundsteuer ${money(g)} (ohne USt) sowie Wasser, Kanal und Müll zusammen ${money(br)} inkl. 10 % USt. Bezahlt wird später.`,
+          calc: `Wasser, Kanal und Müll: ${P.fmt(br)} ÷ 1,1 = ${P.fmt(net)} netto auf 7190 Sonstige Abgaben, Vorsteuer 10 % ${P.fmt(tax)}. Die Grundsteuer ${P.fmt(g)} kommt auf 7100 (ohne USt). Schuld gegenüber der Gemeinde: ${P.fmt(g + br)}.` }; },
+      mb: (rng, m) => abGemeinde(rng, m.q, [["Grundsteuer B, Objekt Annenstraße 21", 0, m.g], ...m.it.map(x => [x[0], 10, x[1]])]) },
+    { tp: "beitraege", v2: true, k: "make", make: rng => {
+        const br = rndStep(rng, [30000, 90000, 1]), net = Math.round(br * 100 / 110), tax = br - net;
+        return { soll: [["sonstabg", net], ["vst", tax]], haben: [["bank", br]],
+          text: `Der Magistrat Graz bucht die vierteljährliche Vorschreibung für Wasser, Kanal und Müll vom Bankkonto ab: ${money(br)} inkl. 10 % USt.`,
+          calc: `Gebühren der Gemeinde: ${P.fmt(br)} ÷ 1,1 = ${P.fmt(net)} netto auf 7190 Sonstige Abgaben, Vorsteuer 10 % ${P.fmt(tax)}.` }; },
+      mb: (rng, m) => bwBank(rng, abDate(rng), "Magistrat Graz, Gebühren Wasser, Kanal, Müll inkl. 10 % USt", m.haben[0][1], false) },
   ];
   CASES.forEach((c, i) => { c.uid = "b" + i; });
   let customCases = []; // aus der Datenbank, siehe unten
@@ -1901,7 +1969,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   // ---------- Aufgabe erzeugen ----------
   // form: "text" | "mix" | "beleg"
-  function makeTask(c, rng, allowBrutto, form) {
+  function makeTask(c, rng, allowBrutto, form, legacy) {
+    // Alte Testcodes (Version 1) bekommen dieselben Aufgaben wie früher: ohne später ergänzte Belege
+    if (legacy && c.bNew) c = Object.assign({}, c, { b: undefined });
     if (c.k === "fixed") {
       return { caseDef: c, text: esc(c.text).replace(/\n/g, "<br>"), soll: c.soll, haben: c.haben, meta: ["Lehrkraft"], calc: c.note ? esc(c.note) : null, note: null, beleg: null };
     }
@@ -1920,7 +1990,9 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     if (c.k === "make") {
       let m = c.make(rng);
       for (let i = 0; m === JA_RETRY && i < 200; i++) m = c.make(rng);
-      return { caseDef: def, text: m.text, soll: m.soll, haben: m.haben, meta: [], calc: m.calc || null, note: null, beleg: null };
+      const t = { caseDef: def, text: m.text, soll: m.soll, haben: m.haben, meta: [], calc: m.calc || null, note: null, beleg: null };
+      if (c.mb && !legacy && (form === "beleg" || (form === "mix" && rng() < 0.5))) { t.beleg = c.mb(rng, m); t.meta = ["Beleg"]; }
+      return t;
     }
     const useBeleg = !!c.b && (form === "beleg" || (form === "mix" && rng() < 0.5));
     let base = rndStep(rng, c.r) * 100; // Cent
@@ -1995,6 +2067,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     const partner = c.b.p ? pickR(rng, PARTNERS[c.b.p]) : null;
     if (c.b.t === "bank") return bankBeleg(c, rng, v, d, partner, wm);
     if (c.b.t === "kb") return kassaBeleg(c, rng, v, d, wm);
+    if (c.b.t === "eigen") return eigenBeleg(c, rng, v, d, wm);
     const issuer = ourSide ? [US.name, US.street, US.city, US.uid] : partner;
     const recipient = ourSide ? partner : [US.name, US.street, US.city, US.uid];
     const gross = v.net + v.tax;
@@ -2076,15 +2149,104 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     </div>`;
   }
   function kassaBeleg(c, rng, v, d, wm) {
-    const eingang = v.soll.some(e => e[0] === "kassa");
+    const eingang = v.soll.some(e => e[0] === "kassa"), amt = v.soll.concat(v.haben).find(e => e[0] === "kassa")[1];
+    const reNr = () => `${d.getFullYear()}-${pad(100 + Math.floor(rng() * 899), 3)}${Math.floor(rng() * 10)}`;
+    const text = c.k === "skek" ? `Bezahlung Rechnung ${pickR(rng, PARTNERS.waren)[0]}, RE-Nr. ${reNr()} über ${fmtNum(v.base)} abzgl. ${v.sk} % Skonto`
+      : c.k === "skvk" ? `Zahlung ${pickR(rng, PARTNERS.kunden)[0]}, unsere RE-Nr. ${reNr()} über ${fmtNum(v.base)} abzgl. ${v.sk} % Skonto` : c.b.text;
     return `<div class="doc kb">${wm}
       <div class="firm">${esc(US.name)}</div>
       <div class="doc-title">Kassa${eingang ? "eingangs" : "ausgangs"}beleg</div>
-      <div class="meta"><span>Beleg-Nr.</span><span class="mono">K-${pad(1 + Math.floor(rng() * 400), 3)}</span><span>Datum</span><span class="mono">${fmtDate(d)}</span><span>Betrag</span><span class="mono"><b>EUR ${fmtNum(v.base)}</b></span><span>Text</span><span>${esc(c.b.text)}</span></div>
+      <div class="meta"><span>Beleg-Nr.</span><span class="mono">K-${pad(1 + Math.floor(rng() * 400), 3)}</span><span>Datum</span><span class="mono">${fmtDate(d)}</span><span>Betrag</span><span class="mono"><b>EUR ${fmtNum(amt)}</b></span><span>Text</span><span>${esc(text)}</span></div>
       <div class="sig"><span>${eingang ? "Einzahler/in" : "Empfänger/in"}</span><span>Kassier/in</span></div>
     </div>`;
   }
 
+  function eigenBeleg(c, rng, v, d, wm) {
+    return `<div class="doc kb">${wm}
+      <div class="firm">${esc(US.name)}</div>
+      <div class="doc-title">Eigenbeleg</div>
+      <div class="meta"><span>Beleg-Nr.</span><span class="mono">SO-${pad(1 + Math.floor(rng() * 90), 2)}</span><span>Datum</span><span class="mono">${fmtDate(d)}</span></div>
+      <p style="margin:12px 0 6px">Entnahme von Waren für private Zwecke: ${v.q} × ${esc(c.b.item)}</p>
+      <table class="tot" style="max-width:320px"><tr><td>Einstandspreis netto</td><td class="num">${fmtNum(v.net)}</td></tr>
+        <tr><td>+ ${v.R} % USt</td><td class="num">${fmtNum(v.tax)}</td></tr>
+        <tr class="grand"><td>Gesamt EUR</td><td class="num">${fmtNum(v.net + v.tax)}</td></tr></table>
+      <div class="sig"><span>${esc(US.owner)}</span><span></span></div>
+    </div>`;
+  }
+  // ---------- Belege für Abgaben, Mahnungen und Abrechnungen ----------
+  const abDate = rng => new Date(2026, Math.floor(rng() * 12), 1 + Math.floor(rng() * 27));
+  // o: { issuer: [Name, Zeile], to: [Name, Straße, Ort], meta: [[Bezeichnung, Wert]], title, intro, head, rows (Zahlen = Cent), tot: [[Text, Cent, fett]], pay, note }
+  function abDoc(o) {
+    const to = o.to || [US.name, US.street, US.city];
+    const cell = (x, i) => typeof x === "number" ? `<td class="num">${fmtNum(x)}</td>` : `<td${i && /%$/.test(x) ? ' class="num"' : ""}>${esc(x)}</td>`;
+    return `<div class="doc"><span class="wm">Übungsbeleg</span>
+      <div class="firm">${esc(o.issuer[0])}</div><div class="small">${esc(o.issuer[1])}</div>
+      <div class="addr-row"><div>${esc(to[0])}<br>${esc(to[1])}<br>${esc(to[2])}</div>
+        <div class="meta">${o.meta.map(([a, b]) => `<span>${esc(a)}</span><span class="mono">${esc(b)}</span>`).join("")}</div></div>
+      <div class="doc-title">${esc(o.title)}</div>
+      ${o.intro ? `<p style="margin:0 0 8px;font-size:0.92rem">${o.intro}</p>` : ""}
+      <table><thead><tr>${o.head.map((h, i) => `<th${i === o.head.length - 1 || /%|USt/.test(h) ? ' class="num"' : ""}>${esc(h)}</th>`).join("")}</tr></thead>
+        <tbody>${o.rows.map(r => `<tr>${r.map(cell).join("")}</tr>`).join("")}</tbody></table>
+      ${o.tot ? `<table class="tot" style="margin-top:6px;max-width:360px;margin-left:auto">${o.tot.map(([l, a, g]) => `<tr${g ? ' class="grand"' : ""}><td>${esc(l)}</td><td class="num">${fmtNum(a)}</td></tr>`).join("")}</table>` : ""}
+      ${o.note ? `<div class="pay small">${esc(o.note)}</div>` : ""}
+      ${o.pay ? `<div class="pay">${esc(o.pay)}</div>` : ""}
+    </div>`;
+  }
+  const abQ = q => [`01.${pad(q * 3 - 2)}.2026 – ${q * 3 === 6 || q * 3 === 9 ? 30 : 31}.${pad(q * 3)}.2026`];
+  function abGemeinde(rng, q, items) {
+    const d = new Date(2026, q * 3 - 3, 2 + Math.floor(rng() * 10)), due = `15.${pad(q * 3 - 1)}.2026`;
+    const g10 = items.filter(x => x[1]).reduce((a, x) => a + x[2], 0), n10 = Math.round(g10 * 100 / 110), g0 = items.filter(x => !x[1]).reduce((a, x) => a + x[2], 0);
+    const tot = [["Vorschreibung inkl. USt", g0 + g10, true]];
+    if (g10) tot.push([`darin 10 % USt (netto ${fmtNum(n10)})`, g10 - n10]);
+    return abDoc({ issuer: ["Magistrat Graz", "Abteilung für Abgaben und Gebühren · Stadtkassa · 8011 Graz"],
+      meta: [["Kunden-Nr.", `47-${100000 + Math.floor(rng() * 899999)}`], ["Datum", fmtDate(d)], ["Fällig am", due]],
+      title: "Abgabenvorschreibung", intro: `Vorschreibung für den Zeitraum ${abQ(q)[0]}. Alle Beträge betreffen das Geschäftsgebäude.`,
+      head: ["Bezeichnung", "USt", "Betrag inkl. USt"], rows: items.map(x => [x[0], `${x[1]} %`, x[2]]),
+      tot, pay: `Bitte überweisen Sie den Gesamtbetrag bis ${due} unter Angabe der Kundennummer.` });
+  }
+  function abGrESt(rng, k, g) {
+    const d = abDate(rng), kv = new Date(d.getTime() - (10 + Math.floor(rng() * 30)) * 86400000), due = new Date(d.getTime() + 30 * 86400000);
+    return abDoc({ issuer: ["Finanzamt Österreich", "Dienststelle Graz-Stadt · Bemessungsgruppe Grunderwerbsteuer"],
+      meta: [["Steuernummer", `68 ${100 + Math.floor(rng() * 899)}/${1000 + Math.floor(rng() * 8999)}`], ["Datum", fmtDate(d)]],
+      title: "Grunderwerbsteuerbescheid", intro: `Betrifft: Kaufvertrag vom ${fmtDate(kv)} zwischen ${esc(pickR(rng, ["Herrn Johann Pölzl", "Frau Maria Kainz", "der Hofer Liegenschaften GmbH"]))} und ${esc(US.name)} über ein unbebautes Grundstück in Graz-Gries.`,
+      head: ["Berechnung", "Betrag EUR"], rows: [["Gegenleistung (Kaufpreis) = Bemessungsgrundlage", k], ["Steuersatz", "3,5 %"]],
+      tot: [["Festgesetzte Grunderwerbsteuer", g, true]], pay: `Der Betrag ist bis ${fmtDate(due)} zu entrichten.` });
+  }
+  function abSvs(rng, q, parts) {
+    const d = new Date(2026, q * 3 - 3, 5 + Math.floor(rng() * 15)), due = `${q * 3 === 6 || q * 3 === 9 ? 30 : 31}.${pad(q * 3)}.2026`, sum = parts.reduce((a, b) => a + b, 0);
+    return abDoc({ issuer: ["Sozialversicherungsanstalt der Selbständigen (SVS)", "Landesstelle Steiermark · 8010 Graz"],
+      to: [US.owner, US.street, US.city], meta: [["Versicherungs-Nr.", `${1000 + Math.floor(rng() * 8999)} ${pad(1 + Math.floor(rng() * 28))}0${Math.floor(rng() * 10)}78`], ["Datum", fmtDate(d)], ["Fällig am", due]],
+      title: `Beitragsvorschreibung ${q}. Quartal 2026`, intro: `Vorläufige Beiträge auf Grundlage des letzten Einkommensteuerbescheides (Gewerbebetrieb ${esc(US.name)}).`,
+      head: ["Beitrag", "Betrag EUR"], rows: [["Pensionsversicherung", parts[0]], ["Krankenversicherung", parts[1]], ["Unfallversicherung", parts[2]], ["Selbständigenvorsorge", parts[3]]],
+      tot: [["Vorschreibung gesamt", sum, true]], pay: `Bitte überweisen Sie den Betrag bis ${due}.` });
+  }
+  function abMahnung(rng, o) {
+    const d = abDate(rng), re = new Date(d.getTime() - (45 + Math.floor(rng() * 40)) * 86400000), nr = `RE-2026-${pad(100 + Math.floor(rng() * 899), 3)}${Math.floor(rng() * 10)}`;
+    const open = rndStep(rng, [600, 6000, 1]) * 100 + Math.floor(rng() * 100), partner = pickR(rng, o.an ? PARTNERS.kunden : PARTNERS.waren);
+    const rows = [], due = new Date(d.getTime() + 10 * 86400000);
+    if (o.paid) {
+      const pd = new Date(re.getTime() + (50 + Math.floor(rng() * 20)) * 86400000);
+      rows.push([`Rechnung ${nr} vom ${fmtDate(re)} über ${fmtNum(open)}, fällig ${fmtDate(new Date(re.getTime() + 30 * 86400000))}, bezahlt am ${fmtDate(pd)}`, "—"]);
+    } else rows.push([`Offene Rechnung ${nr} vom ${fmtDate(re)}`, open]);
+    if (o.z) rows.push(["Verzugszinsen", o.z]);
+    if (o.m) rows.push(["Mahnspesen", o.m]);
+    const total = (o.paid ? 0 : open) + o.z + o.m;
+    return abDoc({ issuer: o.an ? [US.name, `${US.street} · ${US.city} · UID-Nr. ${US.uid}`] : [partner[0], `${partner[1]} · ${partner[2]} · UID-Nr. ${partner[3]}`],
+      to: o.an ? partner : [US.name, US.street, US.city], meta: [["Datum", fmtDate(d)], ["Kunden-Nr.", `${20000 + Math.floor(rng() * 9999)}`]],
+      title: o.paid ? "Zinsenbelastung" : `${o.m && !o.z ? 2 : pickR(rng, [1, 2])}. Mahnung`,
+      intro: o.paid ? "Ihre Zahlung ist erst nach Ablauf des Zahlungsziels bei uns eingegangen. Für die Zeit des Verzugs verrechnen wir Ihnen Verzugszinsen." : "Leider konnten wir zur unten angeführten Rechnung bis heute keinen Zahlungseingang feststellen.",
+      head: ["Bezeichnung", "Betrag EUR"], rows, tot: [[o.paid ? "Zu zahlen" : "Gesamt offen", total, true]],
+      note: o.an ? "Durchschrift für unsere Buchhaltung" : "",
+      pay: o.paid ? `Bitte überweisen Sie den Betrag bis ${fmtDate(due)}.` : `Bitte überweisen Sie den Gesamtbetrag bis spätestens ${fmtDate(due)}.` });
+  }
+  function abKarten(rng, art, m) {
+    const sum = m.haben[0][1], prov = m.soll[1][1], d = abDate(rng), from = new Date(d.getTime() - 9 * 86400000), to = new Date(d.getTime() - 3 * 86400000);
+    return abDoc({ issuer: [art === "Kreditkarten" ? "CardPay Austria GmbH" : BANK.name, art === "Kreditkarten" ? "Händlerservice · 1030 Wien" : "Händlerabrechnung Debitkarten"],
+      meta: [["Händler-Nr.", `${4000000 + Math.floor(rng() * 999999)}`], ["Datum", fmtDate(d)]],
+      title: `${art}-Abrechnung`, intro: `Umsätze vom ${fmtDate(from)} bis ${fmtDate(to)}. Die Gutschrift erfolgt auf Ihr Konto IBAN ${esc(US.iban)}.`,
+      head: ["Bezeichnung", "Betrag EUR"], rows: [[`${art}umsätze (${10 + Math.floor(rng() * 80)} Transaktionen)`, sum], [art === "Kreditkarten" ? "− Disagio (Provision), umsatzsteuerfrei" : "− Entgelt, umsatzsteuerfrei", prov]],
+      tot: [["Gutschrift", sum - prov, true]] });
+  }
   // ---------- Zustand ----------
   let mode = "practice";
   const allTopicIds = TOPICS.map(t => t.id);
@@ -2472,18 +2634,20 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   const topicMask = set => TOPICS.reduce((m, t, i) => set.has(t.id) ? m | (1 << i) : m, 0);
   const maskTopics = mask => new Set(TOPICS.filter((t, i) => mask & (1 << i)).map(t => t.id));
   // Optionen: Bit 0 = Bruttobeträge, Bit 1–2 = Aufgabenart (0 Text, 1 gemischt, 2 Belege)
-  function makeCode(cfg) { return [cfg.mask.toString(36), cfg.n, (cfg.brutto ? 1 : 0) | (FORMS.indexOf(cfg.form) << 1), cfg.seed.toString(36)].join("-").toUpperCase(); }
+  // Version 2 (ab 2026-10-29, mehr Vorlagen und Belege): Optionsziffer + 6; alte Codes (0–5) liefern weiter dieselben Aufgaben
+  function makeCode(cfg) { return [cfg.mask.toString(36), cfg.n, ((cfg.brutto ? 1 : 0) | (FORMS.indexOf(cfg.form) << 1)) + (cfg.v === 1 ? 0 : 6), cfg.seed.toString(36)].join("-").toUpperCase(); }
   function parseCode(code) {
-    const m = String(code).trim().toLowerCase().replace(/^#?test-/, "").match(/^([0-9a-z]+)-(\d{1,2})-([0-5])-([0-9a-z]+)$/);
+    const m = String(code).trim().toLowerCase().replace(/^#?test-/, "").match(/^([0-9a-z]+)-(\d{1,2})-([0-9ab])-([0-9a-z]+)$/);
     if (!m) return null;
-    const mask = parseInt(m[1], 36), n = Number(m[2]), opt = Number(m[3]), seed = parseInt(m[4], 36);
+    const mask = parseInt(m[1], 36), n = Number(m[2]), o = parseInt(m[3], 36), opt = o % 6, seed = parseInt(m[4], 36);
     if (!mask || mask >= (1 << TOPICS.length) || n < 1 || n > 40 || !Number.isFinite(seed)) return null;
-    return { mask, n, brutto: !!(opt & 1), form: FORMS[opt >> 1], seed };
+    return { mask, n, brutto: !!(opt & 1), form: FORMS[opt >> 1], seed, v: o < 6 ? 1 : 2 };
   }
   function buildTest(cfg) {
     const rng = mulberry32(cfg.seed);
     const topics = maskTopics(cfg.mask);
-    const pool = id => allCases().filter(c => c.tp === id).sort((a, b) => a.uid < b.uid ? -1 : 1);
+    const legacy = cfg.v === 1;
+    const pool = id => allCases().filter(c => c.tp === id && !(legacy && c.v2)).sort((a, b) => a.uid < b.uid ? -1 : 1);
     const byTopic = TOPICS.filter(t => topics.has(t.id) && pool(t.id).length).map(t => ({ id: t.id, bag: [] }));
     if (!byTopic.length) return null;
     const items = [];
@@ -2493,7 +2657,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         slot.bag = pool(slot.id);
         for (let j = slot.bag.length - 1; j > 0; j--) { const r = Math.floor(rng() * (j + 1)); [slot.bag[j], slot.bag[r]] = [slot.bag[r], slot.bag[j]]; }
       }
-      items.push(makeTask(slot.bag.pop(), rng, cfg.brutto, cfg.form));
+      items.push(makeTask(slot.bag.pop(), rng, cfg.brutto, cfg.form, legacy));
     }
     for (let j = items.length - 1; j > 0; j--) { const r = Math.floor(rng() * (j + 1)); [items[j], items[r]] = [items[r], items[j]]; }
     return { cfg, code: makeCode(cfg), items, answers: items.map(() => null), idx: 0 };
@@ -2826,7 +2990,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
   function tkBuild() {
     // Vorlagen vorab mit ein paar Probeaufgaben einordnen, damit der Filter genug Auswahl hat
-    const pool = CASES.filter(c => TK_KINDS.includes(c.k) && [0, 1, 2, 3].some(() => tkFits(makeTask(c, Math.random, false, "text"))));
+    const pool = CASES.filter(c => TK_KINDS.includes(c.k) && !c.notk && [0, 1, 2, 3].some(() => tkFits(makeTask(c, Math.random, false, "text"))));
     const picked = [];
     let guard = 0;
     while (picked.length < tkN && guard++ < 500) {
@@ -5727,10 +5891,10 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
 
     { id: "steuern", g: 4, tp: "steuern", title: "Verbuchung von Steuern",
       text: "Betriebliche Steuern wie die <b>Grundsteuer</b> sind Aufwand. Die <b>Einkommensteuer</b> der Inhaberin ist privat und läuft über das Privatkonto. Die <b>Umsatzsteuer-Zahllast</b> ist eine Schuld beim Finanzamt.",
-      rules: ["Grundsteuer: 7100 / 2800.", "Einkommensteuer der Inhaberin: 9610 Privatsteuern / 2800.", "Überweisung der Zahllast: 3520 USt-Zahllast / 2800."], go: [["bs", "steuern"]] },
+      rules: ["Betriebssteuern (Grundsteuer, Kfz-Steuer Lkw) sind Aufwand: 7100 Grundsteuer / 3610 Verbindlichkeiten Gemeinde bzw. 2800.", "Durchlaufsteuern wirken nicht auf den Erfolg: 3520 USt-Zahllast + 3540 Verbindlichkeiten Finanzamt (Lohnsteuer) / 2800.", "Aktivierungspflichtige Steuern erhöhen die Anschaffungskosten: Grunderwerbsteuer 3,5 % → 0200 Unbebaute Grundstücke / 3540.", "Privatsteuern (Einkommensteuer, Grundsteuer für Privatgrundstücke): 9610 Privatsteuern / 2800."], go: [["bs", "steuern"]] },
     { id: "beitraege", g: 4, tp: "beitraege", title: "Beiträge und Gebühren",
-      text: "Beiträge an die Wirtschaftskammer und an die Sozialversicherung der Inhaberin (GSVG) sind betrieblicher Aufwand ohne Umsatzsteuer. Die Müllabfuhr hat 10 % USt.",
-      rules: ["Kammerumlage → 7780, GSVG-Beiträge → 7740 (ohne Vorsteuer).", "Müllgebühren → 7220 Entsorgungsaufwand + 10 % Vorsteuer."] },
+      text: "Beiträge an die Wirtschaftskammer und an die Sozialversicherung der Inhaberin (SVS) sind betrieblicher Aufwand ohne Umsatzsteuer. Die Gebühren der Gemeinde für Wasser, Kanal und Müll haben 10 % USt.",
+      rules: ["Kammerumlage 1 = 0,29 % der Vorsteuern des Quartals: 7780 Kammerumlage / 3540. Die Grundumlage kommt ebenfalls auf 7780.", "SVS-Vorschreibung: 7740 / 3640 Verbindlichkeiten GSVG, bei der Zahlung 3640 / 2800.", "Wasser, Kanal, Müll: 7190 Sonstige Abgaben + 2500 Vorsteuer (10 %) / 3610 bzw. 2800. Die Grundsteuer auf derselben Vorschreibung kommt auf 7100 (ohne USt)."] },
 
     { id: "personal", g: 5, tp: "personal", title: "Löhne und Gehälter",
       text: "Arbeiterinnen und Arbeiter bekommen einen <b>Lohn</b>, Angestellte ein <b>Gehalt</b>. Beides ist Personalaufwand der Klasse 6 und ohne Umsatzsteuer.",
