@@ -1236,6 +1236,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rechtsber:["7750", "Rechtsberatungsaufwand", "aufwand", 7],
       steuerber:["7755", "Steuerberatungsaufwand", "aufwand", 7],
       kammer:   ["7780", "Kammerumlage", "aufwand", 7],
+      grundum:  ["7785", "Grundumlage", "aufwand", 7],
       spesen:   ["7790", "Spesen des Geldverkehrs", "aufwand", 7],
       kartprov: ["7792", "Provisionen Kredit- und Debitkarten", "aufwand", 7],
       vorrabschr:["7800", "Abschreibung von Vorräten", "aufwand", 7],
@@ -1936,6 +1937,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           text: `Der Magistrat Graz bucht die vierteljährliche Vorschreibung für Wasser, Kanal und Müll vom Bankkonto ab: ${money(br)} inkl. 10 % USt.`,
           calc: `Gebühren der Gemeinde: ${P.fmt(br)} ÷ 1,1 = ${P.fmt(net)} netto auf 7190 Sonstige Abgaben, Vorsteuer 10 % ${P.fmt(tax)}.` }; },
       mb: (rng, m) => bwBank(rng, abDate(rng), "Magistrat Graz, Gebühren Wasser, Kanal, Müll inkl. 10 % USt", m.haben[0][1], false) },
+    { tp: "beitraege", v2: true, k: "plain", r: [80, 600, 1], s: "grundum", h: "bank", t: a => `Wir überweisen die Grundumlage für das laufende Jahr an die Wirtschaftskammer Steiermark: ${a}.`, note: "Die Grundumlage finanziert die Fachverbände der Wirtschaftskammer. Sie ist Aufwand (7785) ohne Umsatzsteuer.", b: { t: "bank", text: "Wirtschaftskammer Steiermark, Grundumlage 2026" } },
   ];
   CASES.forEach((c, i) => { c.uid = "b" + i; });
   let customCases = []; // aus der Datenbank, siehe unten
@@ -5894,7 +5896,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rules: ["Betriebssteuern (Grundsteuer, Kfz-Steuer Lkw) sind Aufwand: 7100 Grundsteuer / 3610 Verbindlichkeiten Gemeinde bzw. 2800.", "Durchlaufsteuern wirken nicht auf den Erfolg: 3520 USt-Zahllast + 3540 Verbindlichkeiten Finanzamt (Lohnsteuer) / 2800.", "Aktivierungspflichtige Steuern erhöhen die Anschaffungskosten: Grunderwerbsteuer 3,5 % → 0200 Unbebaute Grundstücke / 3540.", "Privatsteuern (Einkommensteuer, Grundsteuer für Privatgrundstücke): 9610 Privatsteuern / 2800."], go: [["bs", "steuern"]] },
     { id: "beitraege", g: 4, tp: "beitraege", title: "Beiträge und Gebühren",
       text: "Beiträge an die Wirtschaftskammer und an die Sozialversicherung der Inhaberin (SVS) sind betrieblicher Aufwand ohne Umsatzsteuer. Die Gebühren der Gemeinde für Wasser, Kanal und Müll haben 10 % USt.",
-      rules: ["Kammerumlage 1 = 0,29 % der Vorsteuern des Quartals: 7780 Kammerumlage / 3540. Die Grundumlage kommt ebenfalls auf 7780.", "SVS-Vorschreibung: 7740 / 3640 Verbindlichkeiten GSVG, bei der Zahlung 3640 / 2800.", "Wasser, Kanal, Müll: 7190 Sonstige Abgaben + 2500 Vorsteuer (10 %) / 3610 bzw. 2800. Die Grundsteuer auf derselben Vorschreibung kommt auf 7100 (ohne USt)."] },
+      rules: ["Kammerumlage 1 = 0,29 % der Vorsteuern des Quartals: 7780 Kammerumlage / 3540. Die Grundumlage kommt auf 7785 Grundumlage.", "SVS-Vorschreibung: 7740 / 3640 Verbindlichkeiten GSVG, bei der Zahlung 3640 / 2800.", "Wasser, Kanal, Müll: 7190 Sonstige Abgaben + 2500 Vorsteuer (10 %) / 3610 bzw. 2800. Die Grundsteuer auf derselben Vorschreibung kommt auf 7100 (ohne USt)."] },
 
     { id: "personal", g: 5, tp: "personal", title: "Löhne und Gehälter",
       text: "Arbeiterinnen und Arbeiter bekommen einen <b>Lohn</b>, Angestellte ein <b>Gehalt</b>. Beides ist Personalaufwand der Klasse 6 und ohne Umsatzsteuer.",
