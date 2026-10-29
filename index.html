@@ -4373,11 +4373,14 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     if (!gens.slice(0, n).some(g => g === "ber" || g === "ber2")) gens.unshift("ber");
     const cases = [], books = [], sols = [];
     const berOpts = JA_RST.filter(x => x.inv).sort(() => rng() - 0.5);
+    // Honorarnoten: bei zwei Fällen einmal zu hoch und einmal zu niedrig, bei einem Fall in der Hälfte der Fälle zu hoch
+    const nBer = gens.slice(0, n).filter(g => g === "ber" || g === "ber2").length;
+    const vSeq = nBer >= 2 ? (rng() < 0.5 ? ["hoch", "niedrig"] : ["niedrig", "hoch"]) : [pickR(rng, ["hoch", "niedrig", "hoch", "gleich"])];
     gens.slice(0, n).forEach((g, i) => {
       const id = j => `bw-b${i}${j}`;
       if (g === "ber" || g === "ber2") {
         const o = berOpts.pop() || JA_RST[0], rst = rndStep(rng, o.r) * 100;
-        const v = pickR(rng, ["gleich", "niedrig", "hoch"]), d = v === "gleich" ? 0 : Math.max(50, Math.round(rst / 100 * (0.05 + rng() * 0.2) / 10) * 10) * 100;
+        const v = vSeq.shift() || pickR(rng, ["gleich", "niedrig", "hoch"]), d = v === "gleich" ? 0 : Math.max(50, Math.round(rst / 100 * (0.05 + rng() * 0.2) / 10) * 10) * 100;
         const dd = 1 + Math.floor(rng() * 28), dm = 3 + Math.floor(rng() * 4);
         const net = v === "niedrig" ? rst + d : v === "hoch" ? rst - d : rst, tax = net / 5, dt = jaD(dd, dm, (GJ + 1));
         if (rng() < 0.5) {
