@@ -1413,6 +1413,21 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     if (em > 12) { em -= 12; ey++; }
     return `${jaD(1, sm)} bis ${jaD(new Date(ey, em, 0).getDate(), em, ey)}`;
   }
+  // Zeitraum ab einem Tag mitten im Monat (sd), n ganze Monate
+  function jaPerD(sm, sd, n) {
+    if (sd === 1) return jaPer(sm, n);
+    const e = new Date(GJ, sm - 1 + n, sd - 1);
+    return `${jaD(sd, sm)} bis ${jaD(e.getDate(), e.getMonth() + 1, e.getFullYear())}`;
+  }
+  // Monate im nächsten Jahr: Beginn bis inkl. 15. wird abgerundet (Monat zählt), ab dem 16. aufgerundet
+  const jaNextD = (sm, sd, n) => sm + n - 1 - 12 + (sd >= 16 ? 1 : 0);
+  // Starttag: 1. oder mitten im Monat; im Dezember nur bis zum 15., damit ein Teil im alten Jahr bleibt
+  const jaStartDay = (rng, sm) => pickR(rng, sm === 12 ? [5, 10, 12, 15] : [5, 10, 12, 15, 16, 18, 20, 25]);
+  function jaRundText(sm, sd, n, next) {
+    if (sd === 1) return "";
+    const old = n - next;
+    return `Beginn am ${jaD(sd, sm)}: ${sd <= 15 ? `bis inklusive 15. wird abgerundet, der ${MONTHS[sm - 1]} zählt als ganzer Monat zu ${GJ}` : `ab dem 16. wird aufgerundet, gerechnet wird erst ab ${MONTHS[sm % 12]}`}. Auf ${GJ} ${old === 1 ? "entfällt 1 Monat" : `entfallen ${old} Monate`}. `;
+  }
   // Buchwert am 1.1. und AfA im Jahr "year" (lineare AfA, Halbjahresregel bei der Anschaffung)
   function jaAfa(ak, nd, sy, sm, year) {
     const y = ak / nd;
@@ -1946,6 +1961,21 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           calc: `Gebühren der Gemeinde: ${P.fmt(br)} ÷ 1,1 = ${P.fmt(net)} netto auf 7190 Sonstige Abgaben, Vorsteuer 10 % ${P.fmt(tax)}.` }; },
       mb: (rng, m) => bwBank(rng, abDate(rng), "Magistrat Graz, Gebühren Wasser, Kanal, Müll inkl. 10 % USt", m.haben[0][1], false) },
     { tp: "beitraege", v2: true, k: "plain", r: [80, 600, 1], s: "grundum", h: "bank", t: a => `Wir überweisen die Grundumlage für das laufende Jahr an die Wirtschaftskammer Steiermark: ${a}.`, note: "Die Grundumlage finanziert die Fachverbände der Wirtschaftskammer. Sie ist Aufwand (7785) ohne Umsatzsteuer.", b: { t: "bank", text: "Wirtschaftskammer Steiermark, Grundumlage " + GJ } },
+    // Rechnungsabgrenzungen mit Beginn mitten im Monat (bis inkl. 15. abrunden, ab dem 16. aufrunden)
+    { tp: "ja_rap", v2: true, k: "make", make: rng => {
+        const o = pickR(rng, JA_ARA), sm = o.m[0] + Math.floor(rng() * (o.m[1] - o.m[0] + 1)), sd = jaStartDay(rng, sm), mon = rndStep(rng, o.r) * 100, net = mon * o.n, gross = net * (100 + o.rate) / 100;
+        const next = jaNextD(sm, sd, o.n), amt = mon * next, d = Math.max(1, sd - Math.floor(rng() * 4));
+        if (next <= 0 || next >= o.n) return JA_RETRY;
+        return { soll: [["ara", amt]], haben: [[o.acc, amt]],
+          text: `Am ${jaD(d, sm)} haben wir ${o.what} für ${o.n} Monate (${jaPerD(sm, sd, o.n)}) im Voraus per Bank bezahlt: ${money(gross)}${o.rate ? ` inkl. ${o.rate} % USt` : ""}. Die Zahlung ist bereits gebucht. Buche am 31.12.${GJ} die Rechnungsabgrenzung.`,
+          calc: `${o.rate ? `Abgegrenzt wird der Nettobetrag: ${P.fmt(gross)} ÷ 1,${o.rate === 10 ? "1" : "2"} = ${P.fmt(net)}. ` : "Keine Vorsteuer, daher wird der ganze Betrag abgegrenzt. "}Monatlich: ${P.fmt(net)} ÷ ${o.n} = ${P.fmt(mon)}. ${jaRundText(sm, sd, o.n, next)}Auf ${GJ + 1} ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${next} × ${P.fmt(mon)} = ${P.fmt(amt)} (eigene Vorauszahlung → aktive Rechnungsabgrenzung).` }; } },
+    { tp: "ja_rap", v2: true, k: "make", make: rng => {
+        const t = pickR(rng, JA_MIETER), n = pickR(rng, [3, 6]), sm = n === 3 ? pickR(rng, [10, 11, 12]) : 7 + Math.floor(rng() * 6), sd = jaStartDay(rng, sm), mon = rndStep(rng, [30, 120, 1]) * 1000, net = mon * n, gross = net * 6 / 5;
+        const next = jaNextD(sm, sd, n), amt = mon * next, d = Math.max(1, sd - Math.floor(rng() * 4));
+        if (next <= 0 || next >= n) return JA_RETRY;
+        return { soll: [["mieterl", amt]], haben: [["pra", amt]],
+          text: `${t[0]} mietet einen Raum in unserem Geschäftslokal. Am ${jaD(d, sm)} geht die Miete für ${n} Monate (${jaPerD(sm, sd, n)}) im Voraus auf unserem Bankkonto ein: ${money(gross)} inkl. 20 % USt. Der Zahlungseingang ist bereits gebucht. Buche am 31.12.${GJ} die Rechnungsabgrenzung.`,
+          calc: `Nettoertrag: ${P.fmt(gross)} ÷ 1,2 = ${P.fmt(net)}. Monatlich: ${P.fmt(net)} ÷ ${n} = ${P.fmt(mon)}. ${jaRundText(sm, sd, n, next)}Auf ${GJ + 1} ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${next} × ${P.fmt(mon)} = ${P.fmt(amt)} (fremde Vorauszahlung → passive Rechnungsabgrenzung).` }; } }
   ];
   CASES.forEach((c, i) => { c.uid = "b" + i; });
   let customCases = []; // aus der Datenbank, siehe unten
@@ -4340,30 +4370,32 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
         o = mieter.pop(); nn = pickR(rng, [3, 6]); rate = 20; acc = "mieterl";
         sm = nn === 3 ? pickR(rng, [11, 12]) : 8 + Math.floor(rng() * 5); mon = rndStep(rng, [30, 120, 1]) * 1000;
       }
-      const day = 1 + Math.floor(rng() * 5), net = mon * nn, tax = net * rate / 100, next = sm + nn - 1 - 12, amt = mon * next, d = jaD(day, sm), useDoc = rng() < 0.5;
+      // in etwa der Hälfte der Fälle beginnt der Zeitraum mitten im Monat
+      const sd = rng() < 0.5 ? jaStartDay(rng, sm) : 1;
+      const day = sd > 1 ? Math.max(1, sd - Math.floor(rng() * 4)) : 1 + Math.floor(rng() * 5), net = mon * nn, tax = net * rate / 100, next = jaNextD(sm, sd, nn), amt = mon * next, d = jaD(day, sm), useDoc = rng() < 0.5;
       let doc = null;
       if (k === "ara") {
-        text = `Am ${d} überweisen wir ${o.what} für ${nn} Monate (${jaPer(sm, nn)}) im Voraus vom Bankkonto: ${P.fmt(net + tax)}${rate ? ` inkl. ${rate} % USt` : ""}.`;
+        text = `Am ${d} überweisen wir ${o.what} für ${nn} Monate (${jaPerD(sm, sd, nn)}) im Voraus vom Bankkonto: ${P.fmt(net + tax)}${rate ? ` inkl. ${rate} % USt` : ""}.`;
         if (useDoc) {
           const payee = { versich: BW_INSURER[0], lkwvers: BW_INSURER[0], pkwvers: BW_INSURER[0], miete: "Immo Graz GmbH", werbung: "Pixelgarten Online-Marketing OG", literatur: "Modeverlag Wien GmbH", instedv: "Kassensysteme Huber OG", instbga: "Klima Wimmer GmbH", internet: "Webstudio Pixel OG", zinsaufw: "Zinsen Kredit Nr. 4471-22" }[acc] || "Zahlungsempfänger";
-          text = `Am ${d} überweisen wir ${o.what} für ${nn} Monate (${jaPer(sm, nn)}) im Voraus vom Bankkonto${rate ? `, der Betrag enthält ${rate} % USt` : ", ohne USt"}. Den Betrag findest du auf dem Kontoauszug.`;
-          doc = bwBank(rng, new Date(GJ, sm - 1, day), `${acc === "zinsaufw" ? "" : "Überweisung "}${payee}, ${o.short.replace(/^(die|das|der) /, "")} ${jaPer(sm, nn)}`, net + tax, false);
+          text = `Am ${d} überweisen wir ${o.what} für ${nn} Monate (${jaPerD(sm, sd, nn)}) im Voraus vom Bankkonto${rate ? `, der Betrag enthält ${rate} % USt` : ", ohne USt"}. Den Betrag findest du auf dem Kontoauszug.`;
+          doc = bwBank(rng, new Date(GJ, sm - 1, day), `${acc === "zinsaufw" ? "" : "Überweisung "}${payee}, ${o.short.replace(/^(die|das|der) /, "")} ${jaPerD(sm, sd, nn)}`, net + tax, false);
         }
         zs = [[acc, net]]; if (tax) zs.push(["vst", tax]); zh = [["bank", net + tax]];
         books.push({ id: `bw-b${i}a`, case: i, label: `${d}: Zahlung`, soll: zs, haben: zh },
           { id: `bw-b${i}b`, case: i, label: "31.12." + GJ + ": Abgrenzung", soll: [["ara", amt]], haben: [[acc, amt]] },
           { id: `bw-b${i}c`, case: i, label: "01.01." + (GJ + 1) + ": Auflösung", soll: [[acc, amt]], haben: [["ara", amt]] });
-        sols.push(`Fall ${i + 1}: eigene Vorauszahlung (Aufwand). ${rate ? `Netto ${P.fmt(net)}, ` : ""}monatlich ${P.fmt(mon)}, ${next} ${next === 1 ? "Monat" : "Monate"} betreffen ${GJ + 1}: ${P.fmt(amt)} → aktive Rechnungsabgrenzung.`);
+        sols.push(`Fall ${i + 1}: eigene Vorauszahlung (Aufwand). ${rate ? `Netto ${P.fmt(net)}, ` : ""}monatlich ${P.fmt(mon)}. ${jaRundText(sm, sd, nn, next)}${next} ${next === 1 ? "Monat betrifft" : "Monate betreffen"} ${GJ + 1}: ${P.fmt(amt)} → aktive Rechnungsabgrenzung.`);
       } else {
-        text = `${o[0]} mietet einen Raum in unserem Geschäftslokal. Am ${d} geht die Miete für ${nn} Monate (${jaPer(sm, nn)}) im Voraus auf unserem Bankkonto ein: ${P.fmt(net + tax)} inkl. 20 % USt.`;
+        text = `${o[0]} mietet einen Raum in unserem Geschäftslokal. Am ${d} geht die Miete für ${nn} Monate (${jaPerD(sm, sd, nn)}) im Voraus auf unserem Bankkonto ein: ${P.fmt(net + tax)} inkl. 20 % USt.`;
         if (useDoc) {
-          text = `${o[0]} mietet einen Raum in unserem Geschäftslokal. Am ${d} geht die Miete für ${nn} Monate (${jaPer(sm, nn)}) im Voraus auf unserem Bankkonto ein, inklusive 20 % USt (siehe Kontoauszug).`;
-          doc = bwBank(rng, new Date(GJ, sm - 1, day), `Gutschrift ${o[0].replace(/^(Die|Das|Der) /, "")}, Miete ${jaPer(sm, nn)}`, net + tax, true);
+          text = `${o[0]} mietet einen Raum in unserem Geschäftslokal. Am ${d} geht die Miete für ${nn} Monate (${jaPerD(sm, sd, nn)}) im Voraus auf unserem Bankkonto ein, inklusive 20 % USt (siehe Kontoauszug).`;
+          doc = bwBank(rng, new Date(GJ, sm - 1, day), `Gutschrift ${o[0].replace(/^(Die|Das|Der) /, "")}, Miete ${jaPerD(sm, sd, nn)}`, net + tax, true);
         }
         books.push({ id: `bw-b${i}a`, case: i, label: `${d}: Zahlungseingang`, soll: [["bank", net + tax]], haben: [["mieterl", net], ["ust", tax]] },
           { id: `bw-b${i}b`, case: i, label: "31.12." + GJ + ": Abgrenzung", soll: [["mieterl", amt]], haben: [["pra", amt]] },
           { id: `bw-b${i}c`, case: i, label: "01.01." + (GJ + 1) + ": Auflösung", soll: [["pra", amt]], haben: [["mieterl", amt]] });
-        sols.push(`Fall ${i + 1}: fremde Vorauszahlung (Ertrag). Netto ${P.fmt(net)}, monatlich ${P.fmt(mon)}, ${next} ${next === 1 ? "Monat" : "Monate"} betreffen ${GJ + 1}: ${P.fmt(amt)} → passive Rechnungsabgrenzung.`);
+        sols.push(`Fall ${i + 1}: fremde Vorauszahlung (Ertrag). Netto ${P.fmt(net)}, monatlich ${P.fmt(mon)}. ${jaRundText(sm, sd, nn, next)}${next} ${next === 1 ? "Monat betrifft" : "Monate betreffen"} ${GJ + 1}: ${P.fmt(amt)} → passive Rechnungsabgrenzung.`);
       }
       cases.push({ text, amt, doc, id: "bw-r" + i });
     });
@@ -5936,7 +5968,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rules: ["Uneinbringlich: 7802 Abschreibung von Forderungen (netto) + 3500 Umsatzsteuer (Korrektur) / 2000.", "Zweifelhaft: Wertberichtigung = Nettobetrag × erwarteter Ausfall in %, ohne USt-Korrektur.", "Konto 2080 anpassen: Zuweisung 7806 / 2080, Auflösung 2080 / 4870.", "Achtung: Eine Quote von 30 % bedeutet einen Ausfall von 70 %."], go: [["bw", "fo"]] },
     { id: "ja_rap", g: 6, tp: "ja_rap", title: "Rechnungsabgrenzungen",
       text: "Wird im alten Jahr etwas bezahlt, das (teilweise) das nächste Jahr betrifft, wird dieser Teil am 31.12. abgegrenzt. So steht jeder Aufwand und Ertrag in dem Jahr, zu dem er gehört.",
-      rules: ["Abgegrenzt wird immer der <b>Nettobetrag</b>: netto ÷ Monate × Monate im nächsten Jahr.", "Aufwand im Voraus bezahlt (aktive RA): 2900 ARA / Aufwandskonto.", "Ertrag im Voraus erhalten (passive RA): Ertragskonto / 3900 PRA.", "Am 01.01. wird die Buchung umgekehrt (aufgelöst)."], go: [["bw", "ra"]] },
+      rules: ["Abgegrenzt wird immer der <b>Nettobetrag</b>: netto ÷ Monate × Monate im nächsten Jahr.", "Beginnt der Zeitraum mitten im Monat: bis inklusive 15. wird abgerundet (der Monat zählt noch ganz), ab dem 16. wird aufgerundet (gerechnet wird erst ab dem nächsten Monat). Beispiel: 10.10. bis 09.04. → 3 Monate alt, 3 Monate neu; 20.10. bis 19.04. → 2 Monate alt, 4 Monate neu.", "Aufwand im Voraus bezahlt (aktive RA): 2900 ARA / Aufwandskonto.", "Ertrag im Voraus erhalten (passive RA): Ertragskonto / 3900 PRA.", "Am 01.01. wird die Buchung umgekehrt (aufgelöst)."], go: [["bw", "ra"]] },
     { id: "ja_rst", g: 6, tp: "ja_rst", title: "Rückstellungen",
       text: "Rückstellungen sind Schulden, deren Höhe oder Zeitpunkt noch nicht genau feststeht, etwa für Steuerberatung, Prozesskosten, Urlaub oder Garantien. Sie werden am 31.12. als Aufwand gebildet.",
       rules: ["Bildung: Aufwandskonto / Rückstellungskonto (30..), immer netto, ohne Vorsteuer.", "Rechnung kommt in richtiger Höhe: Rückstellung + Vorsteuer / 3300.", "Rückstellung zu niedrig: Mehrbetrag auf 7840 Aufwand für Vorperioden. Zu hoch: Rest auflösen, 30.. / 4700.", "Anpassung am 31.12.: Erhöhung Aufwand / Rückstellung, Verminderung Rückstellung / 4700."], go: [["bw", "rs"]] },
