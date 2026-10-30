@@ -1500,7 +1500,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
     // Verkauf
     { tp: "verkauf", g: true, k: "ust", r: [500, 12000, 50], s: "ford", h: "erloese", t: (a, w) => `Wir verkaufen ${w.pl} an eine Firmenkundin auf Ziel: ${a}.`, b: { t: "re", p: "kunden" } },
     { tp: "verkauf", g: true, k: "ust", r: [50, 380, 10], s: "kassa", h: "erloese", t: (a, w) => `Eine Kundin kauft im Geschäft ${w.pl} und bezahlt bar: ${a}.`, b: { t: "re", p: "kunden" } },
-    { tp: "verkauf", g: true, k: "ust", r: [300, 6000, 50], s: "bank", h: "erloese", t: (a, w) => `Ein Firmenkunde kauft ${w.pl} und bezahlt sofort per Überweisung: ${a}.`, b: { t: "re", p: "kunden" } },
+    { tp: "verkauf", g: true, k: "ust", r: [300, 6000, 50], s: "ford", h: "erloese", old: { s: "bank", t: (a, w) => `Ein Firmenkunde kauft ${w.pl} und bezahlt sofort per Überweisung: ${a}.` }, t: (a, w) => `Ein Firmenkunde kauft ${w.pl}. Wir schicken ihm die Rechnung, die er per Überweisung bezahlt: ${a}.`, b: { t: "re", p: "kunden" } },
     { tp: "verkauf", g: true, k: "ust", r: [60, 400, 10], s: "bank", h: "erloese", t: (a, w) => `Über unseren Onlineshop bestellt eine Kundin ${w.pl}. Sie bezahlt per Vorauskasse auf unser Bankkonto: ${a}.`, bNew: true, b: { t: "bank", text: "Gutschrift Onlineshop-Bestellung (Vorauskasse), inkl. 20 % USt" } },
     { tp: "verkauf", k: "ust", r: [1500, 8000, 100], s: "ford", h: "erloese", t: a => `Ein Hotel bestellt Uniformen für das Servicepersonal auf Ziel: ${a}.`, b: { t: "re", p: "kunden", item: "Servicejacke mit Logostickerei", u: [4500, 8500] } },
     { tp: "verkauf", k: "ust", r: [20, 150, 1], s: "kassa", h: "erlrep", t: a => `Unsere Änderungsschneiderei kürzt eine Hose und tauscht einen Reißverschluss. Die Kundin bezahlt bar: ${a}.`, b: { t: "re", p: "kunden", item: "Änderung: Hose kürzen, Reißverschluss tauschen", q1: true } },
@@ -1978,7 +1978,8 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
           calc: `Nettoertrag: ${P.fmt(gross)} ÷ 1,2 = ${P.fmt(net)}. Monatlich: ${P.fmt(net)} ÷ ${n} = ${P.fmt(mon)}. ${jaRundText(sm, sd, n, next)}Auf ${GJ + 1} ${next === 1 ? "entfällt 1 Monat" : `entfallen ${next} Monate`}: ${next} × ${P.fmt(mon)} = ${P.fmt(amt)} (fremde Vorauszahlung → passive Rechnungsabgrenzung).` }; } },
     // zweiter Schritt zu den Einkäufen auf Rechnung: Bezahlung per Überweisung
     { tp: "einkauf", v2: true, g: true, k: "plain", r: [500, 9000, 10], s: "verb", h: "bank", t: (a, w) => `Wir überweisen die bereits gebuchte Rechnung für ${w.pl} an die Danubia Textilgroßhandel GmbH: ${a}.`, note: "Die Rechnung wurde beim Einkauf schon auf 3300 gebucht. Jetzt wird nur die Schuld beglichen, die Vorsteuer ist bereits erfasst.", b: { t: "bank", text: "Danubia Textilgroßhandel GmbH, Rechnung Wareneinkauf" } },
-    { tp: "anlagen", v2: true, k: "plain", r: [1200, 9000, 10], s: "verb", h: "bank", t: a => `Wir überweisen die bereits gebuchte Rechnung für die neue Industrienähmaschine: ${a}.`, note: "Die Anschaffung wurde mit der Rechnung schon gebucht (0400 + Vorsteuer / 3300). Jetzt wird nur die Schuld beglichen.", b: { t: "bank", text: "Nähtechnik Brandstätter GmbH, Rechnung Industrienähmaschine" } }
+    { tp: "anlagen", v2: true, k: "plain", r: [1200, 9000, 10], s: "verb", h: "bank", t: a => `Wir überweisen die bereits gebuchte Rechnung für die neue Industrienähmaschine: ${a}.`, note: "Die Anschaffung wurde mit der Rechnung schon gebucht (0400 + Vorsteuer / 3300). Jetzt wird nur die Schuld beglichen.", b: { t: "bank", text: "Nähtechnik Brandstätter GmbH, Rechnung Industrienähmaschine" } },
+    { tp: "verkauf", v2: true, k: "plain", r: [300, 7000, 10], s: "bank", h: "ford", t: a => `Die Boutique Seidenfaden OG überweist unsere bereits gebuchte Rechnung über ${a}.`, note: "Der Verkauf wurde mit der Ausgangsrechnung schon gebucht (2000 / 4000 + 3500). Jetzt geht nur das Geld ein, die Forderung wird ausgeglichen.", b: { t: "bank", text: "Gutschrift Boutique Seidenfaden OG, Ausgleich Rechnung" } }
   ];
   CASES.forEach((c, i) => { c.uid = "b" + i; });
   let customCases = []; // aus der Datenbank, siehe unten
@@ -4033,7 +4034,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
   }
 
   // ---------- Ausscheiden von Anlagen: Verkauf und Schadensfall ----------
-  const AG_BUYERS = [["Boutique Seidenfaden OG", "auf Ziel", "ford", "Boutique Seidenfaden OG, 8200 Gleisdorf"], ["die Schneiderei Kern", "bar", "kassa", "Schneiderei Kern e.U., 8020 Graz"], ["einen Gebrauchthändler", "per Banküberweisung", "bank", "Gebraucht & Gut Handels GmbH, 8053 Graz"], ["den Trachtenverein Schöckl", "per Banküberweisung", "bank", "Trachtenverein Schöckl, 8044 Graz"], ["eine Privatperson", "bar", "kassa", "Herr Lukas Brandl, 8010 Graz"], ["Modeatelier Kranz OG", "auf Ziel", "ford", "Modeatelier Kranz OG, 5020 Salzburg"], ["die Tanzschule Rhythmus KG", "per Banküberweisung", "bank", "Tanzschule Rhythmus KG, 8020 Graz"], ["eine ehemalige Mitarbeiterin", "bar", "kassa", "Frau Sabine Ortner, 8054 Seiersberg"], ["den Second-Hand-Laden Kleiderkreisel", "auf Ziel", "ford", "Kleiderkreisel Second Hand OG, 8020 Graz"]];
+  const AG_BUYERS = [["Boutique Seidenfaden OG", "auf Ziel", "ford", "Boutique Seidenfaden OG, 8200 Gleisdorf"], ["die Schneiderei Kern", "bar", "kassa", "Schneiderei Kern e.U., 8020 Graz"], ["einen Gebrauchthändler", "innerhalb von 14 Tagen per Banküberweisung", "ford14", "Gebraucht & Gut Handels GmbH, 8053 Graz"], ["den Trachtenverein Schöckl", "innerhalb von 14 Tagen per Banküberweisung", "ford14", "Trachtenverein Schöckl, 8044 Graz"], ["eine Privatperson", "bar", "kassa", "Herr Lukas Brandl, 8010 Graz"], ["Modeatelier Kranz OG", "auf Ziel", "ford", "Modeatelier Kranz OG, 5020 Salzburg"], ["die Tanzschule Rhythmus KG", "innerhalb von 14 Tagen per Banküberweisung", "ford14", "Tanzschule Rhythmus KG, 8020 Graz"], ["eine ehemalige Mitarbeiterin", "bar", "kassa", "Frau Sabine Ortner, 8054 Seiersberg"], ["den Second-Hand-Laden Kleiderkreisel", "auf Ziel", "ford", "Kleiderkreisel Second Hand OG, 8020 Graz"]];
   const AG_DAMAGE = [
     { acc: ["bga"], t: "Durch einen Wasserrohrbruch im Geschäft wird die Anlage „{x}“ am {d} völlig zerstört." },
     { acc: ["bga"], t: "Bei einem Brand im Lager am {d} wird die Anlage „{x}“ so schwer beschädigt, dass sie nicht mehr verwendet werden kann." },
@@ -4067,17 +4068,17 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       if (k === "verkauf" || k === "pkw") {
         const net = Math.max(10000, Math.round(rbw * (0.4 + rng() * 1.1) / 1000) * 1000);
         if (k === "pkw") {
-          const [buyer, how, pay, addr] = pickR(rng, AG_BUYERS.filter(b => b[2] !== "ford"));
+          const [buyer, how, pay0, addr] = pickR(rng, AG_BUYERS.filter(b => b[1] !== "auf Ziel")), pay = pay0 === "ford14" ? "ford" : pay0;
           text = `Am ${avDate(dOut)} verkaufen wir unseren alten ${x} an ${buyer} um ${P.fmt(net)}. Bezahlt wird ${how}. Beim Kauf des Pkw gab es keinen Vorsteuerabzug, deshalb ist der Verkauf nicht umsatzsteuerpflichtig.`;
           if (rng() < 0.6) {
             text = `Am ${avDate(dOut)} verkaufen wir unseren alten ${x}. Bezahlt wird ${how}. Buche den Verkauf laut Beleg.`;
-            doc = bwInvoice({ rng, issuer: bwUs(), recipient: bwFirm(rng, addr), date: dOut, lines: [[1, `Gebrauchter ${x}, Erstzulassung ${o.inb.getFullYear()}`, net, net]], net, R: 0, tax: 0, free: "Umsatzsteuerfrei gemäß § 6 Abs. 1 Z 26 UStG (beim Erwerb kein Vorsteuerabzug).", pay: pay === "kassa" ? "Betrag bar erhalten." : "Betrag per Banküberweisung erhalten. Danke!", cash: pay === "kassa" });
+            doc = bwInvoice({ rng, issuer: bwUs(), recipient: bwFirm(rng, addr), date: dOut, lines: [[1, `Gebrauchter ${x}, Erstzulassung ${o.inb.getFullYear()}`, net, net]], net, R: 0, tax: 0, free: "Umsatzsteuerfrei gemäß § 6 Abs. 1 Z 26 UStG (beim Erwerb kein Vorsteuerabzug).", pay: pay === "kassa" ? "Betrag bar erhalten." : "Zahlbar innerhalb von 14 Tagen ohne Abzug per Banküberweisung.", cash: pay === "kassa" });
           }
           books.push({ id: id("a"), case: i, label: `${avDate(dOut)}: Verkauf`, soll: [[pay, net]], haben: [["anlerl0", net]] });
         } else {
-          const [buyer, how, pay, addr] = pickR(rng, AG_BUYERS), tax = net / 5;
+          const [buyer, how, pay0, addr] = pickR(rng, AG_BUYERS), pay = pay0 === "ford14" ? "ford" : pay0, tax = net / 5;
           text = `Am ${avDate(dOut)} verkaufen wir die Anlage „${x}“ an ${buyer}. Bezahlt wird ${how}.`;
-          if (rng() < 0.6) doc = bwInvoice({ rng, issuer: bwUs(), recipient: bwFirm(rng, addr), date: dOut, lines: [[1, `${x}, gebraucht`, net, net]], net, R: 20, tax, pay: pay === "kassa" ? "Betrag bar erhalten." : pay === "bank" ? "Betrag per Banküberweisung erhalten. Danke!" : "Zahlbar innerhalb von 30 Tagen ohne Abzug.", cash: pay === "kassa" });
+          if (rng() < 0.6) doc = bwInvoice({ rng, issuer: bwUs(), recipient: bwFirm(rng, addr), date: dOut, lines: [[1, `${x}, gebraucht`, net, net]], net, R: 20, tax, pay: pay === "kassa" ? "Betrag bar erhalten." : pay0 === "ford14" ? "Zahlbar innerhalb von 14 Tagen ohne Abzug per Banküberweisung." : "Zahlbar innerhalb von 30 Tagen ohne Abzug.", cash: pay === "kassa" });
           else inv = [["Verkauf gebraucht: " + x, net], ["+ 20 % USt", tax], ["Rechnungsbetrag", net + tax]];
           books.push({ id: id("a"), case: i, label: `${avDate(dOut)}: Verkauf`, soll: [[pay, net + tax]], haben: [["anlerl", net], ["ust", tax]] });
         }
@@ -5898,7 +5899,7 @@ nav.modules button[aria-current="page"] { background: var(--accent-soft); color:
       rules: ["Aufwandskonto netto + 2500 Vorsteuer im Soll, Zahlungsmittel oder 3300 im Haben.", "Versicherungen (7700), Gebühren und Beiträge sind umsatzsteuerfrei, also ohne Vorsteuer.", "Fachzeitschriften (7630) haben nur 10 % USt."] },
     { id: "verkauf", g: 0, tp: "verkauf", title: "Verkauf von Handelswaren und Dienstleistungen",
       text: "Beim Verkauf entsteht ein Ertrag auf <b>4000 Handelswarenerlöse</b>. Zusätzlich verrechnen wir 20 % Umsatzsteuer, die wir dem Finanzamt schulden.",
-      rules: ["Im Soll steht der Bruttobetrag: 2700 Kassa, 2800 Bank oder 2000 Lieferforderungen bzw. 20999 Diverse Kunden (Verkauf auf Ziel).", "Im Haben: 4000 Handelswarenerlöse (netto) und 3500 Umsatzsteuer.", "Dienstleistungen wie Änderungen oder Reparaturen → 4030 Erlöse Reparaturen."] },
+      rules: ["Im Soll steht der Bruttobetrag: 2700 Kassa (sofort bar), 2800 Bank (z. B. Vorauskasse) oder 2000 Lieferforderungen bzw. 20999 Diverse Kunden (Ausgangsrechnung, auf Ziel).", "Bezahlt die Kundin oder der Kunde die Rechnung später per Überweisung, wird das extra gebucht: 2800 / 2000.", "Im Haben: 4000 Handelswarenerlöse (netto) und 3500 Umsatzsteuer.", "Dienstleistungen wie Änderungen oder Reparaturen → 4030 Erlöse Reparaturen."] },
     { id: "ertraege", g: 0, tp: "ertraege", title: "Sonstige betriebliche Erträge",
       text: "Nicht jeder Ertrag kommt aus dem Warenverkauf: Wir vermieten zum Beispiel einen Raum oder bekommen Provisionen für vermittelte Aufträge.",
       rules: ["Mieterträge → 4810, Provisionserträge → 4820, jeweils mit 20 % Umsatzsteuer.", "Ist der Betrag noch offen und stammt er nicht aus einem Warenverkauf, buchen wir 2300 Sonstige Forderungen statt 2000."] },
